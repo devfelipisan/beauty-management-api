@@ -97,6 +97,15 @@ export class BusinessApi {
     return this.dependencies.unitOfWork.execute(context, (tx) => tx.appointments.list(tenantId));
   }
 
+  listPayments(context: ExecutionContext) {
+    const tenantId = requireTenant(context);
+    return this.dependencies.unitOfWork.execute(context, async (tx) => {
+      const customers = await tx.customers.list(tenantId);
+      const groups = await Promise.all(customers.map((customer) => tx.payments.listByCustomer(tenantId, customer.id)));
+      return groups.flat().sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    });
+  }
+
   listLeads(context: ExecutionContext) {
     const tenantId = requireTenant(context);
     return this.dependencies.leadRepository.list(tenantId);
