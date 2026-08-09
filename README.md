@@ -17,20 +17,61 @@ beauty-management-web
 
 A Business API é a única autoridade de negócio. Frontend e BFF não executam regras de domínio, transições de estado ou autorização definitiva.
 
-## Migração em andamento
+## Estado atual da migração
 
-A primeira etapa extraiu a fachada `BusinessApi` para este repositório e removeu dela a responsabilidade de construir o próprio container. As dependências agora são injetadas explicitamente por `BusinessApiDependencies`.
+Já foram transferidos para este repositório, diretamente na `main`:
 
-Nesta fase, `queries` e `commands` são portas temporárias tipadas com `unknown` nos payloads porque os DTOs, use cases, state machines, repositories, autorização e contratos ainda serão migrados incrementalmente do `beauty-management-web`.
+- contratos centrais e RBAC já existentes;
+- lifecycle states e engine genérico de state machine;
+- máquinas de estado de Appointment, Deposit e Session;
+- modelos de Tenant, Professional, Service, Customer, Appointment, Deposit, Session e Payment;
+- Repository Ports e `UnitOfWork` tenant-aware;
+- auditoria append-only, transactional outbox e idempotência;
+- `CreateTenantUseCase`;
+- `CreateProfessionalUseCase`;
+- `CreateServiceUseCase`;
+- `CreateCustomerUseCase`;
+- política transacional de criação de agendamento e `CreateAppointmentUseCase`;
+- `ConfirmDepositUseCase`;
+- `StartSessionUseCase`;
+- `CompleteSessionUseCase`;
+- `RegisterPaymentUseCase`.
 
-Próximas etapas:
+A fachada `BusinessApi` já executa esses comandos por Application Use Cases reais. Ainda permanecem como ponte temporária os fluxos públicos de lead/agendamento, branding e algumas queries até que os respectivos adapters/composition root sejam concluídos.
 
-1. migrar contratos e erros compartilhados;
-2. migrar Application/Domain por bounded context;
-3. migrar `UnitOfWork`, repositories, audit, outbox e idempotência;
-4. migrar Auth/RBAC;
-5. substituir as portas temporárias da `BusinessApi` pelos tipos reais;
-6. expor `/v1/*` no Worker e conectar o BFF do `beauty-management-web`.
+## Base HTTP
+
+A API versionada utiliza:
+
+```text
+{{host}}/v1/{{path}}
+```
+
+Exemplo de health check:
+
+```text
+GET {{host}}/v1/health
+```
+
+No `beauty-management-web`, configure o BFF com:
+
+```text
+BUSINESS_API_BASE_URL=https://<host>/v1/
+```
+
+Uma chamada do frontend para:
+
+```text
+/api/bff/customers
+```
+
+será encaminhada pelo BFF para:
+
+```text
+https://<host>/v1/customers
+```
+
+O BFF não possui mais fallback para a Business API embarcada no Next.js; `BUSINESS_API_BASE_URL` passa a ser obrigatório para a integração externa.
 
 ## Desenvolvimento
 
@@ -42,10 +83,11 @@ npm run dev
 
 `npm run build` valida o TypeScript. O bundle do Worker continua sendo produzido pelo Wrangler durante o deploy.
 
-Health check inicial:
+Health checks:
 
 ```text
 GET /health
+GET /v1/health
 ```
 
 Quando bindings do Cloudflare forem adicionados, gere os tipos a partir do próprio `wrangler.jsonc`:
@@ -69,6 +111,4 @@ Root directory:    /
 Production branch: main
 ```
 
-O script `build` existe porque Workers Builds pode executar `npm run build` antes do comando de deploy. Para este Worker, a etapa valida o TypeScript e não duplica o bundle de produção.
-
-O projeto declara Node 24 e npm 11 como ambiente de referência. Se a plataforma escolher Bun para a instalação automática, a árvore de dependências também deve permanecer instalável por Bun.
+O projeto declara Node 24 e npm 11 como ambiente de referência.
