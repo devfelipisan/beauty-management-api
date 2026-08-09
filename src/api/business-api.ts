@@ -1,7 +1,12 @@
+import { CreateAppointmentUseCase, type CreateAppointmentInput } from "@/modules/appointments/application/create-appointment";
+import { CreateCustomerUseCase, type CreateCustomerInput } from "@/modules/customers/application/create-customer";
 import { ConfirmDepositUseCase, type ConfirmDepositInput } from "@/modules/deposits/application/confirm-deposit";
 import { RegisterPaymentUseCase, type RegisterPaymentInput } from "@/modules/payments/application/register-payment";
+import { CreateProfessionalUseCase, type CreateProfessionalInput } from "@/modules/professionals/application/create-professional";
+import { CreateServiceUseCase, type CreateServiceInput } from "@/modules/services/application/create-service";
 import { CompleteSessionUseCase, type CompleteSessionInput } from "@/modules/sessions/application/complete-session";
 import { StartSessionUseCase, type StartSessionInput } from "@/modules/sessions/application/start-session";
+import { CreateTenantUseCase, type CreateTenantInput } from "@/modules/tenants/application/create-tenant";
 import type { PermissionCode } from "@/server/auth/permissions";
 import type { ExecutionContext } from "@/shared/application/execution-context";
 
@@ -25,11 +30,6 @@ export interface BusinessApiQueries {
 }
 
 export interface BusinessApiCommands {
-  createTenant(context: ExecutionContext, input: unknown): Promise<unknown>;
-  createProfessional(context: ExecutionContext, input: unknown): Promise<unknown>;
-  createService(context: ExecutionContext, input: unknown): Promise<unknown>;
-  createCustomer(context: ExecutionContext, input: unknown): Promise<unknown>;
-  createAppointment(context: ExecutionContext, input: unknown): Promise<unknown>;
   createPublicAppointment(context: ExecutionContext, input: unknown): Promise<unknown>;
   createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: unknown): Promise<unknown>;
   createPublicLeadBySlug(context: ExecutionContext, slug: string, input: unknown): Promise<unknown>;
@@ -38,6 +38,11 @@ export interface BusinessApiCommands {
 }
 
 export interface BusinessApiUseCases {
+  createTenant: CreateTenantUseCase;
+  createProfessional: CreateProfessionalUseCase;
+  createService: CreateServiceUseCase;
+  createCustomer: CreateCustomerUseCase;
+  createAppointment: CreateAppointmentUseCase;
   confirmDeposit: ConfirmDepositUseCase;
   startSession: StartSessionUseCase;
   completeSession: CompleteSessionUseCase;
@@ -62,7 +67,6 @@ export class BusinessApi {
   authorizeTenant(authSubject: string, tenantId: string, permission: PermissionCode) {
     return this.dependencies.authorization.requireTenantPermission(authSubject, tenantId, permission);
   }
-
   authorizePlatform(authSubject: string, permission: PermissionCode) {
     return this.dependencies.authorization.requirePlatformPermission(authSubject, permission);
   }
@@ -79,11 +83,11 @@ export class BusinessApi {
   listAuditEvents(context: ExecutionContext) { requireTenant(context); return this.dependencies.queries.listAuditEvents(context); }
   getTenantBranding(context: ExecutionContext) { requireTenant(context); return this.dependencies.queries.getTenantBranding(context); }
 
-  createTenant(context: ExecutionContext, input: unknown) { return this.dependencies.commands.createTenant(context, input); }
-  createProfessional(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.createProfessional(context, input); }
-  createService(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.createService(context, input); }
-  createCustomer(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.createCustomer(context, input); }
-  createAppointment(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.createAppointment(context, input); }
+  createTenant(context: ExecutionContext, input: CreateTenantInput) { return this.dependencies.useCases.createTenant.execute(context, input); }
+  createProfessional(context: ExecutionContext, input: CreateProfessionalInput) { requireTenant(context); return this.dependencies.useCases.createProfessional.execute(context, input); }
+  createService(context: ExecutionContext, input: CreateServiceInput) { requireTenant(context); return this.dependencies.useCases.createService.execute(context, input); }
+  createCustomer(context: ExecutionContext, input: CreateCustomerInput) { requireTenant(context); return this.dependencies.useCases.createCustomer.execute(context, input); }
+  createAppointment(context: ExecutionContext, input: CreateAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createAppointment.execute(context, input); }
   createPublicAppointment(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.createPublicAppointment(context, input); }
   createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: unknown) { return this.dependencies.commands.createPublicAppointmentBySlug(context, slug, input); }
   createPublicLeadBySlug(context: ExecutionContext, slug: string, input: unknown) { return this.dependencies.commands.createPublicLeadBySlug(context, slug, input); }
