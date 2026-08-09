@@ -13,6 +13,10 @@
     "build": "npm run typecheck",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
+    "test:state-machines": "node --experimental-transform-types --test src/testing/state-machines.test.ts",
+    "test:security": "node --experimental-transform-types --test src/testing/security-contracts.test.ts",
+    "test": "npm run test:state-machines && npm run test:security",
+    "check": "npm run typecheck && npm run test",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
   },
   "dependencies": {
