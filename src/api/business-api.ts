@@ -1,6 +1,5 @@
+import type { PermissionCode } from "@/server/auth/permissions";
 import type { ExecutionContext } from "@/shared/application/execution-context";
-
-export type PermissionCode = string;
 
 export interface AuthorizationPort {
   requireTenantPermission(authSubject: string, tenantId: string, permission: PermissionCode): Promise<void> | void;
@@ -54,10 +53,9 @@ function requireTenant(context: ExecutionContext): string {
 /**
  * Authoritative backend facade migrated from beauty-management-web.
  *
- * This first extraction keeps HTTP/Cloudflare details outside the facade and
- * injects all application dependencies explicitly. Domain/application ports
- * will replace the temporary query/command bridge incrementally as modules are
- * migrated from the web repository.
+ * HTTP/Cloudflare details stay outside this facade. Application/domain ports
+ * replace the temporary query/command bridge incrementally as bounded contexts
+ * are migrated from the web repository.
  */
 export class BusinessApi {
   constructor(private readonly dependencies: BusinessApiDependencies) {}
