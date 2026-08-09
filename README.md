@@ -36,9 +36,11 @@ Próximas etapas:
 
 ```bash
 npm install
-npm run typecheck
+npm run build
 npm run dev
 ```
+
+`npm run build` valida o TypeScript. O bundle do Worker continua sendo produzido pelo Wrangler durante o deploy.
 
 Health check inicial:
 
@@ -56,15 +58,17 @@ O projeto não depende de `@cloudflare/workers-types`; os tipos de bindings deve
 
 ## Deploy no Cloudflare Workers
 
-Este repositório é um Worker de API puro. O `wrangler.jsonc` aponta diretamente para `src/index.ts`, portanto o Wrangler realiza o bundle durante `wrangler deploy` e não existe uma etapa OpenNext/Next.js anterior ao deploy.
+Este repositório é um Worker de API puro. O `wrangler.jsonc` aponta diretamente para `src/index.ts`, portanto o Wrangler realiza o bundle durante `wrangler deploy`.
 
 Configuração recomendada em Workers Builds:
 
 ```text
-Build command:   None
-Deploy command:  npx wrangler deploy
-Root directory:  /
+Build command:     npm run build
+Deploy command:    npx wrangler deploy
+Root directory:    /
 Production branch: main
 ```
 
-O projeto declara Node 24 e npm 11 como ambiente de referência. Se a plataforma escolher Bun para a instalação automática, a árvore de dependências também deve permanecer instalável por Bun; não adicione dependências de tipos Cloudflare com versões inexistentes ou dependentes de resolução implícita do package manager.
+O script `build` existe porque Workers Builds pode executar `npm run build` antes do comando de deploy. Para este Worker, a etapa valida o TypeScript e não duplica o bundle de produção.
+
+O projeto declara Node 24 e npm 11 como ambiente de referência. Se a plataforma escolher Bun para a instalação automática, a árvore de dependências também deve permanecer instalável por Bun.
