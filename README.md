@@ -19,25 +19,29 @@ A Business API é a única autoridade de negócio. Frontend e BFF não executam 
 
 ## Estado atual da migração
 
-Já foram transferidos para este repositório, diretamente na `main`:
+A `main` já contém a fundação e as regras negociais que estavam expostas no `beauty-management-web` para o núcleo atual:
 
-- contratos centrais e RBAC já existentes;
+- contratos runtime, RBAC e `ExecutionContext`;
 - lifecycle states e engine genérico de state machine;
-- máquinas de estado de Appointment, Deposit e Session;
-- modelos de Tenant, Professional, Service, Customer, Appointment, Deposit, Session e Payment;
-- Repository Ports e `UnitOfWork` tenant-aware;
+- máquinas de estado de Appointment, Deposit, Session e Lead;
+- modelos tenant-aware de Tenant, Professional, Service, Customer, Appointment, Deposit, Session e Payment;
+- regras de Lead e Tenant Branding desacopladas de React/theme;
+- Repository Ports e `UnitOfWork`;
 - auditoria append-only, transactional outbox e idempotência;
-- `CreateTenantUseCase`;
-- `CreateProfessionalUseCase`;
-- `CreateServiceUseCase`;
-- `CreateCustomerUseCase`;
-- política transacional de criação de agendamento e `CreateAppointmentUseCase`;
-- `ConfirmDepositUseCase`;
-- `StartSessionUseCase`;
-- `CompleteSessionUseCase`;
-- `RegisterPaymentUseCase`.
+- criação de tenant, profissional, serviço e cliente;
+- criação de agendamento autenticado e público;
+- confirmação de sinal;
+- início e conclusão de sessão;
+- registro de pagamento;
+- captação e mudança de estado de lead;
+- atualização de branding;
+- queries da fachada `BusinessApi`, incluindo catálogo público e ações válidas de Appointment/Lead.
 
-A fachada `BusinessApi` já executa esses comandos por Application Use Cases reais. Ainda permanecem como ponte temporária os fluxos públicos de lead/agendamento, branding e algumas queries até que os respectivos adapters/composition root sejam concluídos.
+A fachada não depende mais das antigas pontes temporárias `BusinessApiQueries`/`BusinessApiCommands`. O composition root server-side injeta os casos de uso, `UnitOfWork`, LeadRepository e autorização.
+
+### Persistência atual
+
+Para manter a aplicação executável durante a extração, existe um adapter em memória tenant-aware com seed determinístico e transação lógica por clone/commit. Ele é temporário. A próxima substituição de infraestrutura deve implementar os mesmos ports com PostgreSQL/Supabase sem mover regras de negócio de volta para o frontend/BFF.
 
 ## Base HTTP
 
@@ -47,31 +51,30 @@ A API versionada utiliza:
 {{host}}/v1/{{path}}
 ```
 
-Exemplo de health check:
+Exemplos:
 
 ```text
-GET {{host}}/v1/health
+GET  {{host}}/v1/health
+GET  {{host}}/v1/customers
+POST {{host}}/v1/appointments
+POST {{host}}/v1/deposits/confirm
+POST {{host}}/v1/sessions/start
+POST {{host}}/v1/sessions/complete
+POST {{host}}/v1/payments
+GET  {{host}}/v1/public/:slug/catalog
+POST {{host}}/v1/public/:slug/appointments
+POST {{host}}/v1/public/:slug/leads
 ```
 
-No `beauty-management-web`, configure o BFF com:
+No `beauty-management-web`, `BUSINESS_API_BASE_URL` deve conter somente o host do Worker:
 
 ```text
-BUSINESS_API_BASE_URL=https://<host>/v1/
+BUSINESS_API_BASE_URL=https://<host>
 ```
 
-Uma chamada do frontend para:
+O BFF monta o destino versionado como `{{host}}/v1/{{path}}`. Por exemplo, `/api/bff/customers` aponta para `https://<host>/v1/customers`. O BFF composto já utiliza explicitamente caminhos `/v1/*`.
 
-```text
-/api/bff/customers
-```
-
-será encaminhada pelo BFF para:
-
-```text
-https://<host>/v1/customers
-```
-
-O BFF não possui mais fallback para a Business API embarcada no Next.js; `BUSINESS_API_BASE_URL` passa a ser obrigatório para a integração externa.
+Durante a validação de paridade, o proxy genérico mantém fallback temporário para a API embarcada apenas quando `BUSINESS_API_BASE_URL` não estiver configurada. Em ambiente integrado/deploy, configure a variável para usar obrigatoriamente o novo backend.
 
 ## Desenvolvimento
 
