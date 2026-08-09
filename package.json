@@ -1,0 +1,19 @@
+{
+  "name": "beauty-management-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.9.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260801.0",
+    "typescript": "^5.7.4",
+    "wrangler": "^4.119.0"
+  }
+}
