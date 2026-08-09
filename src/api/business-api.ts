@@ -1,3 +1,4 @@
+import { ConfirmDepositUseCase, type ConfirmDepositInput } from "@/modules/deposits/application/confirm-deposit";
 import type { PermissionCode } from "@/server/auth/permissions";
 import type { ExecutionContext } from "@/shared/application/execution-context";
 
@@ -30,33 +31,28 @@ export interface BusinessApiCommands {
   createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: unknown): Promise<unknown>;
   createPublicLeadBySlug(context: ExecutionContext, slug: string, input: unknown): Promise<unknown>;
   updateLeadStatus(context: ExecutionContext, input: unknown): Promise<unknown>;
-  confirmDeposit(context: ExecutionContext, input: unknown): Promise<unknown>;
   startSession(context: ExecutionContext, input: unknown): Promise<unknown>;
   completeSession(context: ExecutionContext, input: unknown): Promise<unknown>;
   registerPayment(context: ExecutionContext, input: unknown): Promise<unknown>;
   updateTenantBranding(context: ExecutionContext, input: unknown): Promise<unknown>;
 }
 
+export interface BusinessApiUseCases {
+  confirmDeposit: ConfirmDepositUseCase;
+}
+
 export interface BusinessApiDependencies {
   authorization: AuthorizationPort;
   queries: BusinessApiQueries;
   commands: BusinessApiCommands;
+  useCases: BusinessApiUseCases;
 }
 
 function requireTenant(context: ExecutionContext): string {
-  if (!context.tenantId) {
-    throw new Error(`Tenant is required for ${context.operation}.`);
-  }
+  if (!context.tenantId) throw new Error(`Tenant is required for ${context.operation}.`);
   return context.tenantId;
 }
 
-/**
- * Authoritative backend facade migrated from beauty-management-web.
- *
- * HTTP/Cloudflare details stay outside this facade. Application/domain ports
- * replace the temporary query/command bridge incrementally as bounded contexts
- * are migrated from the web repository.
- */
 export class BusinessApi {
   constructor(private readonly dependencies: BusinessApiDependencies) {}
 
@@ -89,7 +85,7 @@ export class BusinessApi {
   createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: unknown) { return this.dependencies.commands.createPublicAppointmentBySlug(context, slug, input); }
   createPublicLeadBySlug(context: ExecutionContext, slug: string, input: unknown) { return this.dependencies.commands.createPublicLeadBySlug(context, slug, input); }
   updateLeadStatus(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.updateLeadStatus(context, input); }
-  confirmDeposit(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.confirmDeposit(context, input); }
+  confirmDeposit(context: ExecutionContext, input: ConfirmDepositInput) { requireTenant(context); return this.dependencies.useCases.confirmDeposit.execute(context, input); }
   startSession(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.startSession(context, input); }
   completeSession(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.completeSession(context, input); }
   registerPayment(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.registerPayment(context, input); }
