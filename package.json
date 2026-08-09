@@ -8,7 +8,8 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test:state-machines": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/state-machines.test.ts",
-    "test": "npm run test:state-machines",
+    "test:transactional-foundation": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/transactional-foundation.test.ts",
+    "test": "npm run test:state-machines && npm run test:transactional-foundation",
     "check": "npm run typecheck && npm test"
   },
   "dependencies": {
