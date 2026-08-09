@@ -128,6 +128,10 @@ export function registerBusinessRoutes(app: Hono) {
     return c.json(await api.completeSession(contextFor(c.req.raw, "session.complete", tenant, actorId), input as never));
   });
 
+  app.get("/v1/payments", async (c) => {
+    const { api, tenant, actorId } = await authorizeTenant(c.req.raw, Permissions.PaymentRead);
+    return c.json(await api.listPayments(contextFor(c.req.raw, "payment.list", tenant, actorId)));
+  });
   app.post("/v1/payments", async (c) => {
     const { api, tenant, actorId } = await authorizeTenant(c.req.raw, Permissions.PaymentCreate);
     const input = await bodyFor(c.req.raw, "payment.register");
