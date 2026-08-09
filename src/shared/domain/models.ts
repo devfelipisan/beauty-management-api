@@ -11,6 +11,8 @@ export interface Tenant {
   legalName: string;
   displayName: string;
   document: string;
+  /** Canonical first path segment used to address public tenant resources. */
+  publicSlug?: string;
   timezone: string;
   status: TenantStatus;
   createdAt: IsoDateTime;
