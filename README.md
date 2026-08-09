@@ -45,3 +45,26 @@ Health check inicial:
 ```text
 GET /health
 ```
+
+Quando bindings do Cloudflare forem adicionados, gere os tipos a partir do próprio `wrangler.jsonc`:
+
+```bash
+npm run cf-typegen
+```
+
+O projeto não depende de `@cloudflare/workers-types`; os tipos de bindings devem ser gerados pelo Wrangler para permanecerem sincronizados com a configuração real do Worker.
+
+## Deploy no Cloudflare Workers
+
+Este repositório é um Worker de API puro. O `wrangler.jsonc` aponta diretamente para `src/index.ts`, portanto o Wrangler realiza o bundle durante `wrangler deploy` e não existe uma etapa OpenNext/Next.js anterior ao deploy.
+
+Configuração recomendada em Workers Builds:
+
+```text
+Build command:   None
+Deploy command:  npx wrangler deploy
+Root directory:  /
+Production branch: main
+```
+
+O projeto declara Node 24 e npm 11 como ambiente de referência. Se a plataforma escolher Bun para a instalação automática, a árvore de dependências também deve permanecer instalável por Bun; não adicione dependências de tipos Cloudflare com versões inexistentes ou dependentes de resolução implícita do package manager.
