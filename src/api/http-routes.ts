@@ -9,7 +9,6 @@ import { DomainError } from "@/shared/domain/core";
 function authSubject(request: Request, platform = false): string {
   const header = request.headers.get("authorization")?.trim();
   if (header?.toLowerCase().startsWith("bearer ")) return header.slice(7).trim();
-  // Temporary mock-runtime identity while Supabase Auth is not yet connected.
   return platform ? "user-platform-admin" : "user-tenant-admin";
 }
 
@@ -44,7 +43,11 @@ async function authorizeTenant(request: Request, permission: PermissionCode) {
   const tenant = tenantId(request);
   const subject = authSubject(request);
   const access = await api.authorizeTenant(subject, tenant, permission);
-  return { api, tenant, subject, actorId: access.actorId };
+  return { api, tenant, actorId: access.actorId };
+}
+
+function isForbiddenCode(code: string): boolean {
+  return code.includes("FORBIDDEN") || code.includes("PERMISSION") || code.includes("MEMBERSHIP");
 }
 
 export function registerBusinessRoutes(app: Hono) {
@@ -55,8 +58,10 @@ export function registerBusinessRoutes(app: Hono) {
       return context.json({ error: { code: error.code, message: error.message, issues: error.issues }, requestId }, 400);
     }
     if (error instanceof DomainError) {
-      const status = error.code === "NOT_FOUND" ? 404 : error.code.includes("FORBIDDEN") || error.code.includes("PERMISSION") || error.code.includes("MEMBERSHIP") ? 403 : 409;
-      return context.json({ error: { code: error.code, message: error.message, details: error.details }, requestId }, status);
+      const payload = { error: { code: error.code, message: error.message, details: error.details }, requestId };
+      if (error.code === "NOT_FOUND") return context.json(payload, 404);
+      if (isForbiddenCode(error.code)) return context.json(payload, 403);
+      return context.json(payload, 409);
     }
     console.error("Unhandled API error", error);
     return context.json({ error: { code: "INTERNAL_ERROR", message: "Unexpected server error." }, requestId }, 500);
