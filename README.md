@@ -72,9 +72,9 @@ No `beauty-management-web`, `BUSINESS_API_BASE_URL` deve conter somente o host d
 BUSINESS_API_BASE_URL=https://<host>
 ```
 
-O BFF monta o destino versionado como `{{host}}/v1/{{path}}`. Por exemplo, `/api/bff/customers` aponta para `https://<host>/v1/customers`. O BFF composto já utiliza explicitamente caminhos `/v1/*`.
+O BFF monta o destino versionado como `{{host}}/v1/{{path}}`. Por exemplo, `/api/bff/customers` aponta para `https://<host>/v1/customers`.
 
-Durante a validação de paridade, o proxy genérico mantém fallback temporário para a API embarcada apenas quando `BUSINESS_API_BASE_URL` não estiver configurada. Em ambiente integrado/deploy, configure a variável para usar obrigatoriamente o novo backend.
+`BUSINESS_API_BASE_URL` é obrigatório no `beauty-management-web`; o proxy/BFF não possui mais fallback para a antiga Business API embarcada no Next.js.
 
 ## Desenvolvimento
 
