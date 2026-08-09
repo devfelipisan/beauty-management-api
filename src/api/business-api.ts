@@ -15,14 +15,15 @@ import { StartSessionUseCase, type StartSessionInput } from "@/modules/sessions/
 import { UpdateTenantBrandingUseCase, type UpdateTenantBrandingInput } from "@/modules/tenant-branding/application/update-tenant-branding";
 import { CreateTenantUseCase, type CreateTenantInput } from "@/modules/tenants/application/create-tenant";
 import { normalizePublicTenantSlug, publicTenantSlug } from "@/modules/tenants/domain/public-tenant-slug";
+import type { PlatformAccess, TenantAccess } from "@/server/auth/authorization";
 import type { PermissionCode } from "@/server/auth/permissions";
 import type { ExecutionContext } from "@/shared/application/execution-context";
 import type { UnitOfWork } from "@/shared/application/ports";
 import { NotFoundError } from "@/shared/domain/core";
 
 export interface AuthorizationPort {
-  requireTenantPermission(authSubject: string, tenantId: string, permission: PermissionCode): Promise<void> | void;
-  requirePlatformPermission(authSubject: string, permission: PermissionCode): Promise<void> | void;
+  requireTenantPermission(authSubject: string, tenantId: string, permission: PermissionCode): Promise<TenantAccess> | TenantAccess;
+  requirePlatformPermission(authSubject: string, permission: PermissionCode): Promise<PlatformAccess> | PlatformAccess;
 }
 
 export interface BusinessApiUseCases {
@@ -152,72 +153,24 @@ export class BusinessApi {
     return this.dependencies.unitOfWork.execute(context, (tx) => tx.tenantBranding.findByTenantId(tenantId));
   }
 
-  createTenant(context: ExecutionContext, input: CreateTenantInput) {
-    return this.dependencies.useCases.createTenant.execute(context, input);
-  }
-
-  createProfessional(context: ExecutionContext, input: CreateProfessionalInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.createProfessional.execute(context, input);
-  }
-
-  createService(context: ExecutionContext, input: CreateServiceInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.createService.execute(context, input);
-  }
-
-  createCustomer(context: ExecutionContext, input: CreateCustomerInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.createCustomer.execute(context, input);
-  }
-
-  createAppointment(context: ExecutionContext, input: CreateAppointmentInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.createAppointment.execute(context, input);
-  }
-
-  createPublicAppointment(context: ExecutionContext, input: CreatePublicAppointmentInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.createPublicAppointment.execute(context, input);
-  }
-
+  createTenant(context: ExecutionContext, input: CreateTenantInput) { return this.dependencies.useCases.createTenant.execute(context, input); }
+  createProfessional(context: ExecutionContext, input: CreateProfessionalInput) { requireTenant(context); return this.dependencies.useCases.createProfessional.execute(context, input); }
+  createService(context: ExecutionContext, input: CreateServiceInput) { requireTenant(context); return this.dependencies.useCases.createService.execute(context, input); }
+  createCustomer(context: ExecutionContext, input: CreateCustomerInput) { requireTenant(context); return this.dependencies.useCases.createCustomer.execute(context, input); }
+  createAppointment(context: ExecutionContext, input: CreateAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createAppointment.execute(context, input); }
+  createPublicAppointment(context: ExecutionContext, input: CreatePublicAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createPublicAppointment.execute(context, input); }
   async createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: CreatePublicAppointmentInput) {
     const tenantId = await this.resolvePublicTenantId(context, slug);
     return this.dependencies.useCases.createPublicAppointment.execute({ ...context, tenantId }, input);
   }
-
   async createPublicLeadBySlug(context: ExecutionContext, slug: string, input: CreatePublicLeadInput) {
     const tenantId = await this.resolvePublicTenantId(context, slug);
     return this.dependencies.useCases.createPublicLead.execute({ tenantId }, input);
   }
-
-  updateLeadStatus(context: ExecutionContext, input: UpdateLeadStatusInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.updateLeadStatus.execute(context, input);
-  }
-
-  confirmDeposit(context: ExecutionContext, input: ConfirmDepositInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.confirmDeposit.execute(context, input);
-  }
-
-  startSession(context: ExecutionContext, input: StartSessionInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.startSession.execute(context, input);
-  }
-
-  completeSession(context: ExecutionContext, input: CompleteSessionInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.completeSession.execute(context, input);
-  }
-
-  registerPayment(context: ExecutionContext, input: RegisterPaymentInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.registerPayment.execute(context, input);
-  }
-
-  updateTenantBranding(context: ExecutionContext, input: UpdateTenantBrandingInput) {
-    requireTenant(context);
-    return this.dependencies.useCases.updateTenantBranding.execute(context, input);
-  }
+  updateLeadStatus(context: ExecutionContext, input: UpdateLeadStatusInput) { requireTenant(context); return this.dependencies.useCases.updateLeadStatus.execute(context, input); }
+  confirmDeposit(context: ExecutionContext, input: ConfirmDepositInput) { requireTenant(context); return this.dependencies.useCases.confirmDeposit.execute(context, input); }
+  startSession(context: ExecutionContext, input: StartSessionInput) { requireTenant(context); return this.dependencies.useCases.startSession.execute(context, input); }
+  completeSession(context: ExecutionContext, input: CompleteSessionInput) { requireTenant(context); return this.dependencies.useCases.completeSession.execute(context, input); }
+  registerPayment(context: ExecutionContext, input: RegisterPaymentInput) { requireTenant(context); return this.dependencies.useCases.registerPayment.execute(context, input); }
+  updateTenantBranding(context: ExecutionContext, input: UpdateTenantBrandingInput) { requireTenant(context); return this.dependencies.useCases.updateTenantBranding.execute(context, input); }
 }
