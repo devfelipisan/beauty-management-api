@@ -1,4 +1,7 @@
 import { ConfirmDepositUseCase, type ConfirmDepositInput } from "@/modules/deposits/application/confirm-deposit";
+import { RegisterPaymentUseCase, type RegisterPaymentInput } from "@/modules/payments/application/register-payment";
+import { CompleteSessionUseCase, type CompleteSessionInput } from "@/modules/sessions/application/complete-session";
+import { StartSessionUseCase, type StartSessionInput } from "@/modules/sessions/application/start-session";
 import type { PermissionCode } from "@/server/auth/permissions";
 import type { ExecutionContext } from "@/shared/application/execution-context";
 
@@ -31,14 +34,14 @@ export interface BusinessApiCommands {
   createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: unknown): Promise<unknown>;
   createPublicLeadBySlug(context: ExecutionContext, slug: string, input: unknown): Promise<unknown>;
   updateLeadStatus(context: ExecutionContext, input: unknown): Promise<unknown>;
-  startSession(context: ExecutionContext, input: unknown): Promise<unknown>;
-  completeSession(context: ExecutionContext, input: unknown): Promise<unknown>;
-  registerPayment(context: ExecutionContext, input: unknown): Promise<unknown>;
   updateTenantBranding(context: ExecutionContext, input: unknown): Promise<unknown>;
 }
 
 export interface BusinessApiUseCases {
   confirmDeposit: ConfirmDepositUseCase;
+  startSession: StartSessionUseCase;
+  completeSession: CompleteSessionUseCase;
+  registerPayment: RegisterPaymentUseCase;
 }
 
 export interface BusinessApiDependencies {
@@ -86,8 +89,8 @@ export class BusinessApi {
   createPublicLeadBySlug(context: ExecutionContext, slug: string, input: unknown) { return this.dependencies.commands.createPublicLeadBySlug(context, slug, input); }
   updateLeadStatus(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.updateLeadStatus(context, input); }
   confirmDeposit(context: ExecutionContext, input: ConfirmDepositInput) { requireTenant(context); return this.dependencies.useCases.confirmDeposit.execute(context, input); }
-  startSession(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.startSession(context, input); }
-  completeSession(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.completeSession(context, input); }
-  registerPayment(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.registerPayment(context, input); }
+  startSession(context: ExecutionContext, input: StartSessionInput) { requireTenant(context); return this.dependencies.useCases.startSession.execute(context, input); }
+  completeSession(context: ExecutionContext, input: CompleteSessionInput) { requireTenant(context); return this.dependencies.useCases.completeSession.execute(context, input); }
+  registerPayment(context: ExecutionContext, input: RegisterPaymentInput) { requireTenant(context); return this.dependencies.useCases.registerPayment.execute(context, input); }
   updateTenantBranding(context: ExecutionContext, input: unknown) { requireTenant(context); return this.dependencies.commands.updateTenantBranding(context, input); }
 }
