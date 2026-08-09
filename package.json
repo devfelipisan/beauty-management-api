@@ -13,11 +13,12 @@
     "build": "npm run typecheck",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
+    "test:foundation": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/foundation-backend.test.ts",
     "test:state-machines": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/state-machines.test.ts",
     "test:security": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/security-contracts.test.ts",
     "test:leads": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/leads-domain.test.ts",
     "test:repositories": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/repository-contracts.test.ts",
-    "test": "npm run test:state-machines && npm run test:security && npm run test:leads && npm run test:repositories",
+    "test": "npm run test:foundation && npm run test:state-machines && npm run test:security && npm run test:leads && npm run test:repositories",
     "check": "npm run typecheck && npm run test",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
   },
