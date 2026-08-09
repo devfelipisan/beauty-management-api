@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "test:state-machines": "node --experimental-transform-types --test src/testing/state-machines.test.ts",
     "test:security": "node --experimental-transform-types --test src/testing/security-contracts.test.ts",
-    "test": "npm run test:state-machines && npm run test:security",
+    "test:leads": "node --experimental-transform-types --test src/testing/leads-domain.test.ts",
+    "test": "npm run test:state-machines && npm run test:security && npm run test:leads",
     "check": "npm run typecheck && npm run test",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
   },
