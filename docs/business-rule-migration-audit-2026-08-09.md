@@ -43,7 +43,7 @@ Backend:  https://<host>/v1/customers
 - agendamentos: criação/listagem, conflito de agenda, sinal e FSM;
 - sinal: confirmação transacional;
 - sessões: início e conclusão;
-- pagamentos: registro transacional;
+- pagamentos: listagem por tenant e registro transacional;
 - leads públicos: criação, deduplicação e ciclo de estado;
 - branding do tenant;
 - auditoria, outbox e idempotência;
@@ -73,7 +73,6 @@ O `ApiClient` do Web passou a suportar `PATCH` e a interpretar o envelope de err
 
 A auditoria do `ApplicationGateway` encontrou operações que o frontend já expõe, mas ainda não possuem implementação autoritativa equivalente na Business API:
 
-- `GET /v1/payments` (a API registra pagamento, mas ainda não lista todos por tenant);
 - equipamentos: listar/criar;
 - usuários: listar/criar/atualizar;
 - pacotes: listar/criar;
@@ -86,13 +85,12 @@ O modelo legado do Web também contém `Assessment`, `TechnicalRecord`, `Package
 
 ## Próximos slices
 
-1. Migrar pagamentos de leitura (`list`) para `PaymentRepository`/BusinessApi/HTTP.
-2. Migrar Equipments e Packages como bounded contexts com ports tenant-aware.
-3. Migrar Tenant Settings e Landing Page.
-4. Migrar Users/RBAC administrativo sem duplicar a infraestrutura de autenticação.
-5. Migrar Commercial Policy (perfil, desconto e aprovação) preservando cálculo/autoridade no backend.
-6. Migrar Assessment, TechnicalRecord, PackageMovement e FollowUp quando os contratos de jornada forem ativados.
-7. Após cada slice, remover o código equivalente e seus testes backend-only de `beauty-management-web`.
+1. Migrar Equipments e Packages como bounded contexts com ports tenant-aware.
+2. Migrar Tenant Settings e Landing Page.
+3. Migrar Users/RBAC administrativo sem duplicar a infraestrutura de autenticação.
+4. Migrar Commercial Policy (perfil, desconto e aprovação) preservando cálculo/autoridade no backend.
+5. Migrar Assessment, TechnicalRecord, PackageMovement e FollowUp quando os contratos de jornada forem ativados.
+6. Após cada slice, remover o código equivalente e seus testes backend-only de `beauty-management-web`.
 
 ## Regra de conclusão
 
