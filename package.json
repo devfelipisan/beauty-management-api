@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:state-machines": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/state-machines.test.ts",
+    "test": "npm run test:state-machines",
+    "check": "npm run typecheck && npm test"
   },
   "dependencies": {
     "hono": "^4.9.0"
