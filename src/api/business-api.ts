@@ -5,6 +5,9 @@ import { CreateCustomerUseCase, type CreateCustomerInput } from "@/modules/custo
 import { ConfirmDepositUseCase, type ConfirmDepositInput } from "@/modules/deposits/application/confirm-deposit";
 import { CreateEquipmentUseCase, type CreateEquipmentInput } from "@/modules/equipment/application/create-equipment";
 import type { EquipmentRepository } from "@/modules/equipment/domain/equipment-repository";
+import { HideLandingPageUseCase, PublishLandingPageUseCase, SaveLandingPageDraftUseCase } from "@/modules/landing-page/application/manage-landing-page";
+import type { LandingPageRepository } from "@/modules/landing-page/domain/landing-page-repository";
+import type { SaveLandingPageDraftInput } from "@/modules/landing-page/domain/landing-page";
 import { CreatePublicLeadUseCase, type CreatePublicLeadInput } from "@/modules/leads/application/create-public-lead";
 import { UpdateLeadStatusUseCase, type UpdateLeadStatusInput } from "@/modules/leads/application/update-lead-status";
 import type { LeadRepository } from "@/modules/leads/domain/lead-repository";
@@ -17,6 +20,9 @@ import { CreateServiceUseCase, type CreateServiceInput } from "@/modules/service
 import { CompleteSessionUseCase, type CompleteSessionInput } from "@/modules/sessions/application/complete-session";
 import { StartSessionUseCase, type StartSessionInput } from "@/modules/sessions/application/start-session";
 import { UpdateTenantBrandingUseCase, type UpdateTenantBrandingInput } from "@/modules/tenant-branding/application/update-tenant-branding";
+import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
+import type { TenantSettingsRepository } from "@/modules/tenant-settings/domain/tenant-settings-repository";
+import type { UpdateTenantSettingsInput } from "@/modules/tenant-settings/domain/tenant-settings";
 import { CreateTenantUseCase, type CreateTenantInput } from "@/modules/tenants/application/create-tenant";
 import { normalizePublicTenantSlug, publicTenantSlug } from "@/modules/tenants/domain/public-tenant-slug";
 import type { PlatformAccess, TenantAccess } from "@/server/auth/authorization";
@@ -46,6 +52,10 @@ export interface BusinessApiUseCases {
   completeSession: CompleteSessionUseCase;
   registerPayment: RegisterPaymentUseCase;
   updateTenantBranding: UpdateTenantBrandingUseCase;
+  updateTenantSettings: UpdateTenantSettingsUseCase;
+  saveLandingPageDraft: SaveLandingPageDraftUseCase;
+  publishLandingPage: PublishLandingPageUseCase;
+  hideLandingPage: HideLandingPageUseCase;
 }
 
 export interface BusinessApiDependencies {
@@ -54,6 +64,8 @@ export interface BusinessApiDependencies {
   leadRepository: LeadRepository;
   equipmentRepository: EquipmentRepository;
   packageRepository: PackageRepository;
+  tenantSettingsRepository: TenantSettingsRepository;
+  landingPageRepository: LandingPageRepository;
   useCases: BusinessApiUseCases;
 }
 
@@ -85,34 +97,12 @@ export class BusinessApi {
     });
   }
 
-  listCustomers(context: ExecutionContext) {
-    const tenantId = requireTenant(context);
-    return this.dependencies.unitOfWork.execute(context, (tx) => tx.customers.list(tenantId));
-  }
-
-  listProfessionals(context: ExecutionContext) {
-    const tenantId = requireTenant(context);
-    return this.dependencies.unitOfWork.execute(context, (tx) => tx.professionals.list(tenantId));
-  }
-
-  listServices(context: ExecutionContext) {
-    const tenantId = requireTenant(context);
-    return this.dependencies.unitOfWork.execute(context, (tx) => tx.services.list(tenantId));
-  }
-
-  listEquipment(context: ExecutionContext) {
-    return this.dependencies.equipmentRepository.list(requireTenant(context));
-  }
-
-  listPackages(context: ExecutionContext) {
-    return this.dependencies.packageRepository.list(requireTenant(context));
-  }
-
-  listAppointments(context: ExecutionContext) {
-    const tenantId = requireTenant(context);
-    return this.dependencies.unitOfWork.execute(context, (tx) => tx.appointments.list(tenantId));
-  }
-
+  listCustomers(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.customers.list(tenantId)); }
+  listProfessionals(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.professionals.list(tenantId)); }
+  listServices(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.services.list(tenantId)); }
+  listEquipment(context: ExecutionContext) { return this.dependencies.equipmentRepository.list(requireTenant(context)); }
+  listPackages(context: ExecutionContext) { return this.dependencies.packageRepository.list(requireTenant(context)); }
+  listAppointments(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.appointments.list(tenantId)); }
   listPayments(context: ExecutionContext) {
     const tenantId = requireTenant(context);
     return this.dependencies.unitOfWork.execute(context, async (tx) => {
@@ -121,12 +111,7 @@ export class BusinessApi {
       return groups.flat().sort((left, right) => right.createdAt.localeCompare(left.createdAt));
     });
   }
-
-  listLeads(context: ExecutionContext) {
-    const tenantId = requireTenant(context);
-    return this.dependencies.leadRepository.list(tenantId);
-  }
-
+  listLeads(context: ExecutionContext) { return this.dependencies.leadRepository.list(requireTenant(context)); }
   getLeadActions(context: ExecutionContext, leadId: string) {
     const tenantId = requireTenant(context);
     return this.dependencies.leadRepository.findById(tenantId, leadId).then((lead) => {
@@ -134,31 +119,26 @@ export class BusinessApi {
       return { leadId: lead.id, status: lead.status, allowedActions: allowedLeadActions(lead.status) };
     });
   }
+  getTenantSettings(context: ExecutionContext) { return this.dependencies.tenantSettingsRepository.findByTenantId(requireTenant(context)); }
+  async getLandingPage(context: ExecutionContext) {
+    const tenantId = requireTenant(context);
+    const page = await this.dependencies.landingPageRepository.findByTenantId(tenantId);
+    if (!page) return null;
+    const branding = await this.dependencies.unitOfWork.execute(context, (tx) => tx.tenantBranding.findByTenantId(tenantId));
+    return { ...page, branding };
+  }
 
   getPublicCatalog(context: ExecutionContext) {
     const tenantId = requireTenant(context);
     return this.dependencies.unitOfWork.execute(context, async (tx) => {
       const [tenant, branding, services, professionals] = await Promise.all([
-        tx.tenants.findById(tenantId),
-        tx.tenantBranding.findByTenantId(tenantId),
-        tx.services.list(tenantId),
-        tx.professionals.list(tenantId),
+        tx.tenants.findById(tenantId), tx.tenantBranding.findByTenantId(tenantId), tx.services.list(tenantId), tx.professionals.list(tenantId),
       ]);
       if (!tenant) throw new NotFoundError("tenant", tenantId);
-      return {
-        tenant: { id: tenant.id, displayName: tenant.displayName, timezone: tenant.timezone },
-        branding,
-        services: services.filter((service) => service.active),
-        professionals: professionals.filter((professional) => professional.active),
-      };
+      return { tenant: { id: tenant.id, displayName: tenant.displayName, timezone: tenant.timezone }, branding, services: services.filter((service) => service.active), professionals: professionals.filter((professional) => professional.active) };
     });
   }
-
-  async getPublicCatalogBySlug(context: ExecutionContext, slug: string) {
-    const tenantId = await this.resolvePublicTenantId(context, slug);
-    return this.getPublicCatalog({ ...context, tenantId });
-  }
-
+  async getPublicCatalogBySlug(context: ExecutionContext, slug: string) { const tenantId = await this.resolvePublicTenantId(context, slug); return this.getPublicCatalog({ ...context, tenantId }); }
   getAppointmentActions(context: ExecutionContext, appointmentId: string) {
     const tenantId = requireTenant(context);
     return this.dependencies.unitOfWork.execute(context, async (tx) => {
@@ -167,16 +147,8 @@ export class BusinessApi {
       return { appointmentId: appointment.id, status: appointment.status, allowedActions: allowedAppointmentActions(appointment.status) };
     });
   }
-
-  listAuditEvents(context: ExecutionContext) {
-    const tenantId = requireTenant(context);
-    return this.dependencies.unitOfWork.execute(context, (tx) => tx.audit.findMany({ tenantId }));
-  }
-
-  getTenantBranding(context: ExecutionContext) {
-    const tenantId = requireTenant(context);
-    return this.dependencies.unitOfWork.execute(context, (tx) => tx.tenantBranding.findByTenantId(tenantId));
-  }
+  listAuditEvents(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.audit.findMany({ tenantId })); }
+  getTenantBranding(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.tenantBranding.findByTenantId(tenantId)); }
 
   createTenant(context: ExecutionContext, input: CreateTenantInput) { return this.dependencies.useCases.createTenant.execute(context, input); }
   createProfessional(context: ExecutionContext, input: CreateProfessionalInput) { requireTenant(context); return this.dependencies.useCases.createProfessional.execute(context, input); }
@@ -186,18 +158,16 @@ export class BusinessApi {
   createCustomer(context: ExecutionContext, input: CreateCustomerInput) { requireTenant(context); return this.dependencies.useCases.createCustomer.execute(context, input); }
   createAppointment(context: ExecutionContext, input: CreateAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createAppointment.execute(context, input); }
   createPublicAppointment(context: ExecutionContext, input: CreatePublicAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createPublicAppointment.execute(context, input); }
-  async createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: CreatePublicAppointmentInput) {
-    const tenantId = await this.resolvePublicTenantId(context, slug);
-    return this.dependencies.useCases.createPublicAppointment.execute({ ...context, tenantId }, input);
-  }
-  async createPublicLeadBySlug(context: ExecutionContext, slug: string, input: CreatePublicLeadInput) {
-    const tenantId = await this.resolvePublicTenantId(context, slug);
-    return this.dependencies.useCases.createPublicLead.execute({ tenantId }, input);
-  }
+  async createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: CreatePublicAppointmentInput) { const tenantId = await this.resolvePublicTenantId(context, slug); return this.dependencies.useCases.createPublicAppointment.execute({ ...context, tenantId }, input); }
+  async createPublicLeadBySlug(context: ExecutionContext, slug: string, input: CreatePublicLeadInput) { const tenantId = await this.resolvePublicTenantId(context, slug); return this.dependencies.useCases.createPublicLead.execute({ tenantId }, input); }
   updateLeadStatus(context: ExecutionContext, input: UpdateLeadStatusInput) { requireTenant(context); return this.dependencies.useCases.updateLeadStatus.execute(context, input); }
   confirmDeposit(context: ExecutionContext, input: ConfirmDepositInput) { requireTenant(context); return this.dependencies.useCases.confirmDeposit.execute(context, input); }
   startSession(context: ExecutionContext, input: StartSessionInput) { requireTenant(context); return this.dependencies.useCases.startSession.execute(context, input); }
   completeSession(context: ExecutionContext, input: CompleteSessionInput) { requireTenant(context); return this.dependencies.useCases.completeSession.execute(context, input); }
   registerPayment(context: ExecutionContext, input: RegisterPaymentInput) { requireTenant(context); return this.dependencies.useCases.registerPayment.execute(context, input); }
   updateTenantBranding(context: ExecutionContext, input: UpdateTenantBrandingInput) { requireTenant(context); return this.dependencies.useCases.updateTenantBranding.execute(context, input); }
+  updateTenantSettings(context: ExecutionContext, input: UpdateTenantSettingsInput) { requireTenant(context); return this.dependencies.useCases.updateTenantSettings.execute(context, input); }
+  saveLandingPageDraft(context: ExecutionContext, input: SaveLandingPageDraftInput) { requireTenant(context); return this.dependencies.useCases.saveLandingPageDraft.execute(context, input); }
+  publishLandingPage(context: ExecutionContext) { requireTenant(context); return this.dependencies.useCases.publishLandingPage.execute(context); }
+  hideLandingPage(context: ExecutionContext) { requireTenant(context); return this.dependencies.useCases.hideLandingPage.execute(context); }
 }
