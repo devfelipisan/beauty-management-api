@@ -13,6 +13,7 @@ export type BusinessCommand =
   | "tenant.create"
   | "professional.create"
   | "service.create"
+  | "equipment.create"
   | "customer.create"
   | "appointment.create"
   | "public-appointment.create"
@@ -58,6 +59,15 @@ export const businessCommandSchemas: Record<BusinessCommand, RuntimeSchema<unkno
     active: optionalSchema(booleanSchema()),
     deposit: optionalSchema(depositConfigurationSchema),
     assessmentRequired: optionalSchema(booleanSchema()),
+  }),
+  "equipment.create": objectSchema({
+    name: stringSchema({ min: 2, max: 180, trim: true }),
+    model: optionalSchema(stringSchema({ min: 1, max: 160, trim: true })),
+    manufacturer: optionalSchema(stringSchema({ min: 1, max: 160, trim: true })),
+    serialNumber: optionalSchema(stringSchema({ min: 1, max: 160, trim: true })),
+    primaryUnit: optionalSchema(stringSchema({ min: 1, max: 80, trim: true })),
+    serviceIds: arraySchema(id, { max: 100 }),
+    notes: optionalSchema(stringSchema({ min: 1, max: 2000, trim: true })),
   }),
   "customer.create": objectSchema({
     fullName: stringSchema({ min: 2, max: 180, trim: true }),
