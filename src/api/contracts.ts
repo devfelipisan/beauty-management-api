@@ -16,6 +16,7 @@ export type BusinessCommand =
   | "equipment.create"
   | "package.create"
   | "customer.create"
+  | "assessment.create"
   | "appointment.create"
   | "public-appointment.create"
   | "public-lead.create"
@@ -23,6 +24,9 @@ export type BusinessCommand =
   | "deposit.confirm"
   | "session.start"
   | "session.complete"
+  | "technical-record.create"
+  | "follow-up.create"
+  | "follow-up.status.update"
   | "payment.register"
   | "tenant-branding.update";
 
@@ -82,6 +86,14 @@ export const businessCommandSchemas: Record<BusinessCommand, RuntimeSchema<unkno
     phone: stringSchema({ min: 8, max: 40, trim: true }),
     email: optionalSchema(stringSchema({ min: 3, max: 254, trim: true })),
   }),
+  "assessment.create": objectSchema({
+    customerId: id,
+    serviceId: id,
+    professionalId: id,
+    result: enumSchema(["fit", "fit_with_restrictions", "not_fit"] as const),
+    restrictions: optionalSchema(arraySchema(stringSchema({ min: 1, max: 500, trim: true }), { max: 50 })),
+    validUntil: optionalSchema(isoDateTime),
+  }),
   "appointment.create": objectSchema({
     customerId: id,
     professionalId: id,
@@ -130,6 +142,26 @@ export const businessCommandSchemas: Record<BusinessCommand, RuntimeSchema<unkno
   "session.complete": objectSchema({
     sessionId: id,
     idempotencyKey,
+  }),
+  "technical-record.create": objectSchema({
+    sessionId: id,
+    region: optionalSchema(stringSchema({ min: 1, max: 200, trim: true })),
+    equipmentId: optionalSchema(id),
+    power: optionalSchema(numberSchema({ min: 0 })),
+    powerUnit: optionalSchema(stringSchema({ min: 1, max: 80, trim: true })),
+    reaction: optionalSchema(stringSchema({ min: 1, max: 1000, trim: true })),
+    notes: optionalSchema(stringSchema({ min: 1, max: 4000, trim: true })),
+  }),
+  "follow-up.create": objectSchema({
+    customerId: id,
+    sessionId: optionalSchema(id),
+    suggestedAt: isoDateTime,
+    reason: optionalSchema(stringSchema({ min: 1, max: 1000, trim: true })),
+    appointmentId: optionalSchema(id),
+  }),
+  "follow-up.status.update": objectSchema({
+    action: enumSchema(["schedule", "complete", "cancel", "reopen"] as const),
+    appointmentId: optionalSchema(id),
   }),
   "payment.register": objectSchema({
     customerId: id,
