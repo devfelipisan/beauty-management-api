@@ -41,6 +41,8 @@ export const Permissions = {
   AuditRead: "audit:read",
   UserManage: "user:manage",
   RoleManage: "role:manage",
+  CommercialPolicyRead: "commercial-policy:read",
+  CommercialPolicyManage: "commercial-policy:manage",
 } as const;
 
 export type PermissionCode = (typeof Permissions)[keyof typeof Permissions];
@@ -98,6 +100,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Readonly<Record<SystemRoleCode, readonly 
     Permissions.AuditRead,
     Permissions.UserManage,
     Permissions.RoleManage,
+    Permissions.CommercialPolicyRead,
+    Permissions.CommercialPolicyManage,
   ],
   reception: [
     Permissions.ProfessionalRead,
