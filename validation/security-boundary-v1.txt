@@ -1,0 +1,1 @@
+Temporary validation marker for API security boundary refactor. Do not merge.
