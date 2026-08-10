@@ -7,6 +7,7 @@ export const AuditActions = {
   ProfessionalCreated: "professional.created",
   ProfessionalDisabled: "professional.disabled",
   ServiceCreated: "service.created",
+  EquipmentCreated: "equipment.created",
   CustomerCreated: "customer.created",
   CustomerProfileChanged: "customer.profile.changed",
   AppointmentCreated: "appointment.created",
