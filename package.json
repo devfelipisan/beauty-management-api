@@ -22,6 +22,8 @@
     "test:repositories": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/repository-contracts.test.ts",
     "test": "npm run test:foundation && npm run test:state-machines && npm run test:security && npm run test:leads && npm run test:equipment && npm run test:packages && npm run test:repositories",
     "check": "npm run typecheck && npm run test",
+    "db:seed": "psql --set=ON_ERROR_STOP=1 --file database/seeds/0001_demo_use_cases.sql",
+    "db:seed:check": "psql --set=ON_ERROR_STOP=1 --file database/tests/demo_seed_smoke.sql",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
   },
   "dependencies": {
