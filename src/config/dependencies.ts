@@ -26,9 +26,23 @@ import { UpdateTenantBrandingUseCase } from "@/modules/tenant-branding/applicati
 import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
 import { MemoryTenantSettingsRepository } from "@/modules/tenant-settings/infrastructure/memory-tenant-settings-repository";
 import { CreateTenantUseCase } from "@/modules/tenants/application/create-tenant";
+import { createAuthVerifier, resolveApiAuthMode, type AuthVerifier } from "@/server/auth/authentication";
 import { AuthorizationService } from "@/server/auth/authorization";
 
 let singleton: BusinessApi | null = null;
+let authVerifierSingleton: AuthVerifier | null = null;
+
+export function getAuthVerifier(): AuthVerifier {
+  if (authVerifierSingleton) return authVerifierSingleton;
+
+  const mode = resolveApiAuthMode(process.env.API_AUTH_MODE);
+  authVerifierSingleton = createAuthVerifier({
+    mode,
+    supabaseUrl: process.env.SUPABASE_URL,
+    anonKey: process.env.SUPABASE_ANON_KEY,
+  });
+  return authVerifierSingleton;
+}
 
 export function getBusinessApi(): BusinessApi {
   if (singleton) return singleton;
