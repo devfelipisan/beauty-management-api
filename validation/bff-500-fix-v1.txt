@@ -1,0 +1,1 @@
+validate tokenless HTTP reads and Worker auth-disabled configuration
