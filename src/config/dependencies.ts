@@ -40,6 +40,8 @@ export function getAuthVerifier(): AuthVerifier {
     mode,
     supabaseUrl: process.env.SUPABASE_URL,
     anonKey: process.env.SUPABASE_ANON_KEY,
+    developmentSubject: process.env.API_DEV_AUTH_SUBJECT ?? "user-tenant-admin",
+    production: process.env.NODE_ENV === "production",
   });
   return authVerifierSingleton;
 }
