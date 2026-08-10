@@ -3,6 +3,8 @@ import { CreatePublicAppointmentUseCase, type CreatePublicAppointmentInput } fro
 import { allowedAppointmentActions } from "@/modules/appointments/domain/appointment-state-machine";
 import { CreateCustomerUseCase, type CreateCustomerInput } from "@/modules/customers/application/create-customer";
 import { ConfirmDepositUseCase, type ConfirmDepositInput } from "@/modules/deposits/application/confirm-deposit";
+import { CreateEquipmentUseCase, type CreateEquipmentInput } from "@/modules/equipment/application/create-equipment";
+import type { EquipmentRepository } from "@/modules/equipment/domain/equipment-repository";
 import { CreatePublicLeadUseCase, type CreatePublicLeadInput } from "@/modules/leads/application/create-public-lead";
 import { UpdateLeadStatusUseCase, type UpdateLeadStatusInput } from "@/modules/leads/application/update-lead-status";
 import type { LeadRepository } from "@/modules/leads/domain/lead-repository";
@@ -30,6 +32,7 @@ export interface BusinessApiUseCases {
   createTenant: CreateTenantUseCase;
   createProfessional: CreateProfessionalUseCase;
   createService: CreateServiceUseCase;
+  createEquipment: CreateEquipmentUseCase;
   createCustomer: CreateCustomerUseCase;
   createAppointment: CreateAppointmentUseCase;
   createPublicAppointment: CreatePublicAppointmentUseCase;
@@ -46,6 +49,7 @@ export interface BusinessApiDependencies {
   authorization: AuthorizationPort;
   unitOfWork: UnitOfWork;
   leadRepository: LeadRepository;
+  equipmentRepository: EquipmentRepository;
   useCases: BusinessApiUseCases;
 }
 
@@ -90,6 +94,10 @@ export class BusinessApi {
   listServices(context: ExecutionContext) {
     const tenantId = requireTenant(context);
     return this.dependencies.unitOfWork.execute(context, (tx) => tx.services.list(tenantId));
+  }
+
+  listEquipment(context: ExecutionContext) {
+    return this.dependencies.equipmentRepository.list(requireTenant(context));
   }
 
   listAppointments(context: ExecutionContext) {
@@ -165,6 +173,7 @@ export class BusinessApi {
   createTenant(context: ExecutionContext, input: CreateTenantInput) { return this.dependencies.useCases.createTenant.execute(context, input); }
   createProfessional(context: ExecutionContext, input: CreateProfessionalInput) { requireTenant(context); return this.dependencies.useCases.createProfessional.execute(context, input); }
   createService(context: ExecutionContext, input: CreateServiceInput) { requireTenant(context); return this.dependencies.useCases.createService.execute(context, input); }
+  createEquipment(context: ExecutionContext, input: CreateEquipmentInput) { requireTenant(context); return this.dependencies.useCases.createEquipment.execute(context, input); }
   createCustomer(context: ExecutionContext, input: CreateCustomerInput) { requireTenant(context); return this.dependencies.useCases.createCustomer.execute(context, input); }
   createAppointment(context: ExecutionContext, input: CreateAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createAppointment.execute(context, input); }
   createPublicAppointment(context: ExecutionContext, input: CreatePublicAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createPublicAppointment.execute(context, input); }
