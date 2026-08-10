@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { registerBusinessRoutes } from "@/api/http-routes";
 import { registerEquipmentRoutes } from "@/api/equipment-routes";
+import { registerExtractedContextRoutes } from "@/api/extracted-context-routes";
 import { registerPackageRoutes } from "@/api/package-routes";
 import { registerTenantExperienceRoutes } from "@/api/tenant-experience-routes";
 
@@ -19,5 +20,6 @@ registerBusinessRoutes(app);
 registerEquipmentRoutes(app);
 registerPackageRoutes(app);
 registerTenantExperienceRoutes(app);
+registerExtractedContextRoutes(app);
 
 export default app;
