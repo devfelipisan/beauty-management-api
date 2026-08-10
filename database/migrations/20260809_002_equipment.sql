@@ -58,7 +58,14 @@ insert into identity.role_permissions (role_id, permission_code)
 select r.id, p.code
 from identity.roles r
 join identity.permissions p on p.code in ('equipment:read','equipment:create','equipment:manage')
-where r.tenant_id is null and r.code = 'platform_admin'
+where (r.tenant_id is null and r.code = 'platform_admin')
+   or (r.tenant_id is not null and r.code = 'tenant_admin')
+on conflict do nothing;
+
+insert into identity.role_permissions (role_id, permission_code)
+select r.id, 'equipment:read'
+from identity.roles r
+where r.tenant_id is not null and r.code in ('reception','professional')
 on conflict do nothing;
 
 commit;
