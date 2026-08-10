@@ -76,6 +76,46 @@ O BFF monta o destino versionado como `{{host}}/v1/{{path}}`. Por exemplo, `/api
 
 `BUSINESS_API_BASE_URL` é obrigatório no `beauty-management-web`; o proxy/BFF não possui mais fallback para a antiga Business API embarcada no Next.js.
 
+## Autenticação durante desenvolvimento
+
+Enquanto o fluxo real de login ainda está sendo implementado, a API utiliza por padrão:
+
+```text
+API_AUTH_MODE=development
+```
+
+Nesse modo, endpoints protegidos **não exigem `Authorization`**. A identidade usada pelo backend é resolvida server-side por:
+
+```text
+API_DEV_AUTH_SUBJECT=user-tenant-admin
+```
+
+O valor padrão corresponde ao administrador tenant do `MemoryRuntime`. A autorização de tenant continua sendo executada normalmente; portanto endpoints tenant-scoped ainda exigem `x-tenant-id` e o backend valida o acesso da identidade de desenvolvimento ao tenant selecionado.
+
+Exemplo para o runtime atual:
+
+```http
+x-tenant-id: tenant-bella
+```
+
+Não envie `x-actor-id`: o ator continua sendo resolvido pela API.
+
+Para voltar a exigir autenticação durante os testes, configure:
+
+```text
+API_AUTH_MODE=mock
+```
+
+e envie um Bearer token de identidade local, ou:
+
+```text
+API_AUTH_MODE=supabase
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+```
+
+para autenticação real. `API_AUTH_MODE=development` não deve ser usado em produção.
+
 ## Desenvolvimento
 
 ```bash
