@@ -1,9 +1,12 @@
+import { AdministrationApi } from "@/api/administration-api";
 import { BusinessApi } from "@/api/business-api";
 import { MemoryAssessmentRepository, MemoryFollowUpRepository, MemoryTechnicalRecordRepository } from "@/infrastructure/memory/memory-extracted-context-repositories";
 import { createMemoryRuntime } from "@/infrastructure/memory/memory-runtime";
 import { CreateAssessmentUseCase } from "@/modules/assessments/application/create-assessment";
 import { CreateAppointmentUseCase } from "@/modules/appointments/application/create-appointment";
 import { CreatePublicAppointmentUseCase } from "@/modules/appointments/application/create-public-appointment";
+import { CreateDiscountPolicyUseCase } from "@/modules/commercial-policy/application/create-discount-policy";
+import { MemoryCommercialPolicyRepository } from "@/modules/commercial-policy/infrastructure/memory-commercial-policy-repository";
 import { CreateCustomerUseCase } from "@/modules/customers/application/create-customer";
 import { ConfirmDepositUseCase } from "@/modules/deposits/application/confirm-deposit";
 import { CreateEquipmentUseCase } from "@/modules/equipment/application/create-equipment";
@@ -26,10 +29,13 @@ import { UpdateTenantBrandingUseCase } from "@/modules/tenant-branding/applicati
 import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
 import { MemoryTenantSettingsRepository } from "@/modules/tenant-settings/infrastructure/memory-tenant-settings-repository";
 import { CreateTenantUseCase } from "@/modules/tenants/application/create-tenant";
+import { CreateTenantUserUseCase, UpdateTenantUserUseCase } from "@/modules/users/application/manage-users";
+import { MemoryTenantUserRepository } from "@/modules/users/infrastructure/memory-user-repository";
 import { createAuthVerifier, resolveApiAuthMode, type AuthVerifier } from "@/server/auth/authentication";
 import { AuthorizationService } from "@/server/auth/authorization";
 
 let singleton: BusinessApi | null = null;
+let administrationSingleton: AdministrationApi | null = null;
 let authVerifierSingleton: AuthVerifier | null = null;
 
 export function getAuthVerifier(): AuthVerifier {
@@ -43,6 +49,20 @@ export function getAuthVerifier(): AuthVerifier {
     disabledSubject: process.env.API_DEV_AUTH_SUBJECT ?? "user-tenant-admin",
   });
   return authVerifierSingleton;
+}
+
+export function getAdministrationApi(): AdministrationApi {
+  if (administrationSingleton) return administrationSingleton;
+  const users = new MemoryTenantUserRepository();
+  const commercialPolicies = new MemoryCommercialPolicyRepository();
+  administrationSingleton = new AdministrationApi({
+    users,
+    commercialPolicies,
+    createUser: new CreateTenantUserUseCase(users),
+    updateUser: new UpdateTenantUserUseCase(users),
+    createDiscountPolicy: new CreateDiscountPolicyUseCase(commercialPolicies),
+  });
+  return administrationSingleton;
 }
 
 export function getBusinessApi(): BusinessApi {
