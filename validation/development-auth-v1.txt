@@ -1,0 +1,1 @@
+Temporary CI trigger for development authentication mode validation.
