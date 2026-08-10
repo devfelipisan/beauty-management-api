@@ -16,6 +16,14 @@ export class AuthenticationRequiredError extends DomainError {
   }
 }
 
+export class DevelopmentAuthVerifier implements AuthVerifier {
+  constructor(private readonly subject = "user-tenant-admin") {}
+
+  async verify(): Promise<AuthenticatedIdentity> {
+    return { subject: this.subject };
+  }
+}
+
 export class SupabaseAuthVerifier implements AuthVerifier {
   constructor(private readonly supabaseUrl: string, private readonly anonKey: string) {}
 
@@ -41,16 +49,27 @@ export class MockAuthVerifier implements AuthVerifier {
   }
 }
 
-export type ApiAuthMode = "mock" | "supabase";
+export type ApiAuthMode = "development" | "mock" | "supabase";
 
 export function resolveApiAuthMode(value?: string): ApiAuthMode {
-  if (!value || value === "mock") return "mock";
+  if (!value || value === "development") return "development";
+  if (value === "mock") return "mock";
   if (value === "supabase") return "supabase";
   throw new Error(`Unsupported API_AUTH_MODE: ${value}`);
 }
 
-export function createAuthVerifier(input: { mode?: ApiAuthMode; supabaseUrl?: string; anonKey?: string } = {}): AuthVerifier {
-  const mode = input.mode ?? "mock";
+export function createAuthVerifier(input: {
+  mode?: ApiAuthMode;
+  supabaseUrl?: string;
+  anonKey?: string;
+  developmentSubject?: string;
+  production?: boolean;
+} = {}): AuthVerifier {
+  const mode = input.mode ?? "development";
+  if (mode === "development") {
+    if (input.production) throw new Error("API_AUTH_MODE=development is not allowed in production.");
+    return new DevelopmentAuthVerifier(input.developmentSubject);
+  }
   if (mode === "mock") return new MockAuthVerifier();
   if (!input.supabaseUrl || !input.anonKey) throw new Error("Supabase URL and anonymous key are required for supabase authentication mode.");
   return new SupabaseAuthVerifier(input.supabaseUrl, input.anonKey);
