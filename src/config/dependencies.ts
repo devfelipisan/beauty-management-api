@@ -6,6 +6,8 @@ import { CreateCustomerUseCase } from "@/modules/customers/application/create-cu
 import { ConfirmDepositUseCase } from "@/modules/deposits/application/confirm-deposit";
 import { CreateEquipmentUseCase } from "@/modules/equipment/application/create-equipment";
 import { MemoryEquipmentRepository } from "@/modules/equipment/infrastructure/memory-equipment-repository";
+import { HideLandingPageUseCase, PublishLandingPageUseCase, SaveLandingPageDraftUseCase } from "@/modules/landing-page/application/manage-landing-page";
+import { MemoryLandingPageRepository } from "@/modules/landing-page/infrastructure/memory-landing-page-repository";
 import { CreatePublicLeadUseCase } from "@/modules/leads/application/create-public-lead";
 import { UpdateLeadStatusUseCase } from "@/modules/leads/application/update-lead-status";
 import { CreatePackageUseCase } from "@/modules/packages/application/create-package";
@@ -16,6 +18,8 @@ import { CreateServiceUseCase } from "@/modules/services/application/create-serv
 import { CompleteSessionUseCase } from "@/modules/sessions/application/complete-session";
 import { StartSessionUseCase } from "@/modules/sessions/application/start-session";
 import { UpdateTenantBrandingUseCase } from "@/modules/tenant-branding/application/update-tenant-branding";
+import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
+import { MemoryTenantSettingsRepository } from "@/modules/tenant-settings/infrastructure/memory-tenant-settings-repository";
 import { CreateTenantUseCase } from "@/modules/tenants/application/create-tenant";
 import { AuthorizationService } from "@/server/auth/authorization";
 
@@ -26,6 +30,8 @@ export function getBusinessApi(): BusinessApi {
   const runtime = createMemoryRuntime();
   const equipmentRepository = new MemoryEquipmentRepository();
   const packageRepository = new MemoryPackageRepository();
+  const tenantSettingsRepository = new MemoryTenantSettingsRepository();
+  const landingPageRepository = new MemoryLandingPageRepository();
   const authorization = new AuthorizationService(runtime.accessControl);
   singleton = new BusinessApi({
     authorization,
@@ -33,6 +39,8 @@ export function getBusinessApi(): BusinessApi {
     leadRepository: runtime.leadRepository,
     equipmentRepository,
     packageRepository,
+    tenantSettingsRepository,
+    landingPageRepository,
     useCases: {
       createTenant: new CreateTenantUseCase(runtime.unitOfWork),
       createProfessional: new CreateProfessionalUseCase(runtime.unitOfWork),
@@ -49,6 +57,10 @@ export function getBusinessApi(): BusinessApi {
       completeSession: new CompleteSessionUseCase(runtime.unitOfWork),
       registerPayment: new RegisterPaymentUseCase(runtime.unitOfWork),
       updateTenantBranding: new UpdateTenantBrandingUseCase(runtime.unitOfWork),
+      updateTenantSettings: new UpdateTenantSettingsUseCase(tenantSettingsRepository),
+      saveLandingPageDraft: new SaveLandingPageDraftUseCase(runtime.unitOfWork, landingPageRepository),
+      publishLandingPage: new PublishLandingPageUseCase(landingPageRepository),
+      hideLandingPage: new HideLandingPageUseCase(landingPageRepository),
     },
   });
   return singleton;
