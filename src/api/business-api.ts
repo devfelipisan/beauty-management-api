@@ -1,3 +1,5 @@
+import { CreateAssessmentUseCase, type CreateAssessmentInput } from "@/modules/assessments/application/create-assessment";
+import type { AssessmentRepository } from "@/modules/assessments/domain/assessment-repository";
 import { CreateAppointmentUseCase, type CreateAppointmentInput } from "@/modules/appointments/application/create-appointment";
 import { CreatePublicAppointmentUseCase, type CreatePublicAppointmentInput } from "@/modules/appointments/application/create-public-appointment";
 import { allowedAppointmentActions } from "@/modules/appointments/domain/appointment-state-machine";
@@ -5,6 +7,10 @@ import { CreateCustomerUseCase, type CreateCustomerInput } from "@/modules/custo
 import { ConfirmDepositUseCase, type ConfirmDepositInput } from "@/modules/deposits/application/confirm-deposit";
 import { CreateEquipmentUseCase, type CreateEquipmentInput } from "@/modules/equipment/application/create-equipment";
 import type { EquipmentRepository } from "@/modules/equipment/domain/equipment-repository";
+import { CreateFollowUpUseCase, type CreateFollowUpInput } from "@/modules/follow-ups/application/create-follow-up";
+import { UpdateFollowUpStatusUseCase, type UpdateFollowUpStatusInput } from "@/modules/follow-ups/application/update-follow-up-status";
+import type { FollowUpRepository } from "@/modules/follow-ups/domain/follow-up-repository";
+import { allowedFollowUpActions } from "@/modules/follow-ups/domain/follow-up";
 import { HideLandingPageUseCase, PublishLandingPageUseCase, SaveLandingPageDraftUseCase } from "@/modules/landing-page/application/manage-landing-page";
 import type { LandingPageRepository } from "@/modules/landing-page/domain/landing-page-repository";
 import type { SaveLandingPageDraftInput } from "@/modules/landing-page/domain/landing-page";
@@ -19,6 +25,8 @@ import { CreateProfessionalUseCase, type CreateProfessionalInput } from "@/modul
 import { CreateServiceUseCase, type CreateServiceInput } from "@/modules/services/application/create-service";
 import { CompleteSessionUseCase, type CompleteSessionInput } from "@/modules/sessions/application/complete-session";
 import { StartSessionUseCase, type StartSessionInput } from "@/modules/sessions/application/start-session";
+import { CreateTechnicalRecordUseCase, type CreateTechnicalRecordInput } from "@/modules/technical-records/application/create-technical-record";
+import type { TechnicalRecordRepository } from "@/modules/technical-records/domain/technical-record-repository";
 import { UpdateTenantBrandingUseCase, type UpdateTenantBrandingInput } from "@/modules/tenant-branding/application/update-tenant-branding";
 import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
 import type { TenantSettingsRepository } from "@/modules/tenant-settings/domain/tenant-settings-repository";
@@ -43,6 +51,7 @@ export interface BusinessApiUseCases {
   createEquipment: CreateEquipmentUseCase;
   createPackage: CreatePackageUseCase;
   createCustomer: CreateCustomerUseCase;
+  createAssessment: CreateAssessmentUseCase;
   createAppointment: CreateAppointmentUseCase;
   createPublicAppointment: CreatePublicAppointmentUseCase;
   createPublicLead: CreatePublicLeadUseCase;
@@ -50,6 +59,9 @@ export interface BusinessApiUseCases {
   confirmDeposit: ConfirmDepositUseCase;
   startSession: StartSessionUseCase;
   completeSession: CompleteSessionUseCase;
+  createTechnicalRecord: CreateTechnicalRecordUseCase;
+  createFollowUp: CreateFollowUpUseCase;
+  updateFollowUpStatus: UpdateFollowUpStatusUseCase;
   registerPayment: RegisterPaymentUseCase;
   updateTenantBranding: UpdateTenantBrandingUseCase;
   updateTenantSettings: UpdateTenantSettingsUseCase;
@@ -64,6 +76,9 @@ export interface BusinessApiDependencies {
   leadRepository: LeadRepository;
   equipmentRepository: EquipmentRepository;
   packageRepository: PackageRepository;
+  assessmentRepository: AssessmentRepository;
+  technicalRecordRepository: TechnicalRecordRepository;
+  followUpRepository: FollowUpRepository;
   tenantSettingsRepository: TenantSettingsRepository;
   landingPageRepository: LandingPageRepository;
   useCases: BusinessApiUseCases;
@@ -77,21 +92,14 @@ function requireTenant(context: ExecutionContext): string {
 export class BusinessApi {
   constructor(private readonly dependencies: BusinessApiDependencies) {}
 
-  authorizeTenant(authSubject: string, tenantId: string, permission: PermissionCode) {
-    return this.dependencies.authorization.requireTenantPermission(authSubject, tenantId, permission);
-  }
-
-  authorizePlatform(authSubject: string, permission: PermissionCode) {
-    return this.dependencies.authorization.requirePlatformPermission(authSubject, permission);
-  }
+  authorizeTenant(authSubject: string, tenantId: string, permission: PermissionCode) { return this.dependencies.authorization.requireTenantPermission(authSubject, tenantId, permission); }
+  authorizePlatform(authSubject: string, permission: PermissionCode) { return this.dependencies.authorization.requirePlatformPermission(authSubject, permission); }
 
   private resolvePublicTenantId(context: ExecutionContext, slug: string): Promise<string> {
     const normalizedSlug = normalizePublicTenantSlug(slug);
     return this.dependencies.unitOfWork.execute(context, async (tx) => {
       const tenants = await tx.tenants.list();
-      const tenant = tenants.find((candidate) =>
-        (candidate.status === "active" || candidate.status === "trial") && publicTenantSlug(candidate) === normalizedSlug,
-      );
+      const tenant = tenants.find((candidate) => (candidate.status === "active" || candidate.status === "trial") && publicTenantSlug(candidate) === normalizedSlug);
       if (!tenant) throw new NotFoundError("public_tenant", normalizedSlug);
       return tenant.id;
     });
@@ -102,7 +110,17 @@ export class BusinessApi {
   listServices(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.services.list(tenantId)); }
   listEquipment(context: ExecutionContext) { return this.dependencies.equipmentRepository.list(requireTenant(context)); }
   listPackages(context: ExecutionContext) { return this.dependencies.packageRepository.list(requireTenant(context)); }
+  listAssessments(context: ExecutionContext, customerId: string) { return this.dependencies.assessmentRepository.listByCustomer(requireTenant(context), customerId); }
   listAppointments(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.appointments.list(tenantId)); }
+  listTechnicalRecords(context: ExecutionContext, sessionId: string) { return this.dependencies.technicalRecordRepository.listBySession(requireTenant(context), sessionId); }
+  listFollowUps(context: ExecutionContext) { return this.dependencies.followUpRepository.list(requireTenant(context)); }
+  getFollowUpActions(context: ExecutionContext, followUpId: string) {
+    const tenantId = requireTenant(context);
+    return this.dependencies.followUpRepository.findById(tenantId, followUpId).then((followUp) => {
+      if (!followUp) throw new NotFoundError("follow-up", followUpId);
+      return { followUpId: followUp.id, status: followUp.status, allowedActions: allowedFollowUpActions(followUp.status) };
+    });
+  }
   listPayments(context: ExecutionContext) {
     const tenantId = requireTenant(context);
     return this.dependencies.unitOfWork.execute(context, async (tx) => {
@@ -127,13 +145,10 @@ export class BusinessApi {
     const branding = await this.dependencies.unitOfWork.execute(context, (tx) => tx.tenantBranding.findByTenantId(tenantId));
     return { ...page, branding };
   }
-
   getPublicCatalog(context: ExecutionContext) {
     const tenantId = requireTenant(context);
     return this.dependencies.unitOfWork.execute(context, async (tx) => {
-      const [tenant, branding, services, professionals] = await Promise.all([
-        tx.tenants.findById(tenantId), tx.tenantBranding.findByTenantId(tenantId), tx.services.list(tenantId), tx.professionals.list(tenantId),
-      ]);
+      const [tenant, branding, services, professionals] = await Promise.all([tx.tenants.findById(tenantId), tx.tenantBranding.findByTenantId(tenantId), tx.services.list(tenantId), tx.professionals.list(tenantId)]);
       if (!tenant) throw new NotFoundError("tenant", tenantId);
       return { tenant: { id: tenant.id, displayName: tenant.displayName, timezone: tenant.timezone }, branding, services: services.filter((service) => service.active), professionals: professionals.filter((professional) => professional.active) };
     });
@@ -156,6 +171,7 @@ export class BusinessApi {
   createEquipment(context: ExecutionContext, input: CreateEquipmentInput) { requireTenant(context); return this.dependencies.useCases.createEquipment.execute(context, input); }
   createPackage(context: ExecutionContext, input: CreatePackageInput) { requireTenant(context); return this.dependencies.useCases.createPackage.execute(context, input); }
   createCustomer(context: ExecutionContext, input: CreateCustomerInput) { requireTenant(context); return this.dependencies.useCases.createCustomer.execute(context, input); }
+  createAssessment(context: ExecutionContext, input: CreateAssessmentInput) { requireTenant(context); return this.dependencies.useCases.createAssessment.execute(context, input); }
   createAppointment(context: ExecutionContext, input: CreateAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createAppointment.execute(context, input); }
   createPublicAppointment(context: ExecutionContext, input: CreatePublicAppointmentInput) { requireTenant(context); return this.dependencies.useCases.createPublicAppointment.execute(context, input); }
   async createPublicAppointmentBySlug(context: ExecutionContext, slug: string, input: CreatePublicAppointmentInput) { const tenantId = await this.resolvePublicTenantId(context, slug); return this.dependencies.useCases.createPublicAppointment.execute({ ...context, tenantId }, input); }
@@ -164,6 +180,9 @@ export class BusinessApi {
   confirmDeposit(context: ExecutionContext, input: ConfirmDepositInput) { requireTenant(context); return this.dependencies.useCases.confirmDeposit.execute(context, input); }
   startSession(context: ExecutionContext, input: StartSessionInput) { requireTenant(context); return this.dependencies.useCases.startSession.execute(context, input); }
   completeSession(context: ExecutionContext, input: CompleteSessionInput) { requireTenant(context); return this.dependencies.useCases.completeSession.execute(context, input); }
+  createTechnicalRecord(context: ExecutionContext, input: CreateTechnicalRecordInput) { requireTenant(context); return this.dependencies.useCases.createTechnicalRecord.execute(context, input); }
+  createFollowUp(context: ExecutionContext, input: CreateFollowUpInput) { requireTenant(context); return this.dependencies.useCases.createFollowUp.execute(context, input); }
+  updateFollowUpStatus(context: ExecutionContext, input: UpdateFollowUpStatusInput) { requireTenant(context); return this.dependencies.useCases.updateFollowUpStatus.execute(context, input); }
   registerPayment(context: ExecutionContext, input: RegisterPaymentInput) { requireTenant(context); return this.dependencies.useCases.registerPayment.execute(context, input); }
   updateTenantBranding(context: ExecutionContext, input: UpdateTenantBrandingInput) { requireTenant(context); return this.dependencies.useCases.updateTenantBranding.execute(context, input); }
   updateTenantSettings(context: ExecutionContext, input: UpdateTenantSettingsInput) { requireTenant(context); return this.dependencies.useCases.updateTenantSettings.execute(context, input); }
