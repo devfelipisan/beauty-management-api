@@ -16,7 +16,12 @@ export class AuthenticationRequiredError extends DomainError {
   }
 }
 
-export class DevelopmentAuthVerifier implements AuthVerifier {
+/**
+ * Temporary tokenless verifier used while authentication is intentionally
+ * disabled for implementation and integration testing. Authorization remains
+ * server-side and is still evaluated against the configured subject.
+ */
+export class DisabledAuthVerifier implements AuthVerifier {
   constructor(private readonly subject = "user-tenant-admin") {}
 
   async verify(): Promise<AuthenticatedIdentity> {
@@ -40,7 +45,7 @@ export class SupabaseAuthVerifier implements AuthVerifier {
   }
 }
 
-/** Development-only verifier. The supplied token is treated as the local user id. */
+/** Development/test verifier. The supplied token is treated as the local user id. */
 export class MockAuthVerifier implements AuthVerifier {
   async verify(accessToken: string): Promise<AuthenticatedIdentity> {
     const subject = accessToken.startsWith("mock:") ? accessToken.slice(5) : accessToken;
@@ -49,10 +54,12 @@ export class MockAuthVerifier implements AuthVerifier {
   }
 }
 
-export type ApiAuthMode = "development" | "mock" | "supabase";
+export type ApiAuthMode = "disabled" | "mock" | "supabase";
 
 export function resolveApiAuthMode(value?: string): ApiAuthMode {
-  if (!value || value === "development") return "development";
+  // `development` is kept as a backwards-compatible alias so existing Worker
+  // environments do not fail during the transition to the explicit name.
+  if (!value || value === "disabled" || value === "development") return "disabled";
   if (value === "mock") return "mock";
   if (value === "supabase") return "supabase";
   throw new Error(`Unsupported API_AUTH_MODE: ${value}`);
@@ -62,14 +69,10 @@ export function createAuthVerifier(input: {
   mode?: ApiAuthMode;
   supabaseUrl?: string;
   anonKey?: string;
-  developmentSubject?: string;
-  production?: boolean;
+  disabledSubject?: string;
 } = {}): AuthVerifier {
-  const mode = input.mode ?? "development";
-  if (mode === "development") {
-    if (input.production) throw new Error("API_AUTH_MODE=development is not allowed in production.");
-    return new DevelopmentAuthVerifier(input.developmentSubject);
-  }
+  const mode = input.mode ?? "disabled";
+  if (mode === "disabled") return new DisabledAuthVerifier(input.disabledSubject);
   if (mode === "mock") return new MockAuthVerifier();
   if (!input.supabaseUrl || !input.anonKey) throw new Error("Supabase URL and anonymous key are required for supabase authentication mode.");
   return new SupabaseAuthVerifier(input.supabaseUrl, input.anonKey);
