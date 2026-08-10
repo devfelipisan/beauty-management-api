@@ -1,0 +1,9 @@
+# Development-only authentication bypass. Protected endpoints do not require
+# Authorization while this mode is active. Do not use this mode in production.
+API_AUTH_MODE=development
+API_DEV_AUTH_SUBJECT=user-tenant-admin
+
+# Future real authentication mode:
+# API_AUTH_MODE=supabase
+# SUPABASE_URL=
+# SUPABASE_ANON_KEY=
