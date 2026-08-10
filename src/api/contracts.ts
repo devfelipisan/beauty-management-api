@@ -14,6 +14,7 @@ export type BusinessCommand =
   | "professional.create"
   | "service.create"
   | "equipment.create"
+  | "package.create"
   | "customer.create"
   | "appointment.create"
   | "public-appointment.create"
@@ -68,6 +69,13 @@ export const businessCommandSchemas: Record<BusinessCommand, RuntimeSchema<unkno
     primaryUnit: optionalSchema(stringSchema({ min: 1, max: 80, trim: true })),
     serviceIds: arraySchema(id, { max: 100 }),
     notes: optionalSchema(stringSchema({ min: 1, max: 2000, trim: true })),
+  }),
+  "package.create": objectSchema({
+    customerId: id,
+    serviceId: id,
+    totalSessions: numberSchema({ integer: true, min: 1, max: 1000 }),
+    validUntil: optionalSchema(isoDateTime),
+    priceCents: optionalSchema(moneyCents),
   }),
   "customer.create": objectSchema({
     fullName: stringSchema({ min: 2, max: 180, trim: true }),
