@@ -4,6 +4,8 @@ import { CreateAppointmentUseCase } from "@/modules/appointments/application/cre
 import { CreatePublicAppointmentUseCase } from "@/modules/appointments/application/create-public-appointment";
 import { CreateCustomerUseCase } from "@/modules/customers/application/create-customer";
 import { ConfirmDepositUseCase } from "@/modules/deposits/application/confirm-deposit";
+import { CreateEquipmentUseCase } from "@/modules/equipment/application/create-equipment";
+import { MemoryEquipmentRepository } from "@/modules/equipment/infrastructure/memory-equipment-repository";
 import { CreatePublicLeadUseCase } from "@/modules/leads/application/create-public-lead";
 import { UpdateLeadStatusUseCase } from "@/modules/leads/application/update-lead-status";
 import { RegisterPaymentUseCase } from "@/modules/payments/application/register-payment";
@@ -20,15 +22,18 @@ let singleton: BusinessApi | null = null;
 export function getBusinessApi(): BusinessApi {
   if (singleton) return singleton;
   const runtime = createMemoryRuntime();
+  const equipmentRepository = new MemoryEquipmentRepository();
   const authorization = new AuthorizationService(runtime.accessControl);
   singleton = new BusinessApi({
     authorization,
     unitOfWork: runtime.unitOfWork,
     leadRepository: runtime.leadRepository,
+    equipmentRepository,
     useCases: {
       createTenant: new CreateTenantUseCase(runtime.unitOfWork),
       createProfessional: new CreateProfessionalUseCase(runtime.unitOfWork),
       createService: new CreateServiceUseCase(runtime.unitOfWork),
+      createEquipment: new CreateEquipmentUseCase(runtime.unitOfWork, equipmentRepository),
       createCustomer: new CreateCustomerUseCase(runtime.unitOfWork),
       createAppointment: new CreateAppointmentUseCase(runtime.unitOfWork),
       createPublicAppointment: new CreatePublicAppointmentUseCase(runtime.unitOfWork),
