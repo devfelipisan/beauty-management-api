@@ -18,6 +18,7 @@ export const AuditActions = {
   SessionCompleted: "session.completed",
   PaymentRegistered: "payment.registered",
   PaymentRefunded: "payment.refunded",
+  PackageCreated: "package.created",
   PackageConsumed: "package.consumed",
   LicenseSuspended: "license.suspended",
 } as const;
