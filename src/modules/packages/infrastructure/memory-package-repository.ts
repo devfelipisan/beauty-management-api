@@ -2,7 +2,11 @@ import type { CustomerPackage } from "../domain/package";
 import type { PackageRepository } from "../domain/package-repository";
 
 export class MemoryPackageRepository implements PackageRepository {
-  private readonly items: CustomerPackage[] = [];
+  private readonly items: CustomerPackage[];
+
+  constructor(initialItems: CustomerPackage[] = []) {
+    this.items = initialItems.map((item) => ({ ...item }));
+  }
 
   async findById(tenantId: string, id: string) {
     return this.items.find((item) => item.tenantId === tenantId && item.id === id) ?? null;
