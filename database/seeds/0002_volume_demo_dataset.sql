@@ -23,7 +23,7 @@ select md5('landing:'||id)::uuid,id,public_slug,
 from app.tenants where id::text like '10000000-0000-0000-0000-00000000000%'
 on conflict (tenant_id) do nothing;
 
--- Professionals: 24 ----------------------------------------------------------
+-- Professionals: 24 generated (+ compact fixture records) -------------------
 with cfg as (
  select * from (values
  ('10000000-0000-0000-0000-000000000001'::uuid,7,'Bella'),('10000000-0000-0000-0000-000000000002'::uuid,6,'Ink'),
@@ -34,7 +34,7 @@ select md5('professional:'||tenant_id||':'||g)::uuid,tenant_id,prefix||' Profiss
  case when prefix='Ink' then 'Tatuagem' else 'Estética e serviços por sessão' end,not(prefix='Aurora' and g=5),'2025-12-01T12:00:00Z'::timestamptz+(g||' days')::interval
 from rows on conflict (id) do nothing;
 
--- Services: 45 ---------------------------------------------------------------
+-- Services: 45 generated -----------------------------------------------------
 with cfg as (
  select * from (values
  ('10000000-0000-0000-0000-000000000001'::uuid,12,'Bella'),('10000000-0000-0000-0000-000000000002'::uuid,11,'Ink'),
@@ -55,14 +55,14 @@ select p.tenant_id,p.id,s.id from app.professionals p join lateral (
 where p.id::text not like '30000000-%'
 on conflict do nothing;
 
--- Equipment: 18 --------------------------------------------------------------
+-- Equipment: 18 total with compact fixture ----------------------------------
 with rows as (select g,case when g<=6 then '10000000-0000-0000-0000-000000000001'::uuid when g<=10 then '10000000-0000-0000-0000-000000000002'::uuid when g<=14 then '10000000-0000-0000-0000-000000000003'::uuid else '10000000-0000-0000-0000-000000000004'::uuid end tenant_id from generate_series(1,16) g)
 insert into app.equipment (id,tenant_id,name,model,manufacturer,serial_number,primary_unit,status,notes,usage_count,created_at,updated_at)
 select md5('equipment:'||g)::uuid,tenant_id,'Equipamento '||lpad(g::text,2,'0'),'MODEL-'||g,'DemoMed','SER-'||g,'unit',
  (array['available','available','available','maintenance','blocked','inactive'])[(g%6)+1], 'Massa de dados PostgreSQL',g*7,'2025-12-01T12:00:00Z','2026-08-10T12:00:00Z'
 from rows on conflict (id) do nothing;
 
--- Customers: 1,500 -----------------------------------------------------------
+-- Customers: 1,500 total with compact fixture --------------------------------
 with rows as (select g,case when g<=600 then '10000000-0000-0000-0000-000000000001'::uuid when g<=1000 then '10000000-0000-0000-0000-000000000002'::uuid when g<=1300 then '10000000-0000-0000-0000-000000000003'::uuid else '10000000-0000-0000-0000-000000000004'::uuid end tenant_id from generate_series(1,1496) g)
 insert into app.customers (id,tenant_id,full_name,phone,email,status,relationship_profile,created_at,updated_at)
 select md5('customer:'||g)::uuid,tenant_id,'Cliente Demonstração '||lpad(g::text,4,'0'),'229'||lpad(g::text,8,'0'),'cliente.'||g||'@example.test',
@@ -71,7 +71,8 @@ select md5('customer:'||g)::uuid,tenant_id,'Cliente Demonstração '||lpad(g::te
  '2025-01-01T12:00:00Z'::timestamptz+(g%500||' days')::interval,'2026-08-10T12:00:00Z'
 from rows on conflict (id) do nothing;
 
--- Appointments: 8,000 total --------------------------------------------------
+-- Appointments: 8,000 total. Generated time slots are globally unique so the
+-- database exclusion constraint remains active while the seed is inserted.
 with refs as (
  select t.id tenant_id,array_agg(distinct c.id order by c.id) customers,array_agg(distinct p.id order by p.id) professionals,array_agg(distinct s.id order by s.id) services
  from app.tenants t join app.customers c on c.tenant_id=t.id join app.professionals p on p.tenant_id=t.id join app.services s on s.tenant_id=t.id
@@ -85,7 +86,7 @@ with refs as (
 )
 insert into app.appointments (id,tenant_id,customer_id,professional_id,service_id,starts_at,ends_at,status,base_price_cents,discount_cents,final_price_cents,deposit_cents,origin,created_at,updated_at)
 select md5('appointment:'||g)::uuid,tenant_id,customer_id,professional_id,service_id,
- '2024-01-01T08:00:00Z'::timestamptz+(floor(g/24.0)*interval '2 hours'), '2024-01-01T09:00:00Z'::timestamptz+(floor(g/24.0)*interval '2 hours'),
+ '2024-01-01T08:00:00Z'::timestamptz+(g*interval '2 hours'), '2024-01-01T09:00:00Z'::timestamptz+(g*interval '2 hours'),
  case when g%100<56 then 'completed' when g%100<64 then 'confirmed' when g%100<70 then 'awaiting_deposit' when g%100<76 then 'awaiting_confirmation'
       when g%100<81 then 'no_show' when g%100<86 then 'canceled' when g%100<91 then 'rescheduled' when g%100<95 then 'expired' when g%100<98 then 'checked_in' else 'in_progress' end,
  15000,case when g%7=0 then 1500 else 0 end,15000-case when g%7=0 then 1500 else 0 end,case when g%3=0 then 3000 else 0 end,
@@ -93,11 +94,14 @@ select md5('appointment:'||g)::uuid,tenant_id,customer_id,professional_id,servic
 from data on conflict (id) do nothing;
 
 -- Deposits: 5,000 ------------------------------------------------------------
+with candidates as (
+ select a.*,row_number() over(order by a.id) rn from app.appointments a order by a.id limit 5000
+)
 insert into app.deposits (id,tenant_id,appointment_id,amount_cents,status,payment_method,confirmed_at,created_at)
-select md5('deposit:'||row_number() over())::uuid,a.tenant_id,a.id,a.deposit_cents,
- (array['not_required','awaiting_payment','proof_submitted','under_review','confirmed','rejected','expired','refunded','retained','credit'])[(row_number() over()%10)+1],
- case when a.deposit_cents>0 then 'pix' end,case when row_number() over()%10=4 then a.updated_at end,a.created_at
-from app.appointments a order by a.id limit 5000
+select md5('deposit:'||rn)::uuid,tenant_id,id,deposit_cents,
+ (array['not_required','awaiting_payment','proof_submitted','under_review','confirmed','rejected','expired','refunded','retained','credit'])[(rn%10)+1],
+ case when deposit_cents>0 then 'pix' end,case when rn%10=4 then updated_at end,created_at
+from candidates
 on conflict (tenant_id,appointment_id) do nothing;
 
 -- Assessments: 950 -----------------------------------------------------------
@@ -111,12 +115,15 @@ join lateral (select * from app.services where tenant_id=c.tenant_id order by id
 join lateral (select * from app.professionals where tenant_id=c.tenant_id order by id limit 1) p on true
 on conflict (id) do nothing;
 
--- Sessions: up to 4,500 completed/in-progress appointments ------------------
+-- Sessions: 4,500 ------------------------------------------------------------
+with candidates as (
+ select a.*,row_number() over(order by a.id) rn from app.appointments a where a.status in ('completed','in_progress') order by a.id limit 4500
+)
 insert into app.sessions (id,tenant_id,appointment_id,customer_id,professional_id,service_id,status,started_at,completed_at,technical_form_version)
-select md5('session:'||row_number() over())::uuid,a.tenant_id,a.id,a.customer_id,a.professional_id,a.service_id,
- case when a.status='in_progress' then 'in_progress' else 'completed' end,a.starts_at+interval '5 minutes',
- case when a.status='in_progress' then null else a.ends_at-interval '5 minutes' end,1
-from app.appointments a where a.status in ('completed','in_progress') order by a.id limit 4500
+select md5('session:'||rn)::uuid,tenant_id,id,customer_id,professional_id,service_id,
+ case when status='in_progress' then 'in_progress' else 'completed' end,starts_at+interval '5 minutes',
+ case when status='in_progress' then null else ends_at-interval '5 minutes' end,1
+from candidates
 on conflict (tenant_id,appointment_id) do nothing;
 
 -- Technical records: 12,000 --------------------------------------------------
@@ -125,7 +132,9 @@ insert into app.technical_records (id,tenant_id,session_id,region,equipment_id,p
 select md5('technical:'||g)::uuid,s.tenant_id,s.id,case when g%2=0 then 'Face' else 'Corporal' end,
  case when e.id is not null and e.tenant_id=s.tenant_id then e.id end,12+(g%10),'J/cm²',case when g%9=0 then 'Eritema leve' else 'Sem intercorrência' end,
  case when g%11=0 then 'Ajuste de parâmetro após comparação histórica' else 'Registro técnico da sessão' end,s.started_at+(g%20||' minutes')::interval
-from generate_series(1,12000) g,ss,ee
+from generate_series(1,12000) g
+cross join ss
+cross join ee
 join app.sessions s on s.id=ss.ids[((g-1)%cardinality(ss.ids))+1]
 left join app.equipment e on e.id=ee.ids[((g-1)%cardinality(ee.ids))+1]
 on conflict (id) do nothing;
@@ -142,16 +151,19 @@ on conflict (id) do nothing;
 with pp as (select array_agg(id order by id) ids from app.customer_packages)
 insert into app.package_movements (id,tenant_id,package_id,quantity,movement_type,reason,created_at)
 select md5('package-movement:'||g)::uuid,p.tenant_id,p.id,1,(array['consume','consume','reverse','adjust'])[(g%4)+1],'Massa de dados','2026-08-01T12:00:00Z'
-from generate_series(1,2500) g,pp join app.customer_packages p on p.id=pp.ids[((g-1)%cardinality(pp.ids))+1]
+from generate_series(1,2500) g
+cross join pp
+join app.customer_packages p on p.id=pp.ids[((g-1)%cardinality(pp.ids))+1]
 on conflict (id) do nothing;
 
 -- Payments: 6,500 ------------------------------------------------------------
-with cc as (select array_agg(id order by id) ids from app.customers), aa as (select array_agg(id order by id) ids from app.appointments)
+with cc as (select array_agg(id order by id) ids from app.customers)
 insert into app.payments (id,tenant_id,customer_id,origin_type,origin_id,amount_cents,method,status,paid_at,created_at)
 select md5('payment:'||g)::uuid,c.tenant_id,c.id,'appointment',a.id,10000+(g%20)*500,
  (array['cash','pix','debit_card','credit_card','transfer','internal_credit'])[(g%6)+1],(array['pending','partial','paid','refunded','canceled'])[(g%5)+1],
  case when g%5 in (2,3) then '2026-08-01T12:00:00Z'::timestamptz end,'2026-08-01T12:00:00Z'
-from generate_series(1,6500) g,cc,aa
+from generate_series(1,6500) g
+cross join cc
 join app.customers c on c.id=cc.ids[((g-1)%cardinality(cc.ids))+1]
 join lateral (select * from app.appointments where tenant_id=c.tenant_id order by id offset ((g-1)%100) limit 1) a on true
 on conflict (id) do nothing;
@@ -161,7 +173,9 @@ with ss as (select array_agg(id order by id) ids from app.sessions)
 insert into app.follow_ups (id,tenant_id,customer_id,session_id,suggested_at,reason,appointment_id,status,created_at,updated_at)
 select md5('follow-up:'||g)::uuid,s.tenant_id,s.customer_id,s.id,'2026-09-01T12:00:00Z'::timestamptz+(g%60||' days')::interval,'Retorno recomendado',
  case when g%4=1 then s.appointment_id end,(array['pending','scheduled','completed','canceled'])[(g%4)+1],'2026-08-10T12:00:00Z','2026-08-10T12:00:00Z'
-from generate_series(1,2000) g,ss join app.sessions s on s.id=ss.ids[((g-1)%cardinality(ss.ids))+1]
+from generate_series(1,2000) g
+cross join ss
+join app.sessions s on s.id=ss.ids[((g-1)%cardinality(ss.ids))+1]
 on conflict (id) do nothing;
 
 -- Leads: 1,200 ---------------------------------------------------------------
