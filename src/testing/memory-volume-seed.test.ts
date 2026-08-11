@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createMemoryContextSeed } from "@/infrastructure/memory/memory-context-seed";
 import { createMemoryVolumeSeed } from "@/infrastructure/memory/memory-volume-seed";
 
 const expectedAppointmentStatuses = new Set([
@@ -51,6 +52,23 @@ test("memory volume seed has the expected scale and lifecycle coverage", () => {
   assert.deepEqual(new Set(seed.leads.map((item) => item.status)), new Set(["new", "in_contact", "awaiting_customer", "appointment_created", "converted", "no_response", "lost", "duplicate"]));
 });
 
+test("extracted memory contexts are seeded with realistic volume", () => {
+  const seed = createMemoryContextSeed();
+
+  assert.equal(seed.equipment.length, 18);
+  assert.equal(seed.packages.length, 700);
+  assert.equal(seed.assessments.length, 950);
+  assert.equal(seed.technicalRecords.length, 12_000);
+  assert.equal(seed.followUps.length, 2_000);
+  assert.equal(seed.landingPages.length, 4);
+
+  assert.deepEqual(new Set(seed.equipment.map((item) => item.status)), new Set(["available", "maintenance", "blocked", "inactive"]));
+  assert.deepEqual(new Set(seed.packages.map((item) => item.status)), new Set(["active", "expired", "exhausted", "canceled"]));
+  assert.deepEqual(new Set(seed.assessments.map((item) => item.result)), new Set(["fit", "fit_with_restrictions", "not_fit"]));
+  assert.deepEqual(new Set(seed.followUps.map((item) => item.status)), new Set(["pending", "scheduled", "completed", "canceled"]));
+  assert.deepEqual(new Set(seed.landingPages.map((item) => item.status)), new Set(["published", "draft", "hidden"]));
+});
+
 test("memory volume seed preserves tenant ownership and references", () => {
   const seed = createMemoryVolumeSeed();
   const tenants = new Set(seed.tenants.map((item) => item.id));
@@ -98,8 +116,12 @@ test("professional agenda data is partitioned inside each tenant", () => {
 test("memory volume seed is deterministic", () => {
   const first = createMemoryVolumeSeed();
   const second = createMemoryVolumeSeed();
+  const firstContexts = createMemoryContextSeed();
+  const secondContexts = createMemoryContextSeed();
 
   assert.deepEqual(first.tenants, second.tenants);
   assert.deepEqual(first.appointments.slice(0, 100), second.appointments.slice(0, 100));
   assert.deepEqual(first.audit.slice(-100), second.audit.slice(-100));
+  assert.deepEqual(firstContexts.equipment, secondContexts.equipment);
+  assert.deepEqual(firstContexts.landingPages, secondContexts.landingPages);
 });
