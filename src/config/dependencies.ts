@@ -38,7 +38,7 @@ import { PostgresPublicTenantContextRepository } from "@/modules/tenants/infrast
 import { CreateTenantUserUseCase, UpdateTenantUserUseCase } from "@/modules/users/application/manage-users";
 import { SupabaseAuthVerifier, type AuthVerifier } from "@/server/auth/authentication";
 import { AuthorizationService } from "@/server/auth/authorization";
-import { readSupabaseDatabaseConfig } from "./supabase-config";
+import { readDatabaseRuntimeConfig, readSupabaseAuthConfig } from "./supabase-config";
 
 let businessSingleton: BusinessApi | null = null;
 let administrationSingleton: AdministrationApi | null = null;
@@ -51,7 +51,7 @@ let operationalTenantResolverSingleton: ResolveOperationalTenantContextUseCase |
 
 export function getSqlClient(): SqlClient {
   if (sqlClientSingleton) return sqlClientSingleton;
-  const config = readSupabaseDatabaseConfig();
+  const config = readDatabaseRuntimeConfig();
   const factory = new PostgresJsSqlClientFactory(postgres as unknown as PostgresJsFactory, {
     max: 1,
     prepare: false,
@@ -90,8 +90,7 @@ export function getPublicTenantResolver(): ResolvePublicTenantContextUseCase {
 
 export function getAuthVerifier(): AuthVerifier {
   if (authVerifierSingleton) return authVerifierSingleton;
-  const config = readSupabaseDatabaseConfig();
-  if (!config.apiKey) throw new Error("ApiKeySupaBase is required when AUTHENTICATION_ENABLED=true.");
+  const config = readSupabaseAuthConfig();
   authVerifierSingleton = new SupabaseAuthVerifier(config.supabaseUrl, config.apiKey);
   return authVerifierSingleton;
 }
