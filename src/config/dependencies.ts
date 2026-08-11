@@ -113,6 +113,7 @@ export function getBusinessApi(): BusinessApi {
 
   businessSingleton = new BusinessApi({
     authorization: getAuthorizationService(),
+    publicTenantResolver: getPublicTenantResolver(),
     unitOfWork: runtime.unitOfWork,
     leadRepository: runtime.leadRepository,
     equipmentRepository,
