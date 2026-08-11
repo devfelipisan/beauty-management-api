@@ -23,6 +23,10 @@ interface WorkspaceRow {
   professionals: WorkspaceProfessionalRow[] | null;
 }
 
+interface QueryResultLike {
+  rowCount?: number;
+}
+
 const WORKSPACE_SELECT = `
   select
     t.id as tenant_id,
@@ -98,38 +102,58 @@ function toTenant(row: WorkspaceRow): WorkspaceTenantOption {
   };
 }
 
-async function timedQuery<T>(labelName: string, query: () => Promise<T>): Promise<T> {
+async function timedQuery<T extends QueryResultLike>(
+  operation: string,
+  slowQueryThresholdMs: number,
+  query: () => Promise<T>,
+): Promise<T> {
   const startedAt = Date.now();
-  try {
-    return await query();
-  } finally {
-    const durationMs = Date.now() - startedAt;
-    if (durationMs >= 1_000) {
-      console.warn("Slow PostgreSQL workspace query", { query: labelName, durationMs });
-    }
+  const result = await query();
+  const durationMs = Date.now() - startedAt;
+
+  if (durationMs >= slowQueryThresholdMs) {
+    console.warn("postgres.query.slow", {
+      operation,
+      durationMs,
+      rowCount: result.rowCount,
+      thresholdMs: slowQueryThresholdMs,
+    });
   }
+
+  return result;
 }
 
 export class PostgresWorkspaceContextRepository implements WorkspaceContextRepository {
-  constructor(private readonly sql: SqlClient) {}
+  constructor(
+    private readonly sql: SqlClient,
+    private readonly slowQueryThresholdMs = 750,
+  ) {}
 
   async listCatalog(): Promise<WorkspaceCatalog> {
-    const result = await timedQuery("workspace.listCatalog", () => this.sql.query<WorkspaceRow>(
-      `${WORKSPACE_SELECT}
-       where t.status in ('active','trial')
-       order by t.display_name, t.id`,
-    ));
+    const result = await timedQuery(
+      "workspace.listCatalog",
+      this.slowQueryThresholdMs,
+      () => this.sql.query<WorkspaceRow>(
+        `${WORKSPACE_SELECT}
+         where t.status in ('active','trial')
+         order by t.display_name, t.id`,
+      ),
+    );
 
     return { tenants: result.rows.map(toTenant) };
   }
 
   async findTenant(tenantId: string): Promise<WorkspaceTenantOption | null> {
-    const result = await timedQuery("workspace.findTenant", () => this.sql.query<WorkspaceRow>(
-      `${WORKSPACE_SELECT}
-       where t.id = $1::uuid
-         and t.status in ('active','trial')`,
-      [tenantId],
-    ));
+    const result = await timedQuery(
+      "workspace.findTenant",
+      this.slowQueryThresholdMs,
+      () => this.sql.query<WorkspaceRow>(
+        `${WORKSPACE_SELECT}
+         where t.id = $1::uuid
+           and t.status in ('active','trial')`,
+        [tenantId],
+      ),
+    );
 
     return result.rows[0] ? toTenant(result.rows[0]) : null;
   }
