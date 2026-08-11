@@ -2,7 +2,11 @@ import type { Equipment } from "../domain/equipment";
 import type { EquipmentRepository } from "../domain/equipment-repository";
 
 export class MemoryEquipmentRepository implements EquipmentRepository {
-  private readonly items: Equipment[] = [];
+  private readonly items: Equipment[];
+
+  constructor(initialItems: Equipment[] = []) {
+    this.items = initialItems.map((item) => ({ ...item, serviceIds: [...item.serviceIds] }));
+  }
 
   async findById(tenantId: string, id: string) {
     return this.items.find((item) => item.tenantId === tenantId && item.id === id) ?? null;
