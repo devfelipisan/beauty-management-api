@@ -7,6 +7,8 @@ export interface ExecutionContext {
   correlationId: string;
   tenantId?: string;
   actorId?: string;
+  membershipId?: string;
+  professionalId?: string;
   source: ExecutionSource;
   operation: string;
 }
@@ -14,6 +16,8 @@ export interface ExecutionContext {
 export interface TenantContext {
   tenantId: string;
   actorId?: string;
+  membershipId?: string;
+  professionalId?: string;
 }
 
 export function createExecutionContext(
@@ -26,6 +30,8 @@ export function createExecutionContext(
     correlationId: overrides.correlationId ?? requestId,
     tenantId: overrides.tenantId,
     actorId: overrides.actorId,
+    membershipId: overrides.membershipId,
+    professionalId: overrides.professionalId,
     source: overrides.source ?? "web",
     operation,
   };
@@ -35,5 +41,10 @@ export function requireTenant(context: ExecutionContext): TenantContext {
   if (!context.tenantId) {
     throw new Error(`Tenant is required for operation ${context.operation}.`);
   }
-  return { tenantId: context.tenantId, actorId: context.actorId };
+  return {
+    tenantId: context.tenantId,
+    actorId: context.actorId,
+    membershipId: context.membershipId,
+    professionalId: context.professionalId,
+  };
 }
