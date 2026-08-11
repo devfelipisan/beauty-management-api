@@ -1,5 +1,11 @@
 import type { Hono } from "hono";
-import { authorizeTenantRequest, createApiExecutionContext, resolveAuthenticatedTenant, authenticateRequest } from "@/api/request-security";
+import {
+  authorizeTenantRequest,
+  createApiExecutionContext,
+  resolveAuthenticatedTenant,
+  authenticateRequest,
+  requireAuthenticationEnabled,
+} from "@/api/request-security";
 import { getAuthorizationService } from "@/config/dependencies";
 import type { TenantAccess } from "@/server/auth/authorization";
 import { Permissions } from "@/server/auth/permissions";
@@ -23,12 +29,14 @@ function tenantSummary(access: TenantAccess) {
 
 export function registerTenantContextRoutes(app: Hono) {
   app.get("/v1/me/tenants", async (c) => {
+    requireAuthenticationEnabled();
     const identity = await authenticateRequest(c.req.raw);
     const accesses = await getAuthorizationService().listTenantMemberships(identity.subject);
     return c.json({ items: accesses.map(tenantSummary) });
   });
 
   app.get("/v1/me/context", async (c) => {
+    requireAuthenticationEnabled();
     const { identity, access } = await resolveAuthenticatedTenant(c.req.raw);
     return c.json({
       user: { subject: identity.subject, email: identity.email },
@@ -37,6 +45,7 @@ export function registerTenantContextRoutes(app: Hono) {
   });
 
   app.get("/v1/me/appointments", async (c) => {
+    requireAuthenticationEnabled();
     const { api, access } = await authorizeTenantRequest(c.req.raw, Permissions.AppointmentReadOwn);
     if (!access.professionalId) {
       throw new DomainError(
@@ -50,6 +59,7 @@ export function registerTenantContextRoutes(app: Hono) {
   });
 
   app.get("/v1/me/customers", async (c) => {
+    requireAuthenticationEnabled();
     const { api, access } = await authorizeTenantRequest(c.req.raw, Permissions.CustomerReadLinked);
     if (!access.professionalId) {
       throw new DomainError(
