@@ -11,6 +11,7 @@ function tenantSummary(access: TenantAccess) {
     displayName: access.tenantDisplayName,
     publicSlug: access.tenantPublicSlug,
     status: access.tenantStatus,
+    selectable: access.membershipStatus === "active" && (access.tenantStatus === "active" || access.tenantStatus === "trial"),
     membership: {
       id: access.membershipId,
       status: access.membershipStatus,
@@ -23,7 +24,7 @@ function tenantSummary(access: TenantAccess) {
 export function registerTenantContextRoutes(app: Hono) {
   app.get("/v1/me/tenants", async (c) => {
     const identity = await authenticateRequest(c.req.raw);
-    const accesses = await getAuthorizationService().listAvailableTenants(identity.subject);
+    const accesses = await getAuthorizationService().listTenantMemberships(identity.subject);
     return c.json({ items: accesses.map(tenantSummary) });
   });
 
