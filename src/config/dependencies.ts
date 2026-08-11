@@ -1,25 +1,27 @@
+import postgres from "postgres";
 import { AdministrationApi } from "@/api/administration-api";
 import { BusinessApi } from "@/api/business-api";
-import { createMemoryContextSeed } from "@/infrastructure/memory/memory-context-seed";
-import { MemoryAssessmentRepository, MemoryFollowUpRepository, MemoryTechnicalRecordRepository } from "@/infrastructure/memory/memory-extracted-context-repositories";
-import { createMemoryRuntime } from "@/infrastructure/memory/memory-runtime";
+import { PostgresCommercialPolicyRepository, PostgresTenantUserRepository } from "@/infrastructure/postgres/postgres-administration-repositories";
+import { PostgresAssessmentRepository, PostgresFollowUpRepository, PostgresTechnicalRecordRepository } from "@/infrastructure/postgres/postgres-extracted-context-repositories";
+import { PostgresJsSqlClientFactory, type PostgresJsFactory } from "@/infrastructure/postgres/postgres-js-sql-client";
+import { createPostgresRuntime } from "@/infrastructure/postgres/postgres-runtime";
+import { PostgresLandingPageRepository, PostgresTenantSettingsRepository } from "@/infrastructure/postgres/postgres-tenant-experience-repositories";
+import type { SqlClient } from "@/infrastructure/postgres/sql-client";
 import { CreateAssessmentUseCase } from "@/modules/assessments/application/create-assessment";
 import { CreateAppointmentUseCase } from "@/modules/appointments/application/create-appointment";
 import { CreatePublicAppointmentUseCase } from "@/modules/appointments/application/create-public-appointment";
 import { CreateDiscountPolicyUseCase } from "@/modules/commercial-policy/application/create-discount-policy";
-import { MemoryCommercialPolicyRepository } from "@/modules/commercial-policy/infrastructure/memory-commercial-policy-repository";
 import { CreateCustomerUseCase } from "@/modules/customers/application/create-customer";
 import { ConfirmDepositUseCase } from "@/modules/deposits/application/confirm-deposit";
 import { CreateEquipmentUseCase } from "@/modules/equipment/application/create-equipment";
-import { MemoryEquipmentRepository } from "@/modules/equipment/infrastructure/memory-equipment-repository";
+import { PostgresEquipmentRepository } from "@/modules/equipment/infrastructure/postgres-equipment-repository";
 import { CreateFollowUpUseCase } from "@/modules/follow-ups/application/create-follow-up";
 import { UpdateFollowUpStatusUseCase } from "@/modules/follow-ups/application/update-follow-up-status";
 import { HideLandingPageUseCase, PublishLandingPageUseCase, SaveLandingPageDraftUseCase } from "@/modules/landing-page/application/manage-landing-page";
-import { MemoryLandingPageRepository } from "@/modules/landing-page/infrastructure/memory-landing-page-repository";
 import { CreatePublicLeadUseCase } from "@/modules/leads/application/create-public-lead";
 import { UpdateLeadStatusUseCase } from "@/modules/leads/application/update-lead-status";
 import { CreatePackageUseCase } from "@/modules/packages/application/create-package";
-import { MemoryPackageRepository } from "@/modules/packages/infrastructure/memory-package-repository";
+import { PostgresPackageRepository } from "@/modules/packages/infrastructure/postgres-package-repository";
 import { RegisterPaymentUseCase } from "@/modules/payments/application/register-payment";
 import { CreateProfessionalUseCase } from "@/modules/professionals/application/create-professional";
 import { CreateServiceUseCase } from "@/modules/services/application/create-service";
@@ -28,34 +30,42 @@ import { StartSessionUseCase } from "@/modules/sessions/application/start-sessio
 import { CreateTechnicalRecordUseCase } from "@/modules/technical-records/application/create-technical-record";
 import { UpdateTenantBrandingUseCase } from "@/modules/tenant-branding/application/update-tenant-branding";
 import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
-import { MemoryTenantSettingsRepository } from "@/modules/tenant-settings/infrastructure/memory-tenant-settings-repository";
 import { CreateTenantUseCase } from "@/modules/tenants/application/create-tenant";
 import { CreateTenantUserUseCase, UpdateTenantUserUseCase } from "@/modules/users/application/manage-users";
-import { MemoryTenantUserRepository } from "@/modules/users/infrastructure/memory-user-repository";
-import { createAuthVerifier, resolveApiAuthMode, type AuthVerifier } from "@/server/auth/authentication";
+import { SupabaseAuthVerifier, type AuthVerifier } from "@/server/auth/authentication";
 import { AuthorizationService } from "@/server/auth/authorization";
+import { readSupabaseDatabaseConfig } from "./supabase-config";
 
-let singleton: BusinessApi | null = null;
+let businessSingleton: BusinessApi | null = null;
 let administrationSingleton: AdministrationApi | null = null;
 let authVerifierSingleton: AuthVerifier | null = null;
+let sqlClientSingleton: SqlClient | null = null;
+
+function getSqlClient(): SqlClient {
+  if (sqlClientSingleton) return sqlClientSingleton;
+  const config = readSupabaseDatabaseConfig();
+  const factory = new PostgresJsSqlClientFactory(postgres as unknown as PostgresJsFactory, {
+    max: 1,
+    prepare: false,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
+  sqlClientSingleton = factory.create(config.runtimeConnectionString);
+  return sqlClientSingleton;
+}
 
 export function getAuthVerifier(): AuthVerifier {
   if (authVerifierSingleton) return authVerifierSingleton;
-
-  const mode = resolveApiAuthMode(process.env.API_AUTH_MODE);
-  authVerifierSingleton = createAuthVerifier({
-    mode,
-    supabaseUrl: process.env.SUPABASE_URL,
-    anonKey: process.env.SUPABASE_ANON_KEY,
-    disabledSubject: process.env.API_DEV_AUTH_SUBJECT ?? "user-tenant-admin",
-  });
+  const config = readSupabaseDatabaseConfig();
+  authVerifierSingleton = new SupabaseAuthVerifier(config.supabaseUrl, config.apiKey);
   return authVerifierSingleton;
 }
 
 export function getAdministrationApi(): AdministrationApi {
   if (administrationSingleton) return administrationSingleton;
-  const users = new MemoryTenantUserRepository();
-  const commercialPolicies = new MemoryCommercialPolicyRepository();
+  const sql = getSqlClient();
+  const users = new PostgresTenantUserRepository(sql);
+  const commercialPolicies = new PostgresCommercialPolicyRepository(sql);
   administrationSingleton = new AdministrationApi({
     users,
     commercialPolicies,
@@ -67,18 +77,19 @@ export function getAdministrationApi(): AdministrationApi {
 }
 
 export function getBusinessApi(): BusinessApi {
-  if (singleton) return singleton;
-  const runtime = createMemoryRuntime();
-  const seed = createMemoryContextSeed();
-  const equipmentRepository = new MemoryEquipmentRepository(seed.equipment);
-  const packageRepository = new MemoryPackageRepository(seed.packages);
-  const assessmentRepository = new MemoryAssessmentRepository(seed.assessments);
-  const technicalRecordRepository = new MemoryTechnicalRecordRepository(seed.technicalRecords);
-  const followUpRepository = new MemoryFollowUpRepository(seed.followUps);
-  const tenantSettingsRepository = new MemoryTenantSettingsRepository();
-  const landingPageRepository = new MemoryLandingPageRepository(seed.landingPages);
+  if (businessSingleton) return businessSingleton;
+  const sql = getSqlClient();
+  const runtime = createPostgresRuntime(sql);
+  const equipmentRepository = new PostgresEquipmentRepository(sql);
+  const packageRepository = new PostgresPackageRepository(sql);
+  const assessmentRepository = new PostgresAssessmentRepository(sql);
+  const technicalRecordRepository = new PostgresTechnicalRecordRepository(sql);
+  const followUpRepository = new PostgresFollowUpRepository(sql);
+  const tenantSettingsRepository = new PostgresTenantSettingsRepository(sql);
+  const landingPageRepository = new PostgresLandingPageRepository(sql);
   const authorization = new AuthorizationService(runtime.accessControl);
-  singleton = new BusinessApi({
+
+  businessSingleton = new BusinessApi({
     authorization,
     unitOfWork: runtime.unitOfWork,
     leadRepository: runtime.leadRepository,
@@ -115,5 +126,5 @@ export function getBusinessApi(): BusinessApi {
       hideLandingPage: new HideLandingPageUseCase(landingPageRepository),
     },
   });
-  return singleton;
+  return businessSingleton;
 }
