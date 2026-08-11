@@ -8,26 +8,43 @@ import type {
 } from "@/modules/workspace/application/workspace-context";
 import type { WorkspaceRole } from "@/shared/application/execution-context";
 
-interface TenantRow {
-  id: string;
+interface WorkspaceRow {
+  tenant_id: string;
   display_name: string;
   public_slug: string | null;
   status: WorkspaceTenantOption["status"];
+  role_code: string | null;
+  professional_id: string | null;
+  professional_display_name: string | null;
+  professional_specialty: string | null;
 }
 
-interface RoleRow {
-  tenant_id: string;
-  code: string;
+interface TenantAccumulator {
+  tenant: Omit<WorkspaceTenantOption, "roles">;
+  roleCodes: Set<WorkspaceRole>;
+  professionals: Map<string, WorkspaceProfessionalOption>;
 }
 
-interface ProfessionalRow {
-  tenant_id: string;
-  id: string;
-  display_name: string;
-  specialty: string | null;
-}
+const WORKSPACE_SELECT = `
+  select
+    t.id as tenant_id,
+    t.display_name,
+    t.public_slug,
+    t.status,
+    r.code as role_code,
+    p.id as professional_id,
+    p.display_name as professional_display_name,
+    p.specialty as professional_specialty
+  from app.tenants t
+  left join identity.roles r
+    on r.tenant_id = t.id
+   and r.code in ('tenant_admin','reception','professional')
+  left join app.professionals p
+    on p.tenant_id = t.id
+   and p.active = true
+`;
 
-function workspaceRole(code: string): WorkspaceRole | undefined {
+function workspaceRole(code: string | null): WorkspaceRole | undefined {
   if (code === "tenant_admin") return "administrator";
   if (code === "reception") return "reception";
   if (code === "professional") return "professional";
@@ -40,113 +57,82 @@ function label(role: WorkspaceRole): string {
   return "Profissional";
 }
 
-function groupProfessionals(rows: ProfessionalRow[]): Map<string, WorkspaceProfessionalOption[]> {
-  const professionalsByTenant = new Map<string, WorkspaceProfessionalOption[]>();
-  for (const row of rows) {
-    const items = professionalsByTenant.get(row.tenant_id) ?? [];
-    items.push({ id: row.id, displayName: row.display_name, specialty: row.specialty ?? undefined });
-    professionalsByTenant.set(row.tenant_id, items);
-  }
-  return professionalsByTenant;
-}
+function collectTenants(rows: WorkspaceRow[]): WorkspaceTenantOption[] {
+  const byTenant = new Map<string, TenantAccumulator>();
 
-function groupRoles(
-  rows: RoleRow[],
-  professionalsByTenant: Map<string, WorkspaceProfessionalOption[]>,
-): Map<string, WorkspaceRoleOption[]> {
-  const rolesByTenant = new Map<string, WorkspaceRoleOption[]>();
   for (const row of rows) {
-    const role = workspaceRole(row.code);
-    if (!role) continue;
-    const items = rolesByTenant.get(row.tenant_id) ?? [];
-    if (items.some((item) => item.code === role)) continue;
-    items.push({
+    let accumulator = byTenant.get(row.tenant_id);
+    if (!accumulator) {
+      accumulator = {
+        tenant: {
+          id: row.tenant_id,
+          displayName: row.display_name,
+          publicSlug: row.public_slug ?? undefined,
+          status: row.status,
+        },
+        roleCodes: new Set<WorkspaceRole>(),
+        professionals: new Map<string, WorkspaceProfessionalOption>(),
+      };
+      byTenant.set(row.tenant_id, accumulator);
+    }
+
+    const role = workspaceRole(row.role_code);
+    if (role) accumulator.roleCodes.add(role);
+
+    if (row.professional_id && row.professional_display_name) {
+      accumulator.professionals.set(row.professional_id, {
+        id: row.professional_id,
+        displayName: row.professional_display_name,
+        specialty: row.professional_specialty ?? undefined,
+      });
+    }
+  }
+
+  return [...byTenant.values()].map(({ tenant, roleCodes, professionals }) => {
+    const professionalOptions = [...professionals.values()];
+    const roles: WorkspaceRoleOption[] = [...roleCodes].map((role) => ({
       code: role,
       label: label(role),
-      professionals: role === "professional" ? professionalsByTenant.get(row.tenant_id) ?? [] : undefined,
-    });
-    rolesByTenant.set(row.tenant_id, items);
+      professionals: role === "professional" ? professionalOptions : undefined,
+    }));
+    return { ...tenant, roles };
+  });
+}
+
+async function timedQuery<T>(labelName: string, query: () => Promise<T>): Promise<T> {
+  const startedAt = Date.now();
+  try {
+    return await query();
+  } finally {
+    const durationMs = Date.now() - startedAt;
+    if (durationMs >= 1_000) {
+      console.warn("Slow PostgreSQL workspace query", { query: labelName, durationMs });
+    }
   }
-  return rolesByTenant;
 }
 
 export class PostgresWorkspaceContextRepository implements WorkspaceContextRepository {
   constructor(private readonly sql: SqlClient) {}
 
   async listCatalog(): Promise<WorkspaceCatalog> {
-    const [tenantsResult, rolesResult, professionalsResult] = await Promise.all([
-      this.sql.query<TenantRow>(
-        `select id, display_name, public_slug, status
-         from app.tenants
-         where status in ('active','trial')
-         order by display_name, id`,
-      ),
-      this.sql.query<RoleRow>(
-        `select tenant_id, code
-         from identity.roles
-         where code in ('tenant_admin','reception','professional')
-         order by tenant_id, code`,
-      ),
-      this.sql.query<ProfessionalRow>(
-        `select tenant_id, id, display_name, specialty
-         from app.professionals
-         where active = true
-         order by tenant_id, display_name, id`,
-      ),
-    ]);
+    const result = await timedQuery("workspace.listCatalog", () => this.sql.query<WorkspaceRow>(
+      `${WORKSPACE_SELECT}
+       where t.status in ('active','trial')
+       order by t.display_name, t.id, r.code, p.display_name, p.id`,
+    ));
 
-    const professionalsByTenant = groupProfessionals(professionalsResult.rows);
-    const rolesByTenant = groupRoles(rolesResult.rows, professionalsByTenant);
-
-    return {
-      tenants: tenantsResult.rows.map((row) => ({
-        id: row.id,
-        displayName: row.display_name,
-        publicSlug: row.public_slug ?? undefined,
-        status: row.status,
-        roles: rolesByTenant.get(row.id) ?? [],
-      })),
-    };
+    return { tenants: collectTenants(result.rows) };
   }
 
   async findTenant(tenantId: string): Promise<WorkspaceTenantOption | null> {
-    const [tenantResult, rolesResult, professionalsResult] = await Promise.all([
-      this.sql.query<TenantRow>(
-        `select id, display_name, public_slug, status
-         from app.tenants
-         where id = $1::uuid
-           and status in ('active','trial')
-         limit 1`,
-        [tenantId],
-      ),
-      this.sql.query<RoleRow>(
-        `select tenant_id, code
-         from identity.roles
-         where tenant_id = $1::uuid
-           and code in ('tenant_admin','reception','professional')
-         order by code`,
-        [tenantId],
-      ),
-      this.sql.query<ProfessionalRow>(
-        `select tenant_id, id, display_name, specialty
-         from app.professionals
-         where tenant_id = $1::uuid
-           and active = true
-         order by display_name, id`,
-        [tenantId],
-      ),
-    ]);
+    const result = await timedQuery("workspace.findTenant", () => this.sql.query<WorkspaceRow>(
+      `${WORKSPACE_SELECT}
+       where t.id = $1::uuid
+         and t.status in ('active','trial')
+       order by r.code, p.display_name, p.id`,
+      [tenantId],
+    ));
 
-    const row = tenantResult.rows[0];
-    if (!row) return null;
-    const professionalsByTenant = groupProfessionals(professionalsResult.rows);
-    const rolesByTenant = groupRoles(rolesResult.rows, professionalsByTenant);
-    return {
-      id: row.id,
-      displayName: row.display_name,
-      publicSlug: row.public_slug ?? undefined,
-      status: row.status,
-      roles: rolesByTenant.get(row.id) ?? [],
-    };
+    return collectTenants(result.rows)[0] ?? null;
   }
 }
