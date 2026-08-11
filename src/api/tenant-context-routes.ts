@@ -1,10 +1,11 @@
 import type { Hono } from "hono";
 import { authorizeTenantRequest, createApiExecutionContext, resolveAuthenticatedTenant, authenticateRequest } from "@/api/request-security";
 import { getAuthorizationService } from "@/config/dependencies";
+import type { TenantAccess } from "@/server/auth/authorization";
 import { Permissions } from "@/server/auth/permissions";
 import { DomainError } from "@/shared/domain/core";
 
-function tenantSummary(access: Awaited<ReturnType<ReturnType<typeof getAuthorizationService>["resolveTenantContext"]>>) {
+function tenantSummary(access: TenantAccess) {
   return {
     id: access.tenantId,
     displayName: access.tenantDisplayName,
