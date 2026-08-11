@@ -82,16 +82,30 @@ If the decomposed database configuration is used, only the password must be secr
 
 Do not commit real passwords or connection strings.
 
+## Worker/PostgreSQL network controls
+
+The Worker runtime deliberately minimizes PostgreSQL network round trips:
+
+- `max: 1` keeps a single postgres.js connection per Worker isolate;
+- `fetch_types: false` prevents postgres.js from issuing its automatic type-discovery query during connection initialization;
+- `prepare: false` remains enabled while the runtime uses the Supabase transaction pooler;
+- `connect_timeout: 5` fails a broken connection path earlier instead of keeping one Worker invocation waiting for a long time;
+- `idle_timeout: 10` avoids holding idle edge connections longer than necessary.
+
+The pre-auth workspace bootstrap is also implemented as a **single SQL query**. Tenant, role and active-professional data are joined in PostgreSQL and reconstructed into the workspace DTO in-process. This replaces the former three-query `Promise.all` fan-out and guarantees one application SQL round trip for both catalog loading and tenant resolution.
+
+Workspace repository queries taking at least one second emit a structured warning with the query operation and duration. Connection strings, passwords and query parameters are never logged.
+
+If Cloudflare still reports `Too many subrequests by single Worker invocation` after these controls, the next infrastructure step is to place **Cloudflare Hyperdrive** between the Worker and the Supabase direct PostgreSQL endpoint. Hyperdrive should then own runtime pooling; migrations remain on `MIGRATION_DATABASE_URL`. Do not increase Worker subrequest limits as the primary fix for a bootstrap operation that should require one database query.
+
 ## Tenant resolution
 
 While authentication is disabled, the internal workspace bootstrap loads tenant, operational role and professional options directly from PostgreSQL. Request selectors are validated server-side before creating an `ExecutionContext`.
 
 ```text
 GET /v1/bootstrap/workspace
-  -> PostgreSQL
-  -> app.tenants
-  -> identity.roles
-  -> app.professionals
+  -> one PostgreSQL query
+  -> app.tenants + identity.roles + app.professionals
   -> workspace catalog
 ```
 
@@ -147,6 +161,8 @@ npm run db:setup
 - `status=not_ready`, `configuration=valid`, `database=unavailable` when configuration exists but PostgreSQL cannot be reached.
 
 Sensitive values are never returned by readiness responses.
+
+Cloudflare subrequest exhaustion is classified as an infrastructure-capacity failure and returned as `503 INFRASTRUCTURE_LIMIT_EXCEEDED`, preserving the request id for log correlation instead of reporting an opaque `500 INTERNAL_ERROR`.
 
 ## Runtime architecture
 
