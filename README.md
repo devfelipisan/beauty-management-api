@@ -8,8 +8,7 @@ Backend autoritativo do projeto Beauty Management.
 beauty-management-web
     -> BFF
     -> beauty-management-api
-        -> Authentication Gate
-        -> Tenant Context Resolver
+        -> Workspace/Auth Context Resolver
         -> BusinessApi / AdministrationApi
         -> Application
         -> Domain
@@ -23,26 +22,23 @@ A Business API é a única autoridade de negócio. Frontend e BFF não executam 
 
 O runtime de produção usa PostgreSQL/Supabase. O adapter in-memory existe somente como test double vazio para testes isolados e não contém massa de negócio/demo.
 
-O projeto está em uma fase em que o login ainda não faz parte do MVP ativo. Por isso a autenticação é controlada por uma feature flag explícita:
+O login ainda não faz parte do MVP ativo:
 
 ```env
 AUTHENTICATION_ENABLED=false
 ```
 
-`false` é o default atual. Nesse modo uma rota tenant-scoped não exige Bearer token, porém o multi-tenancy continua obrigatório:
+Nesse modo, a área interna usa um workspace pré-auth carregado do banco:
 
 ```text
-x-tenant-id (selector opcional)
-  -> PostgreSQL app.tenants
-  -> valida UUID / existência / status
-  -> resolved tenantId
-  -> ExecutionContext
-  -> PostgresUnitOfWork
-  -> SET app.tenant_id
-  -> PostgreSQL RLS
+GET /v1/bootstrap/workspace
+  -> app.tenants
+  -> identity.roles
+  -> app.professionals
+  -> tenant/role/professional selectors
 ```
 
-O header nunca é usado diretamente como autoridade. Se existir apenas um tenant `active`/`trial`, ele pode ser resolvido automaticamente. Se existirem vários tenants operacionais e nenhum selector for informado, a API retorna `TENANT_SELECTION_REQUIRED`.
+Os selectors enviados pelo Web/BFF são validados na API antes de criar o `ExecutionContext`. Tenant continua isolado por predicates e PostgreSQL RLS. Quando a função selecionada é `professional`, o `professionalId` também é validado no mesmo tenant e limita agenda/clientes ao profissional selecionado.
 
 Quando o login for ativado:
 
@@ -50,29 +46,9 @@ Quando o login for ativado:
 AUTHENTICATION_ENABLED=true
 ```
 
-o fluxo passa a ser:
+o contexto passa a ser resolvido por Supabase Auth, membership e RBAC reais. As rotas `/v1/me/*` representam identidade pessoal e continuam indisponíveis enquanto a autenticação estiver desligada.
 
-```text
-Bearer token
-  -> Supabase Auth
-  -> identity.users.auth_subject
-  -> identity.tenant_memberships
-  -> app.tenants
-  -> roles / permissions
-  -> optional professional membership
-  -> resolved ExecutionContext
-  -> PostgreSQL RLS
-```
-
-Nesse modo `x-tenant-id` permanece apenas um selector hint e precisa pertencer ao usuário autenticado.
-
-As rotas `/v1/me/*` representam identidade pessoal e ficam indisponíveis enquanto `AUTHENTICATION_ENABLED=false`; elas retornam `AUTHENTICATION_NOT_ENABLED` em vez de criar uma identidade fictícia.
-
-O perfil profissional e a regra de "minha agenda" entram em vigor com autenticação habilitada, quando o backend pode resolver `identity.professional_memberships -> professionalId` com segurança.
-
-Rotas públicas são independentes dos dois modos e resolvem `app.tenants.public_slug` diretamente no PostgreSQL.
-
-Detalhes: [`docs/multitenant-context.md`](docs/multitenant-context.md).
+Rotas públicas resolvem `app.tenants.public_slug` diretamente no PostgreSQL.
 
 ## Funcionalidades do núcleo
 
@@ -85,7 +61,7 @@ A API contém, entre outros:
 - auditoria append-only, transactional outbox e idempotência;
 - tenants, profissionais, serviços, equipamentos e clientes;
 - avaliações e registros técnicos;
-- agendamentos autenticados e públicos;
+- agendamentos internos e públicos;
 - sinal, check-in, sessão e pagamento;
 - pacotes e retornos;
 - leads institucionais;
@@ -106,6 +82,8 @@ Principais exemplos:
 ```text
 GET  {{host}}/v1/health
 GET  {{host}}/health/ready
+GET  {{host}}/v1/bootstrap/workspace
+POST {{host}}/v1/bootstrap/context
 GET  {{host}}/v1/customers
 GET  {{host}}/v1/services
 GET  {{host}}/v1/appointments
@@ -128,8 +106,6 @@ GET {{host}}/v1/me/appointments
 GET {{host}}/v1/me/customers
 ```
 
-No `beauty-management-web`, `BUSINESS_API_BASE_URL` deve conter somente o host do Worker. Enquanto não há login, o BFF deve encaminhar o UUID do tenant selecionado em `x-tenant-id` quando houver mais de um tenant operacional. A resolução final sempre ocorre na API/banco.
-
 ## Autenticação
 
 ### Fase atual
@@ -139,9 +115,9 @@ AUTHENTICATION_ENABLED=false
 ```
 
 - não exige `Authorization` em rotas tenant-scoped;
-- não inventa `actorId`, membership ou role;
-- RBAC de usuário não é aplicado porque ainda não existe identidade autenticada;
-- tenant existence/status, predicates e RLS continuam ativos;
+- não inventa `actorId` ou membership;
+- role/professional pré-auth são contexto operacional selecionado e validado no banco, não identidade autenticada;
+- tenant predicates e RLS continuam ativos;
 - auditorias sem usuário são gravadas como ator `system`;
 - `/v1/me/*` e operações de plataforma permanecem bloqueadas.
 
@@ -149,15 +125,11 @@ AUTHENTICATION_ENABLED=false
 
 ```env
 AUTHENTICATION_ENABLED=true
+SPIdBD=<supabase-project-ref>
+ApiKeySupaBase=<publishable-or-anon-key>
 ```
 
-Nesse modo endpoints protegidos usam Supabase Auth:
-
-```http
-Authorization: Bearer <supabase-access-token>
-```
-
-`ApiKeySupaBase` passa a ser obrigatória e membership/RBAC voltam a ser aplicados.
+Nesse modo endpoints protegidos usam Supabase Auth e membership/RBAC reais.
 
 As antigas variáveis `API_AUTH_MODE`, `API_DEV_AUTH_SUBJECT`, `API_DEV_AUTH_ID` e `API_DEV_TENANT_ID` não fazem parte do runtime.
 
@@ -165,18 +137,38 @@ As antigas variáveis `API_AUTH_MODE`, `API_DEV_AUTH_SUBJECT`, `API_DEV_AUTH_ID`
 
 Configure `.dev.vars` a partir de `.dev.vars.example`. Não versione senhas ou connection strings reais.
 
-Preferencialmente, use a URI exata do **Transaction Pooler** do Supabase no Worker:
+### Worker runtime
+
+Preferencialmente use a URI exata do **Transaction Pooler** do Supabase:
 
 ```env
 AUTHENTICATION_ENABLED=false
-DATABASE_URL=
-SPIdBD=zkzzptgbiwsxinzmfvss
-SBNameDB=postgres
-SPPasswordDB=
-# ApiKeySupaBase=  # somente quando AUTHENTICATION_ENABLED=true
+DATABASE_URL=postgresql://...
 ```
 
-`SPPasswordDB` é a senha do PostgreSQL. `ApiKeySupaBase` é usada somente pela autenticação Supabase e não substitui a senha do banco.
+`DATABASE_URL` é suficiente por si só para o runtime PostgreSQL. O Worker não exige `SPIdBD`, `SBNameDB` ou `SPPasswordDB` quando a URL explícita está presente.
+
+Como alternativa, a conexão pode ser informada por componentes explícitos:
+
+```env
+SBDatabaseHost=<pooler-host>
+SBDatabasePort=6543
+SBDatabaseUser=postgres.<project-ref>
+SBNameDB=postgres
+SPPasswordDB=<secret>
+```
+
+Nenhum hostname de pooler é inferido de região.
+
+### Migration/seed
+
+Migration e seed usam uma conexão separada, preferencialmente direta:
+
+```env
+MIGRATION_DATABASE_URL=postgresql://...
+```
+
+Sem `MIGRATION_DATABASE_URL`, o runner utiliza `SPIdBD`, `SBNameDB`, `SPPasswordDB` e os overrides opcionais `SBMigrationHost`, `SBMigrationPort`, `SBMigrationUser`.
 
 Comandos:
 
@@ -194,7 +186,7 @@ Ou:
 npm run db:setup
 ```
 
-Detalhes de conexão: [`docs/supabase-postgres-runtime.md`](docs/supabase-postgres-runtime.md).
+Detalhes: [`docs/supabase-postgres-runtime.md`](docs/supabase-postgres-runtime.md).
 
 ## Desenvolvimento
 
@@ -212,7 +204,7 @@ GET /v1/health
 GET /health/ready
 ```
 
-`/health` é liveness. `/health/ready` verifica conectividade PostgreSQL e a última migration rastreada.
+`/health` é liveness. `/health/ready` distingue configuração inválida, banco indisponível e conexão pronta sem expor secrets.
 
 ## Deploy no Cloudflare Workers
 
@@ -225,7 +217,9 @@ Root directory:    /
 Production branch: main
 ```
 
-Credenciais devem ser configuradas como Worker secrets. Para bindings/tipagem Cloudflare:
+Na fase atual, configure `DATABASE_URL` como Worker secret e `AUTHENTICATION_ENABLED=false` como variável regular. `SPIdBD` e `ApiKeySupaBase` só são necessários ao runtime quando Supabase Auth for habilitado.
+
+Para tipagem Cloudflare:
 
 ```bash
 npm run cf-typegen
