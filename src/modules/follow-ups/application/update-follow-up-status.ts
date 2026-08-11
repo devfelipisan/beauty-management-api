@@ -1,7 +1,7 @@
 import type { ExecutionContext } from "@/shared/application/execution-context";
 import type { UnitOfWork } from "@/shared/application/ports";
 import { AuditActions, createAuditEvent } from "@/shared/audit/audit";
-import { DomainError, NotFoundError } from "@/shared/domain/core";
+import { DomainError, ForbiddenError, NotFoundError } from "@/shared/domain/core";
 import { createOutboxEvent } from "@/shared/outbox/outbox";
 import { transitionFollowUp, type FollowUp, type FollowUpAction } from "../domain/follow-up";
 import type { FollowUpRepository } from "../domain/follow-up-repository";
@@ -21,11 +21,28 @@ export class UpdateFollowUpStatusUseCase {
     return this.unitOfWork.execute(context, async (tx) => {
       const current = await this.followUps.findById(tenantId, input.followUpId);
       if (!current) throw new NotFoundError("follow-up", input.followUpId);
+
+      if (context.professionalId) {
+        const linked = (await tx.appointments.list(tenantId)).some((appointment) =>
+          appointment.professionalId === context.professionalId && appointment.customerId === current.customerId,
+        );
+        if (!linked) {
+          throw new ForbiddenError(
+            "PROFESSIONAL_CUSTOMER_FORBIDDEN",
+            "The follow-up customer is not linked to the authenticated professional.",
+            { customerId: current.customerId },
+          );
+        }
+      }
+
       if (input.action === "schedule") {
         if (!input.appointmentId) throw new DomainError("FOLLOW_UP_APPOINTMENT_REQUIRED", "Appointment is required to schedule a follow-up.");
         const appointment = await tx.appointments.findById(tenantId, input.appointmentId);
         if (!appointment) throw new NotFoundError("appointment", input.appointmentId);
         if (appointment.customerId !== current.customerId) throw new DomainError("FOLLOW_UP_APPOINTMENT_CUSTOMER_MISMATCH", "Appointment does not belong to the follow-up customer.");
+        if (context.professionalId && appointment.professionalId !== context.professionalId) {
+          throw new ForbiddenError("PROFESSIONAL_APPOINTMENT_FORBIDDEN", "The appointment is not assigned to the authenticated professional.", { appointmentId: appointment.id });
+        }
       }
       const updated = transitionFollowUp(current, input.action, input.appointmentId);
       await this.followUps.update(updated);
