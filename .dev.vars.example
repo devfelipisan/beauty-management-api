@@ -1,9 +1,17 @@
 # Authentication is not part of the current MVP stage.
-# false (default): tenant-scoped API works without Bearer token, but tenant is still resolved in PostgreSQL.
+# false (default): tenant-scoped API works without Bearer token.
 # true: Supabase Auth + membership/RBAC are required.
 AUTHENTICATION_ENABLED=false
 
-# Worker runtime database connection.
+# Runtime persistence source.
+# postgres (default): real Supabase/PostgreSQL runtime.
+# memory: disables PostgreSQL completely and loads a deterministic demo dataset for UI/page testing.
+API_DATA_SOURCE=postgres
+
+# When API_DATA_SOURCE=memory, DATABASE_URL and the decomposed runtime database variables are not required.
+# The fallback workspace is Bella Estética Demo and the API stays fully in-process for supported MVP flows.
+
+# Worker runtime database connection used only when API_DATA_SOURCE=postgres.
 # Preferred: copy the exact Transaction Pooler URI from Supabase > Connect.
 # DATABASE_URL is sufficient by itself for runtime PostgreSQL access.
 DATABASE_URL=
