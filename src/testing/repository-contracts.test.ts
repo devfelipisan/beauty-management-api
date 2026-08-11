@@ -61,7 +61,7 @@ test("unit of work rolls back failed mutations", async () => {
   });
 });
 
-test("workspace catalog uses one PostgreSQL round trip and reconstructs tenant roles and professionals", async () => {
+test("workspace catalog uses one PostgreSQL round trip without role-professional row multiplication", async () => {
   const queries: Array<{ text: string; parameters: readonly unknown[] }> = [];
   const rows = [
     {
@@ -69,30 +69,19 @@ test("workspace catalog uses one PostgreSQL round trip and reconstructs tenant r
       display_name: "Bella Estética",
       public_slug: "bella-estetica",
       status: "active",
-      role_code: "tenant_admin",
-      professional_id: "00000000-0000-0000-0000-000000000101",
-      professional_display_name: "Ana Martins",
-      professional_specialty: "Laser",
-    },
-    {
-      tenant_id: TENANT_A,
-      display_name: "Bella Estética",
-      public_slug: "bella-estetica",
-      status: "active",
-      role_code: "professional",
-      professional_id: "00000000-0000-0000-0000-000000000101",
-      professional_display_name: "Ana Martins",
-      professional_specialty: "Laser",
-    },
-    {
-      tenant_id: TENANT_A,
-      display_name: "Bella Estética",
-      public_slug: "bella-estetica",
-      status: "active",
-      role_code: "reception",
-      professional_id: "00000000-0000-0000-0000-000000000102",
-      professional_display_name: "Julia Alves",
-      professional_specialty: "Facial",
+      role_codes: ["professional", "reception", "tenant_admin"],
+      professionals: [
+        {
+          id: "00000000-0000-0000-0000-000000000101",
+          displayName: "Ana Martins",
+          specialty: "Laser",
+        },
+        {
+          id: "00000000-0000-0000-0000-000000000102",
+          displayName: "Julia Alves",
+          specialty: "Facial",
+        },
+      ],
     },
   ];
 
@@ -110,8 +99,10 @@ test("workspace catalog uses one PostgreSQL round trip and reconstructs tenant r
   const catalog = await repository.listCatalog();
 
   assert.equal(queries.length, 1);
-  assert.match(queries[0].text, /left join identity\.roles/i);
-  assert.match(queries[0].text, /left join app\.professionals/i);
+  assert.match(queries[0].text, /select distinct r\.code/i);
+  assert.match(queries[0].text, /jsonb_agg/i);
+  assert.doesNotMatch(queries[0].text, /left join identity\.roles/i);
+  assert.doesNotMatch(queries[0].text, /left join app\.professionals/i);
   assert.equal(catalog.tenants.length, 1);
   assert.deepEqual(catalog.tenants[0].roles.map((role) => role.code).sort(), ["administrator", "professional", "reception"]);
   const professionalRole = catalog.tenants[0].roles.find((role) => role.code === "professional");
@@ -128,10 +119,8 @@ test("workspace tenant lookup uses one PostgreSQL round trip", async () => {
         display_name: "Bella Estética",
         public_slug: "bella-estetica",
         status: "active",
-        role_code: "reception",
-        professional_id: null,
-        professional_display_name: null,
-        professional_specialty: null,
+        role_codes: ["reception"],
+        professionals: [],
       }];
       return { rows: rows as unknown as TRow[], rowCount: rows.length };
     },
