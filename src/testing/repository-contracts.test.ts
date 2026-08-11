@@ -21,18 +21,22 @@ function customer(id: string, tenantId: string, phone: string) {
   };
 }
 
-test("memory repositories enforce tenant-scoped reads without embedded business data", async () => {
+test("memory repositories preserve tenant-scoped reads with fallback seed data", async () => {
   const runtime = createMemoryRuntime();
   const context = createExecutionContext("repository.contract", { tenantId: TENANT_A, source: "test" });
+  let initialTenantACount = 0;
+  let initialTenantBCount = 0;
   await runtime.unitOfWork.execute(context, async (tx) => {
-    await tx.customers.create(customer("customer-a", TENANT_A, "22999990001"));
-    await tx.customers.create(customer("customer-b", TENANT_B, "22999990002"));
+    initialTenantACount = (await tx.customers.list(TENANT_A)).length;
+    initialTenantBCount = (await tx.customers.list(TENANT_B)).length;
+    await tx.customers.create(customer("customer-a", TENANT_A, "22999999991"));
+    await tx.customers.create(customer("customer-b", TENANT_B, "22999999992"));
   });
   await runtime.unitOfWork.execute(context, async (tx) => {
     const tenantACustomers = await tx.customers.list(TENANT_A);
     const tenantBCustomers = await tx.customers.list(TENANT_B);
-    assert.equal(tenantACustomers.length, 1);
-    assert.equal(tenantBCustomers.length, 1);
+    assert.equal(tenantACustomers.length, initialTenantACount + 1);
+    assert.equal(tenantBCustomers.length, initialTenantBCount + 1);
     assert.equal(tenantACustomers.some((item) => item.tenantId !== TENANT_A), false);
     assert.equal(tenantBCustomers.some((item) => item.tenantId !== TENANT_B), false);
   });
