@@ -176,16 +176,25 @@ export class MemoryAccessControlRepository implements AccessControlRepository {
     return null;
   }
 
+  async listTenantAccesses(authSubject: string): Promise<TenantAccess[]> {
+    const access = await this.resolveTenantAccess(authSubject, "00000000-0000-0000-0000-000000000001");
+    return access ? [access] : [];
+  }
+
   async resolveTenantAccess(authSubject: string, tenantId: string): Promise<TenantAccess | null> {
     const role = this.roleForSubject(authSubject);
     if (!role || role === "platform_admin") return null;
-    if (tenantId !== "tenant-bella") return null;
+    if (tenantId !== "00000000-0000-0000-0000-000000000001") return null;
     return {
       actorId: authSubject,
       authSubject,
       tenantId,
+      tenantDisplayName: "Memory Test Tenant",
+      tenantPublicSlug: "memory-test-tenant",
+      tenantStatus: "active",
       membershipId: `${tenantId}:${authSubject}`,
       membershipStatus: "active",
+      professionalId: role === "professional" ? "00000000-0000-0000-0000-000000000101" : undefined,
       roles: [role],
       permissions: [...DEFAULT_ROLE_PERMISSIONS[role]],
     };
