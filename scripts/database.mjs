@@ -71,10 +71,18 @@ async function seed(sql) {
   }
 }
 
-async function validateSeed(sql) {
-  const file = resolve("database/tests/demo_seed_smoke.sql");
-  console.log("[seed-check] demo_seed_smoke.sql");
+async function executeTestFile(sql, filename, label) {
+  const file = resolve("database/tests", filename);
+  console.log(`[${label}] ${filename}`);
   await sql.unsafe(await readFile(file, "utf8"));
+}
+
+async function validateSeed(sql) {
+  await executeTestFile(sql, "demo_seed_smoke.sql", "seed-check");
+}
+
+async function validateSecurity(sql) {
+  await executeTestFile(sql, "security_and_constraints.sql", "security-check");
 }
 
 const command = process.argv[2] ?? "migrate";
@@ -84,8 +92,9 @@ const db = postgres(connectionString(mode), { max: 1, prepare: false, connect_ti
 try {
   if (command === "migrate") await migrate(db);
   else if (command === "seed") await seed(db);
-  else if (command === "setup") { await migrate(db); await seed(db); await validateSeed(db); }
+  else if (command === "setup") { await migrate(db); await seed(db); await validateSeed(db); await validateSecurity(db); }
   else if (command === "seed-check") await validateSeed(db);
+  else if (command === "security-check") await validateSecurity(db);
   else if (command === "check") {
     const [row] = await db`select current_database() as database, current_user as user, now() as now`;
     console.log(JSON.stringify(row));
