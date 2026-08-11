@@ -1,6 +1,19 @@
 import postgres from "postgres";
 import { AdministrationApi } from "@/api/administration-api";
 import { BusinessApi } from "@/api/business-api";
+import {
+  MemoryAssessmentRepository,
+  MemoryFollowUpRepository,
+  MemoryTechnicalRecordRepository,
+} from "@/infrastructure/memory/memory-extracted-context-repositories";
+import {
+  MemoryCommercialPolicyRepository,
+  MemoryLandingPageRepository,
+  MemoryPublicTenantContextRepository,
+  MemoryTenantSettingsRepository,
+  MemoryTenantUserRepository,
+} from "@/infrastructure/memory/memory-fallback-repositories";
+import { createMemoryRuntime } from "@/infrastructure/memory/memory-runtime";
 import { PostgresCommercialPolicyRepository, PostgresTenantUserRepository } from "@/infrastructure/postgres/postgres-administration-repositories";
 import { PostgresAssessmentRepository, PostgresFollowUpRepository, PostgresTechnicalRecordRepository } from "@/infrastructure/postgres/postgres-extracted-context-repositories";
 import { PostgresJsSqlClientFactory, type PostgresJsFactory } from "@/infrastructure/postgres/postgres-js-sql-client";
@@ -14,6 +27,7 @@ import { CreateDiscountPolicyUseCase } from "@/modules/commercial-policy/applica
 import { CreateCustomerUseCase } from "@/modules/customers/application/create-customer";
 import { ConfirmDepositUseCase } from "@/modules/deposits/application/confirm-deposit";
 import { CreateEquipmentUseCase } from "@/modules/equipment/application/create-equipment";
+import { MemoryEquipmentRepository } from "@/modules/equipment/infrastructure/memory-equipment-repository";
 import { PostgresEquipmentRepository } from "@/modules/equipment/infrastructure/postgres-equipment-repository";
 import { CreateFollowUpUseCase } from "@/modules/follow-ups/application/create-follow-up";
 import { UpdateFollowUpStatusUseCase } from "@/modules/follow-ups/application/update-follow-up-status";
@@ -21,6 +35,7 @@ import { HideLandingPageUseCase, PublishLandingPageUseCase, SaveLandingPageDraft
 import { CreatePublicLeadUseCase } from "@/modules/leads/application/create-public-lead";
 import { UpdateLeadStatusUseCase } from "@/modules/leads/application/update-lead-status";
 import { CreatePackageUseCase } from "@/modules/packages/application/create-package";
+import { MemoryPackageRepository } from "@/modules/packages/infrastructure/memory-package-repository";
 import { PostgresPackageRepository } from "@/modules/packages/infrastructure/postgres-package-repository";
 import { RegisterPaymentUseCase } from "@/modules/payments/application/register-payment";
 import { CreateProfessionalUseCase } from "@/modules/professionals/application/create-professional";
@@ -38,6 +53,7 @@ import { PostgresPublicTenantContextRepository } from "@/modules/tenants/infrast
 import { CreateTenantUserUseCase, UpdateTenantUserUseCase } from "@/modules/users/application/manage-users";
 import { SupabaseAuthVerifier, type AuthVerifier } from "@/server/auth/authentication";
 import { AuthorizationService } from "@/server/auth/authorization";
+import { readRuntimeDataSourceConfig } from "./runtime-data-source";
 import { readDatabaseRuntimeConfig, readSupabaseAuthConfig } from "./supabase-config";
 
 let businessSingleton: BusinessApi | null = null;
@@ -45,11 +61,19 @@ let administrationSingleton: AdministrationApi | null = null;
 let authVerifierSingleton: AuthVerifier | null = null;
 let sqlClientSingleton: SqlClient | null = null;
 let postgresRuntimeSingleton: ReturnType<typeof createPostgresRuntime> | null = null;
+let memoryRuntimeSingleton: ReturnType<typeof createMemoryRuntime> | null = null;
 let authorizationSingleton: AuthorizationService | null = null;
 let publicTenantResolverSingleton: ResolvePublicTenantContextUseCase | null = null;
 let operationalTenantResolverSingleton: ResolveOperationalTenantContextUseCase | null = null;
 
+export function getRuntimeDataSource() {
+  return readRuntimeDataSourceConfig().dataSource;
+}
+
 export function getSqlClient(): SqlClient {
+  if (getRuntimeDataSource() === "memory") {
+    throw new Error("PostgreSQL is disabled while API_DATA_SOURCE=memory.");
+  }
   if (sqlClientSingleton) return sqlClientSingleton;
   const config = readDatabaseRuntimeConfig();
   const factory = new PostgresJsSqlClientFactory(postgres as unknown as PostgresJsFactory, {
@@ -63,19 +87,25 @@ export function getSqlClient(): SqlClient {
   return sqlClientSingleton;
 }
 
-function getPostgresRuntime() {
-  if (postgresRuntimeSingleton) return postgresRuntimeSingleton;
-  postgresRuntimeSingleton = createPostgresRuntime(getSqlClient());
+function getRuntime() {
+  if (getRuntimeDataSource() === "memory") {
+    if (!memoryRuntimeSingleton) memoryRuntimeSingleton = createMemoryRuntime();
+    return memoryRuntimeSingleton;
+  }
+  if (!postgresRuntimeSingleton) postgresRuntimeSingleton = createPostgresRuntime(getSqlClient());
   return postgresRuntimeSingleton;
 }
 
 export function getAuthorizationService(): AuthorizationService {
   if (authorizationSingleton) return authorizationSingleton;
-  authorizationSingleton = new AuthorizationService(getPostgresRuntime().accessControl);
+  authorizationSingleton = new AuthorizationService(getRuntime().accessControl);
   return authorizationSingleton;
 }
 
 export function getOperationalTenantResolver(): ResolveOperationalTenantContextUseCase {
+  if (getRuntimeDataSource() === "memory") {
+    throw new Error("Authenticated operational tenant resolution is not enabled in the fallback memory runtime.");
+  }
   if (operationalTenantResolverSingleton) return operationalTenantResolverSingleton;
   operationalTenantResolverSingleton = new ResolveOperationalTenantContextUseCase(
     new PostgresOperationalTenantContextRepository(getSqlClient()),
@@ -85,7 +115,9 @@ export function getOperationalTenantResolver(): ResolveOperationalTenantContextU
 
 export function getPublicTenantResolver(): ResolvePublicTenantContextUseCase {
   if (publicTenantResolverSingleton) return publicTenantResolverSingleton;
-  publicTenantResolverSingleton = new ResolvePublicTenantContextUseCase(new PostgresPublicTenantContextRepository(getSqlClient()));
+  publicTenantResolverSingleton = getRuntimeDataSource() === "memory"
+    ? new ResolvePublicTenantContextUseCase(new MemoryPublicTenantContextRepository())
+    : new ResolvePublicTenantContextUseCase(new PostgresPublicTenantContextRepository(getSqlClient()));
   return publicTenantResolverSingleton;
 }
 
@@ -98,6 +130,20 @@ export function getAuthVerifier(): AuthVerifier {
 
 export function getAdministrationApi(): AdministrationApi {
   if (administrationSingleton) return administrationSingleton;
+
+  if (getRuntimeDataSource() === "memory") {
+    const users = new MemoryTenantUserRepository();
+    const commercialPolicies = new MemoryCommercialPolicyRepository();
+    administrationSingleton = new AdministrationApi({
+      users,
+      commercialPolicies,
+      createUser: new CreateTenantUserUseCase(users),
+      updateUser: new UpdateTenantUserUseCase(users),
+      createDiscountPolicy: new CreateDiscountPolicyUseCase(commercialPolicies),
+    });
+    return administrationSingleton;
+  }
+
   const sql = getSqlClient();
   const users = new PostgresTenantUserRepository(sql);
   const commercialPolicies = new PostgresCommercialPolicyRepository(sql);
@@ -113,15 +159,17 @@ export function getAdministrationApi(): AdministrationApi {
 
 export function getBusinessApi(): BusinessApi {
   if (businessSingleton) return businessSingleton;
-  const sql = getSqlClient();
-  const runtime = getPostgresRuntime();
-  const equipmentRepository = new PostgresEquipmentRepository(sql);
-  const packageRepository = new PostgresPackageRepository(sql);
-  const assessmentRepository = new PostgresAssessmentRepository(sql);
-  const technicalRecordRepository = new PostgresTechnicalRecordRepository(sql);
-  const followUpRepository = new PostgresFollowUpRepository(sql);
-  const tenantSettingsRepository = new PostgresTenantSettingsRepository(sql);
-  const landingPageRepository = new PostgresLandingPageRepository(sql);
+  const runtime = getRuntime();
+  const memory = getRuntimeDataSource() === "memory";
+  const sql = memory ? undefined : getSqlClient();
+
+  const equipmentRepository = memory ? new MemoryEquipmentRepository() : new PostgresEquipmentRepository(sql!);
+  const packageRepository = memory ? new MemoryPackageRepository() : new PostgresPackageRepository(sql!);
+  const assessmentRepository = memory ? new MemoryAssessmentRepository() : new PostgresAssessmentRepository(sql!);
+  const technicalRecordRepository = memory ? new MemoryTechnicalRecordRepository() : new PostgresTechnicalRecordRepository(sql!);
+  const followUpRepository = memory ? new MemoryFollowUpRepository() : new PostgresFollowUpRepository(sql!);
+  const tenantSettingsRepository = memory ? new MemoryTenantSettingsRepository() : new PostgresTenantSettingsRepository(sql!);
+  const landingPageRepository = memory ? new MemoryLandingPageRepository() : new PostgresLandingPageRepository(sql!);
 
   businessSingleton = new BusinessApi({
     authorization: getAuthorizationService(),
