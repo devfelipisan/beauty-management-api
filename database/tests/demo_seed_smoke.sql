@@ -13,6 +13,38 @@ begin
     raise exception 'demo seed must cover a multi-tenant authenticated user';
   end if;
 
+  if not exists (
+    select 1
+    from identity.professional_memberships pm
+    where pm.tenant_id = '10000000-0000-0000-0000-000000000001'
+      and pm.membership_id = '22000000-0000-0000-0000-000000000003'
+      and pm.professional_id = '30000000-0000-0000-0000-000000000001'
+  ) then
+    raise exception 'demo seed must link professional membership to professional domain profile';
+  end if;
+
+  if not exists (
+    select 1
+    from identity.roles r
+    join identity.role_permissions rp on rp.role_id = r.id
+    where r.tenant_id = '10000000-0000-0000-0000-000000000001'
+      and r.code = 'professional'
+      and rp.permission_code = 'appointment:read-own'
+  ) then
+    raise exception 'professional role must have own-appointment permission';
+  end if;
+
+  if exists (
+    select 1
+    from identity.roles r
+    join identity.role_permissions rp on rp.role_id = r.id
+    where r.tenant_id = '10000000-0000-0000-0000-000000000001'
+      and r.code = 'professional'
+      and rp.permission_code = 'appointment:read'
+  ) then
+    raise exception 'professional role must not have global appointment read permission';
+  end if;
+
   if not exists (select 1 from app.tenants where public_slug = 'clinica-bella') then
     raise exception 'demo seed must expose canonical public tenant slug';
   end if;
