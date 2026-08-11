@@ -50,6 +50,10 @@ jobs:
       - name: PostgreSQL security and concurrency constraints
         run: psql --set=ON_ERROR_STOP=1 --file database/tests/security_and_constraints.sql
       - name: Apply deterministic demo seed
-        run: psql --set=ON_ERROR_STOP=1 --file database/seeds/0001_demo_use_cases.sql
-      - name: Validate demo use-case coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql --set=ON_ERROR_STOP=1 --file database/seeds/0001_demo_use_cases.sql
+          psql --set=ON_ERROR_STOP=1 --file database/seeds/0003_professional_memberships.sql
+      - name: Validate demo use-case and multitenant coverage
         run: psql --set=ON_ERROR_STOP=1 --file database/tests/demo_seed_smoke.sql

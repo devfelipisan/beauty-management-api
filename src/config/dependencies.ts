@@ -31,6 +31,8 @@ import { CreateTechnicalRecordUseCase } from "@/modules/technical-records/applic
 import { UpdateTenantBrandingUseCase } from "@/modules/tenant-branding/application/update-tenant-branding";
 import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
 import { CreateTenantUseCase } from "@/modules/tenants/application/create-tenant";
+import { ResolvePublicTenantContextUseCase } from "@/modules/tenants/application/resolve-public-tenant-context";
+import { PostgresPublicTenantContextRepository } from "@/modules/tenants/infrastructure/postgres-public-tenant-context.repository";
 import { CreateTenantUserUseCase, UpdateTenantUserUseCase } from "@/modules/users/application/manage-users";
 import { SupabaseAuthVerifier, type AuthVerifier } from "@/server/auth/authentication";
 import { AuthorizationService } from "@/server/auth/authorization";
@@ -40,8 +42,11 @@ let businessSingleton: BusinessApi | null = null;
 let administrationSingleton: AdministrationApi | null = null;
 let authVerifierSingleton: AuthVerifier | null = null;
 let sqlClientSingleton: SqlClient | null = null;
+let postgresRuntimeSingleton: ReturnType<typeof createPostgresRuntime> | null = null;
+let authorizationSingleton: AuthorizationService | null = null;
+let publicTenantResolverSingleton: ResolvePublicTenantContextUseCase | null = null;
 
-function getSqlClient(): SqlClient {
+export function getSqlClient(): SqlClient {
   if (sqlClientSingleton) return sqlClientSingleton;
   const config = readSupabaseDatabaseConfig();
   const factory = new PostgresJsSqlClientFactory(postgres as unknown as PostgresJsFactory, {
@@ -52,6 +57,24 @@ function getSqlClient(): SqlClient {
   });
   sqlClientSingleton = factory.create(config.runtimeConnectionString);
   return sqlClientSingleton;
+}
+
+function getPostgresRuntime() {
+  if (postgresRuntimeSingleton) return postgresRuntimeSingleton;
+  postgresRuntimeSingleton = createPostgresRuntime(getSqlClient());
+  return postgresRuntimeSingleton;
+}
+
+export function getAuthorizationService(): AuthorizationService {
+  if (authorizationSingleton) return authorizationSingleton;
+  authorizationSingleton = new AuthorizationService(getPostgresRuntime().accessControl);
+  return authorizationSingleton;
+}
+
+export function getPublicTenantResolver(): ResolvePublicTenantContextUseCase {
+  if (publicTenantResolverSingleton) return publicTenantResolverSingleton;
+  publicTenantResolverSingleton = new ResolvePublicTenantContextUseCase(new PostgresPublicTenantContextRepository(getSqlClient()));
+  return publicTenantResolverSingleton;
 }
 
 export function getAuthVerifier(): AuthVerifier {
@@ -79,7 +102,7 @@ export function getAdministrationApi(): AdministrationApi {
 export function getBusinessApi(): BusinessApi {
   if (businessSingleton) return businessSingleton;
   const sql = getSqlClient();
-  const runtime = createPostgresRuntime(sql);
+  const runtime = getPostgresRuntime();
   const equipmentRepository = new PostgresEquipmentRepository(sql);
   const packageRepository = new PostgresPackageRepository(sql);
   const assessmentRepository = new PostgresAssessmentRepository(sql);
@@ -87,10 +110,10 @@ export function getBusinessApi(): BusinessApi {
   const followUpRepository = new PostgresFollowUpRepository(sql);
   const tenantSettingsRepository = new PostgresTenantSettingsRepository(sql);
   const landingPageRepository = new PostgresLandingPageRepository(sql);
-  const authorization = new AuthorizationService(runtime.accessControl);
 
   businessSingleton = new BusinessApi({
-    authorization,
+    authorization: getAuthorizationService(),
+    publicTenantResolver: getPublicTenantResolver(),
     unitOfWork: runtime.unitOfWork,
     leadRepository: runtime.leadRepository,
     equipmentRepository,

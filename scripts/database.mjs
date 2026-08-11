@@ -8,18 +8,35 @@ function required(name) {
   return value;
 }
 
+function optional(name) { return process.env[name]?.trim() || undefined; }
 function encode(value) { return encodeURIComponent(value); }
 
+function validateUrl(value, name) {
+  if (!/^postgres(?:ql)?:\/\//i.test(value)) throw new Error(`${name} must be a PostgreSQL connection string.`);
+  return value;
+}
+
 function connectionString(mode = "migration") {
-  const region = required("SPRegionDB");
   const projectId = required("SPIdBD");
   const database = required("SBNameDB");
   const password = required("SPPasswordDB");
 
   if (mode === "runtime") {
-    return `postgresql://${encode(`postgres.${projectId}`)}:${encode(password)}@aws-${region}.pooler.supabase.com:6543/${encode(database)}?sslmode=require`;
+    const explicit = optional("DATABASE_URL");
+    if (explicit) return validateUrl(explicit, "DATABASE_URL");
+    const host = optional("SBDatabaseHost") ?? (optional("SPRegionDB") ? `aws-${optional("SPRegionDB")}.pooler.supabase.com` : undefined);
+    if (!host) throw new Error("Configure DATABASE_URL or SBDatabaseHost for runtime/pooler database access.");
+    const port = optional("SBDatabasePort") ?? "6543";
+    const user = optional("SBDatabaseUser") ?? `postgres.${projectId}`;
+    return `postgresql://${encode(user)}:${encode(password)}@${host}:${port}/${encode(database)}?sslmode=require`;
   }
-  return `postgresql://postgres:${encode(password)}@db.${projectId}.supabase.co:5432/${encode(database)}?sslmode=require`;
+
+  const explicit = optional("MIGRATION_DATABASE_URL");
+  if (explicit) return validateUrl(explicit, "MIGRATION_DATABASE_URL");
+  const host = optional("SBMigrationHost") ?? `db.${projectId}.supabase.co`;
+  const port = optional("SBMigrationPort") ?? "5432";
+  const user = optional("SBMigrationUser") ?? "postgres";
+  return `postgresql://${encode(user)}:${encode(password)}@${host}:${port}/${encode(database)}?sslmode=require`;
 }
 
 async function sqlFiles(directory) {
@@ -54,10 +71,18 @@ async function seed(sql) {
   }
 }
 
-async function validateSeed(sql) {
-  const file = resolve("database/tests/demo_seed_smoke.sql");
-  console.log("[seed-check] demo_seed_smoke.sql");
+async function executeTestFile(sql, filename, label) {
+  const file = resolve("database/tests", filename);
+  console.log(`[${label}] ${filename}`);
   await sql.unsafe(await readFile(file, "utf8"));
+}
+
+async function validateSeed(sql) {
+  await executeTestFile(sql, "demo_seed_smoke.sql", "seed-check");
+}
+
+async function validateSecurity(sql) {
+  await executeTestFile(sql, "security_and_constraints.sql", "security-check");
 }
 
 const command = process.argv[2] ?? "migrate";
@@ -67,8 +92,9 @@ const db = postgres(connectionString(mode), { max: 1, prepare: false, connect_ti
 try {
   if (command === "migrate") await migrate(db);
   else if (command === "seed") await seed(db);
-  else if (command === "setup") { await migrate(db); await seed(db); await validateSeed(db); }
+  else if (command === "setup") { await migrate(db); await seed(db); await validateSeed(db); await validateSecurity(db); }
   else if (command === "seed-check") await validateSeed(db);
+  else if (command === "security-check") await validateSecurity(db);
   else if (command === "check") {
     const [row] = await db`select current_database() as database, current_user as user, now() as now`;
     console.log(JSON.stringify(row));

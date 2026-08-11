@@ -1,19 +1,22 @@
 # PostgreSQL adapter migration
 
-The Business API owns PostgreSQL persistence. The Web/BFF must not instantiate database adapters.
+The Business API owns PostgreSQL persistence and tenant authorization. Web/BFF never instantiate database adapters and never become the authority for tenant selection.
 
 ## Current production composition
 
-PostgreSQL/Supabase is now the production persistence adapter. The composition root no longer selects the in-memory runtime.
+PostgreSQL/Supabase is the production persistence adapter. The production composition root does not select the in-memory runtime.
 
 ```text
-BusinessApi / AdministrationApi
+Request
+  -> Supabase Auth
+  -> database-backed tenant/membership resolution
+  -> BusinessApi / AdministrationApi
   -> Application Use Cases
   -> UnitOfWork / repository ports
   -> PostgreSQL repositories / PostgresUnitOfWork
   -> SqlClient
   -> postgres.js
-  -> Supabase Supavisor transaction pooler
+  -> Supavisor transaction pooler
   -> PostgreSQL
 ```
 
@@ -24,10 +27,29 @@ Implemented persistence adapters include:
 - equipment and packages;
 - assessments, technical records and follow-ups;
 - tenant settings and landing page;
-- tenant users and commercial policies.
+- tenant users and commercial policies;
+- public tenant lookup by canonical `public_slug`.
 
-The in-memory classes remain only as empty test doubles where isolated unit tests need them. They do not contain the demo/volume dataset and are not imported by the production composition root.
+## Tenant context boundary
 
-Migration and demo data now live under `database/migrations` and `database/seeds`. See `docs/supabase-postgres-runtime.md` for connection and execution instructions.
+For authenticated requests, `x-tenant-id` is only an optional selector. `PostgresAccessControlRepository` resolves the canonical context from:
 
-No use case or domain object depends directly on PostgreSQL, postgres.js or the Supabase SDK.
+```text
+identity.users
+  -> identity.tenant_memberships
+  -> app.tenants
+  -> identity.membership_roles
+  -> identity.roles
+  -> identity.role_permissions
+  -> identity.professional_memberships (when applicable)
+```
+
+Only this resolved context is allowed to populate `ExecutionContext.tenantId`. `PostgresUnitOfWork` then configures `app.tenant_id` and `app.actor_id` inside the database transaction, where RLS provides a second tenant-isolation boundary.
+
+Public routes do not use membership context. They resolve `app.tenants.public_slug` directly and expose only public operational tenants.
+
+The in-memory classes remain only as empty test doubles for isolated unit tests. They contain no demo/volume dataset and are not imported by the production composition root.
+
+Migration and demo data live under `database/migrations` and `database/seeds`. Database security contracts live under `database/tests` and are executable with `npm run db:security:check`.
+
+No use case or domain object depends directly on PostgreSQL, postgres.js or a Supabase database SDK.

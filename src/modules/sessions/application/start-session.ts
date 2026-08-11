@@ -28,6 +28,13 @@ export class StartSessionUseCase {
       handler: async (transaction) => {
         const appointment = await transaction.appointments.findById(tenantId, input.appointmentId);
         if (!appointment) throw new NotFoundError("appointment", input.appointmentId);
+        if (context.professionalId && appointment.professionalId !== context.professionalId) {
+          throw new ForbiddenError(
+            "PROFESSIONAL_APPOINTMENT_FORBIDDEN",
+            "A professional can start only sessions assigned to their own professional profile.",
+            { appointmentId: appointment.id },
+          );
+        }
         const existing = await transaction.sessions.findByAppointmentId(tenantId, appointment.id);
         if (existing) return existing;
         const nextAppointmentStatus = transitionAppointment(appointment.status, "start_session");

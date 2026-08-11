@@ -1,5 +1,3 @@
-\set ON_ERROR_STOP on
-
 begin;
 
 insert into app.tenants (id,legal_name,display_name,document,timezone,status)
@@ -72,6 +70,9 @@ BEGIN
 
   select count(*) into visible_count from app.leads where id='60000000-0000-4000-8000-000000000001';
   if visible_count <> 0 then raise exception 'RLS leaked lead from another tenant'; end if;
+
+  select count(*) into visible_count from app.appointments where id='40000000-0000-4000-8000-000000000001';
+  if visible_count <> 0 then raise exception 'RLS leaked appointment from another tenant'; end if;
 END $$;
 
 insert into app.customers (id,tenant_id,full_name,phone,status,relationship_profile)

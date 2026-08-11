@@ -1,10 +1,25 @@
 # Supabase project/database configuration
-# SPRegionDB is the Supabase/AWS region used by the shared Supavisor pooler, e.g. sa-east-1.
-SPRegionDB=
-# Supabase project reference/id. Example derived from db.<project-ref>.supabase.co.
 SPIdBD=zkzzptgbiwsxinzmfvss
-# Database name; Supabase default is postgres.
 SBNameDB=postgres
+
+# Preferred Worker runtime connection: copy the Transaction Pooler URI from Supabase > Connect.
+# Keep the password percent-encoded when embedding it directly in this URI.
+DATABASE_URL=
+
+# Alternative decomposed pooler configuration when DATABASE_URL is not used.
+# Prefer the exact host/user shown by Supabase Connect instead of deriving them from the region.
+SBDatabaseHost=
+SBDatabasePort=6543
+SBDatabaseUser=postgres.zkzzptgbiwsxinzmfvss
+# Legacy fallback only when SBDatabaseHost is absent.
+SPRegionDB=
+
+# Direct migration connection. Defaults to db.<SPIdBD>.supabase.co:5432 / user postgres.
+# Override only when the environment needs a different endpoint.
+# MIGRATION_DATABASE_URL=
+# SBMigrationHost=db.zkzzptgbiwsxinzmfvss.supabase.co
+# SBMigrationPort=5432
+# SBMigrationUser=postgres
 
 # Secrets - never commit real values.
 # PostgreSQL database password. An API key cannot replace this credential.
@@ -12,7 +27,7 @@ SPPasswordDB=
 # Supabase publishable/anon API key used only for Auth token verification.
 ApiKeySupaBase=
 
-# Optional for local migration tooling only:
-# direct (default) uses db.<project-ref>.supabase.co:5432.
-# runtime uses aws-<region>.pooler.supabase.com:6543 when direct IPv6 is unavailable locally.
+# Optional local migration tooling mode:
+# default = direct migration endpoint
+# runtime = DATABASE_URL / Transaction Pooler endpoint
 # SPDatabaseConnectionMode=runtime
