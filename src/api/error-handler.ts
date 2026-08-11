@@ -22,6 +22,12 @@ function isDatabaseUnavailable(error: unknown): boolean {
   return code.startsWith("08") || ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "57P01", "57P02", "57P03"].includes(code);
 }
 
+function isInfrastructureLimitExceeded(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("Too many subrequests by single Worker invocation")
+    || message.includes("Too many subrequests");
+}
+
 function isForbiddenDomainCode(code: string): boolean {
   return code.includes("FORBIDDEN")
     || code.includes("PERMISSION")
@@ -65,6 +71,7 @@ export function registerApiErrorHandler(app: Hono) {
       operation: `${context.req.method} ${context.req.path}`,
       ...metadata,
       ...(error instanceof RuntimeConfigurationError ? { missingVariable: error.variable } : {}),
+      ...(isInfrastructureLimitExceeded(error) ? { cloudflareResource: "subrequests" } : {}),
     });
 
     if (error instanceof RuntimeConfigurationError) {
@@ -72,6 +79,16 @@ export function registerApiErrorHandler(app: Hono) {
         error: {
           code: "SERVICE_NOT_READY",
           message: "Service runtime configuration is incomplete or invalid.",
+        },
+        requestId,
+      }, 503);
+    }
+
+    if (isInfrastructureLimitExceeded(error)) {
+      return context.json({
+        error: {
+          code: "INFRASTRUCTURE_LIMIT_EXCEEDED",
+          message: "The service temporarily exceeded its external request capacity.",
         },
         requestId,
       }, 503);
