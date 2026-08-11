@@ -2,45 +2,102 @@
 
 `beauty-management-api` uses PostgreSQL/Supabase as the production persistence adapter. In-memory repositories are empty test doubles only; demo/business data is stored by PostgreSQL seeds and is never loaded into Worker memory.
 
-## Environment variables
+## Configuration model
 
-| Variable | Purpose | Secret |
-| --- | --- | --- |
-| `SPIdBD` | Supabase project reference/id | no |
-| `SBNameDB` | PostgreSQL database name, normally `postgres` | no |
-| `DATABASE_URL` | Preferred exact Transaction Pooler URI copied from Supabase Connect | **yes** |
-| `SBDatabaseHost` | Exact Transaction Pooler host when decomposed config is used | no |
-| `SBDatabasePort` | Pooler port, normally `6543` | no |
-| `SBDatabaseUser` | Pooler user, normally `postgres.<project-ref>` | no |
-| `SPRegionDB` | Legacy host-derivation fallback only | no |
-| `SPPasswordDB` | PostgreSQL database password | **yes** |
-| `ApiKeySupaBase` | Supabase publishable/anon API key used by Auth token verification | **yes** |
+Runtime database access, migration tooling and Supabase Auth are separate concerns.
 
-`ApiKeySupaBase` is not a PostgreSQL password and cannot be used in the PostgreSQL connection string.
+### Worker runtime
 
-The runtime no longer uses `API_DEV_AUTH_ID`, `API_AUTH_MODE`, `API_DEV_AUTH_SUBJECT` or `API_DEV_TENANT_ID`.
-
-## Connections
-
-For Worker/serverless traffic, prefer the exact **Transaction Pooler** URI copied from Supabase Connect:
+Preferred production configuration:
 
 ```env
-DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<pooler-host>:6543/postgres?sslmode=require
+AUTHENTICATION_ENABLED=false
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<transaction-pooler-host>:6543/postgres?sslmode=require
 ```
 
-Do not derive the pooler hostname from region when the exact endpoint is available. `SBDatabaseHost`, `SBDatabasePort` and `SBDatabaseUser` are supported when the URI is supplied as decomposed values.
+`DATABASE_URL` is sufficient by itself for PostgreSQL access in the Worker. The runtime does not require `SPIdBD`, `SBNameDB` or `SPPasswordDB` when an explicit URL is present.
 
-Migrations default to the direct PostgreSQL endpoint:
+The alternative decomposed form is supported when a single URI is not desired:
+
+```env
+SBDatabaseHost=<exact transaction pooler host>
+SBDatabasePort=6543
+SBDatabaseUser=postgres.<project-ref>
+SBNameDB=postgres
+SPPasswordDB=<database password>
+```
+
+No pooler hostname is inferred from `SPRegionDB`. Use the exact endpoint supplied by Supabase.
+
+### Migration and seed tooling
+
+Migrations are intentionally independent from the Worker runtime. Prefer an explicit direct connection:
+
+```env
+MIGRATION_DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require
+```
+
+If `MIGRATION_DATABASE_URL` is not provided, `scripts/database.mjs` builds the direct connection from:
+
+```env
+SPIdBD=<project-ref>
+SBNameDB=postgres
+SPPasswordDB=<database password>
+# optional:
+# SBMigrationHost=
+# SBMigrationPort=5432
+# SBMigrationUser=postgres
+```
+
+The legacy `SPDatabaseConnectionMode` runtime-switch and `SPRegionDB` pooler-host derivation are not used by the database runner.
+
+### Supabase Auth
+
+Authentication remains disabled for the current MVP stage:
+
+```env
+AUTHENTICATION_ENABLED=false
+```
+
+When authentication is enabled in the future, configure Auth separately:
+
+```env
+AUTHENTICATION_ENABLED=true
+SPIdBD=<project-ref>
+ApiKeySupaBase=<publishable/anon key>
+```
+
+`ApiKeySupaBase` is not a PostgreSQL password and is never used to create the SQL connection.
+
+## Cloudflare variables and secrets
+
+For the current pre-auth runtime, only two settings are conceptually required:
 
 ```text
-postgresql://postgres:<SPPasswordDB>@db.<SPIdBD>.supabase.co:5432/<SBNameDB>?sslmode=require
+AUTHENTICATION_ENABLED=false     regular variable
+DATABASE_URL                     secret
 ```
 
-`MIGRATION_DATABASE_URL`, `SBMigrationHost`, `SBMigrationPort` and `SBMigrationUser` can override that endpoint. `SPDatabaseConnectionMode=runtime` makes the database runner use the transaction-pooler configuration when direct connectivity is unavailable.
+If the decomposed database configuration is used, only the password must be secret; host, port, user and database name may be normal Worker variables.
+
+Do not commit real passwords or connection strings.
 
 ## Tenant resolution
 
-Authenticated requests do **not** trust a tenant from the frontend/BFF. The optional `x-tenant-id` header is only a selector hint.
+While authentication is disabled, the internal workspace bootstrap loads tenant, operational role and professional options directly from PostgreSQL. Request selectors are validated server-side before creating an `ExecutionContext`.
+
+```text
+GET /v1/bootstrap/workspace
+  -> PostgreSQL
+  -> app.tenants
+  -> identity.roles
+  -> app.professionals
+  -> workspace catalog
+```
+
+Tenant-scoped operations continue to set the resolved tenant in the PostgreSQL transaction context and RLS. Frontend/BFF selectors are never treated as database authority.
+
+When authentication is enabled later, the resolver switches to membership/RBAC identity:
 
 ```text
 Bearer token
@@ -56,18 +113,7 @@ Bearer token
   -> RLS
 ```
 
-Rules:
-
-- one active operational membership: tenant may be resolved automatically;
-- multiple active operational memberships: `TENANT_SELECTION_REQUIRED` until one is selected;
-- invalid selector: `TENANT_SELECTION_INVALID`;
-- membership missing/inactive: access denied;
-- suspended/closed tenant: visible in `/v1/me/tenants`, but not selectable for normal operations;
-- the resolved database tenant is the only value propagated into `ExecutionContext` and RLS.
-
-Professional memberships are mapped through `identity.professional_memberships`. The `professionalId` resolved by the backend scopes `GET /v1/me/appointments`, linked clients, assessments, technical records, follow-ups and session mutations.
-
-Public requests are separate from authenticated membership resolution. `/v1/public/:slug/*` resolves `app.tenants.public_slug` directly in PostgreSQL and exposes only operational public tenants (`active`/`trial`).
+Public requests remain separate and resolve `app.tenants.public_slug` directly in PostgreSQL.
 
 ## Local setup
 
@@ -90,27 +136,24 @@ npm run db:setup
 
 `db:setup` executes migrations, deterministic seeds, seed contracts and RLS/constraint security contracts. Migrations are tracked in `public.schema_migrations`.
 
-## Cloudflare configuration
+## Health and readiness
 
-Keep connection URIs, database passwords and API credentials as Worker secrets. At minimum:
+`GET /health` and `GET /v1/health` are liveness checks.
 
-```bash
-npx wrangler secret put SPPasswordDB
-npx wrangler secret put ApiKeySupaBase
-```
+`GET /health/ready` validates runtime database configuration before connecting. It reports:
 
-If `DATABASE_URL` is used, configure it as a secret as well. `SPIdBD`, `SBNameDB` and non-sensitive decomposed endpoint metadata can be regular Worker variables.
+- `status=ready`, `configuration=valid`, `database=connected` when the Worker can query PostgreSQL;
+- `status=not_ready`, `configuration=invalid`, `database=not_tested` when runtime configuration is missing/invalid;
+- `status=not_ready`, `configuration=valid`, `database=unavailable` when configuration exists but PostgreSQL cannot be reached.
 
-## Health
-
-`GET /health` and `GET /v1/health` are liveness checks. `GET /health/ready` verifies PostgreSQL connectivity and reads the latest tracked migration; it returns `503` when the database is unavailable.
+Sensitive values are never returned by readiness responses.
 
 ## Runtime architecture
 
 ```text
 HTTP/BFF
-  -> Supabase Auth
-  -> database-backed TenantContext resolution
+  -> pre-auth workspace context (current stage)
+  -> database-backed tenant resolution
   -> Business API / Administration API
   -> application use cases
   -> repository / UnitOfWork ports
