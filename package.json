@@ -25,8 +25,8 @@
     "db:check": "node scripts/database.mjs check",
     "db:migrate": "node scripts/database.mjs migrate",
     "db:seed": "node scripts/database.mjs seed",
+    "db:seed:check": "node scripts/database.mjs seed-check",
     "db:setup": "node scripts/database.mjs setup",
-    "db:seed:check": "psql --set=ON_ERROR_STOP=1 --file database/tests/demo_seed_smoke.sql",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
   },
   "dependencies": {
