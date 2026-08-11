@@ -8,24 +8,38 @@ import { registerPackageRoutes } from "@/api/package-routes";
 import { registerTenantContextRoutes } from "@/api/tenant-context-routes";
 import { registerTenantExperienceRoutes } from "@/api/tenant-experience-routes";
 import { registerWorkspaceRoutes } from "@/api/workspace-routes";
-import { getSqlClient } from "@/config/dependencies";
+import { getRuntimeDataSource, getSqlClient } from "@/config/dependencies";
 import { readDatabaseRuntimeConfig, RuntimeConfigurationError } from "@/config/supabase-config";
 
 const app = new Hono();
 
-const healthPayload = {
+app.get("/health", (context) => context.json({
   service: "beauty-management-api",
   status: "ok",
   businessApiMigration: "domain-and-transactional-rules",
-  persistence: "postgresql",
-  tenancy: "database-resolved",
+  persistence: getRuntimeDataSource(),
+  tenancy: getRuntimeDataSource() === "memory" ? "fallback-memory" : "database-resolved",
   apiBasePath: "/v1",
-};
-
-app.get("/health", (context) => context.json(healthPayload));
-app.get("/v1/health", (context) => context.json(healthPayload));
+}));
+app.get("/v1/health", (context) => context.json({
+  service: "beauty-management-api",
+  status: "ok",
+  persistence: getRuntimeDataSource(),
+  apiBasePath: "/v1",
+}));
 app.get("/health/ready", async (context) => {
   const requestId = context.req.header("x-request-id") ?? crypto.randomUUID();
+
+  if (getRuntimeDataSource() === "memory") {
+    return context.json({
+      service: "beauty-management-api",
+      status: "ready",
+      configuration: "valid",
+      database: "disabled",
+      dataSource: "memory",
+      fallbackDataset: "bella-estetica-demo",
+    });
+  }
 
   try {
     const runtimeConfig = readDatabaseRuntimeConfig();
@@ -40,6 +54,7 @@ app.get("/health/ready", async (context) => {
       configuration: "valid",
       database: "connected",
       databaseSource: runtimeConfig.source,
+      dataSource: "postgres",
       databaseName: result.rows[0]?.database,
       migration: result.rows[0]?.migration ?? "untracked",
     });
