@@ -55,8 +55,9 @@ export function getSqlClient(): SqlClient {
   const factory = new PostgresJsSqlClientFactory(postgres as unknown as PostgresJsFactory, {
     max: 1,
     prepare: false,
-    idle_timeout: 20,
-    connect_timeout: 10,
+    fetch_types: false,
+    idle_timeout: 10,
+    connect_timeout: 5,
   });
   sqlClientSingleton = factory.create(config.runtimeConnectionString);
   return sqlClientSingleton;
