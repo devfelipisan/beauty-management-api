@@ -3,30 +3,31 @@
 # true: Supabase Auth + membership/RBAC are required.
 AUTHENTICATION_ENABLED=false
 
-# Supabase project/database configuration
-SPIdBD=zkzzptgbiwsxinzmfvss
-SBNameDB=postgres
-
-# Preferred Worker runtime connection: copy the Transaction Pooler URI from Supabase > Connect.
-# Keep the password percent-encoded when embedding it directly in this URI.
+# Worker runtime database connection.
+# Preferred: copy the exact Transaction Pooler URI from Supabase > Connect.
+# DATABASE_URL is sufficient by itself for runtime PostgreSQL access.
 DATABASE_URL=
 
-# Alternative decomposed pooler configuration when DATABASE_URL is not used.
-SBDatabaseHost=
-SBDatabasePort=6543
-SBDatabaseUser=postgres.zkzzptgbiwsxinzmfvss
-SPRegionDB=
+# Optional alternative when DATABASE_URL is not used.
+# No hostname is inferred from region; use the exact pooler endpoint.
+# SBDatabaseHost=
+# SBDatabasePort=6543
+# SBDatabaseUser=postgres.zkzzptgbiwsxinzmfvss
+# SBNameDB=postgres
+# SPPasswordDB=
 
-# Direct migration connection. Defaults to db.<SPIdBD>.supabase.co:5432 / user postgres.
-# MIGRATION_DATABASE_URL=
+# Migration/seed tooling is separate from the Worker runtime.
+# Preferred: direct PostgreSQL connection string used only by scripts/database.mjs.
+MIGRATION_DATABASE_URL=
+
+# Optional decomposed migration configuration when MIGRATION_DATABASE_URL is not used.
+# SPIdBD=zkzzptgbiwsxinzmfvss
+# SBNameDB=postgres
+# SPPasswordDB=
 # SBMigrationHost=db.zkzzptgbiwsxinzmfvss.supabase.co
 # SBMigrationPort=5432
 # SBMigrationUser=postgres
 
-# Secrets - never commit real values.
-SPPasswordDB=
-# Required only when AUTHENTICATION_ENABLED=true.
-ApiKeySupaBase=
-
-# Optional local migration tooling mode:
-# SPDatabaseConnectionMode=runtime
+# Supabase Auth only. Required only when AUTHENTICATION_ENABLED=true.
+# SPIdBD=zkzzptgbiwsxinzmfvss
+# ApiKeySupaBase=
