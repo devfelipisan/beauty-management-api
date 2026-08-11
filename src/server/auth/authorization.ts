@@ -38,7 +38,7 @@ export class AuthorizationError extends DomainError {
 
 function assertUuid(value: string, field: string): string {
   const normalized = value.trim().toLowerCase();
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(normalized)) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(normalized)) {
     throw new DomainError("TENANT_SELECTION_INVALID", `${field} must be a valid UUID.`, { field });
   }
   return normalized;
