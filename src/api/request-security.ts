@@ -12,16 +12,20 @@ export function readTenantSelection(request: Request): string | undefined {
 export function createApiExecutionContext(
   request: Request,
   operation: string,
-  access?: Pick<TenantAccess, "tenantId" | "actorId" | "membershipId" | "professionalId">,
+  accessOrTenantId?: Pick<TenantAccess, "tenantId" | "actorId" | "membershipId" | "professionalId"> | string,
+  actorId?: string,
 ) {
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
+  const access = typeof accessOrTenantId === "string"
+    ? { tenantId: accessOrTenantId, actorId }
+    : accessOrTenantId;
   return createExecutionContext(operation, {
     requestId,
     correlationId: request.headers.get("x-correlation-id") ?? requestId,
     tenantId: access?.tenantId,
     actorId: access?.actorId,
-    membershipId: access?.membershipId,
-    professionalId: access?.professionalId,
+    membershipId: access && "membershipId" in access ? access.membershipId : undefined,
+    professionalId: access && "professionalId" in access ? access.professionalId : undefined,
     source: "api",
   });
 }
