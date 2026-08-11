@@ -9,6 +9,7 @@ import type { AuditEvent, AuditQuery } from "@/shared/audit/audit";
 import type { Appointment, Customer, Deposit, Payment, Professional, Service, Session, Tenant } from "@/shared/domain/models";
 import type { IdempotencyRecord } from "@/shared/idempotency/idempotency";
 import type { OutboxEvent } from "@/shared/outbox/outbox";
+import { createMemoryVolumeSeed } from "./memory-volume-seed";
 
 interface MemoryState {
   tenants: Tenant[];
@@ -27,37 +28,7 @@ interface MemoryState {
 }
 
 function seedState(): MemoryState {
-  const createdAt = "2026-08-09T12:00:00.000Z";
-  return {
-    tenants: [
-      { id: "tenant-bella", legalName: "Bella Estetica LTDA", displayName: "Clínica Bella", document: "12345678000199", timezone: "America/Sao_Paulo", status: "active", createdAt },
-      { id: "tenant-ink", legalName: "Ink Studio LTDA", displayName: "Ink Studio", document: "98765432000199", timezone: "America/Sao_Paulo", status: "active", createdAt },
-    ],
-    tenantBranding: [
-      { tenantId: "tenant-bella", primaryColor: "#a44f67", secondaryColor: "#c88698", updatedAt: createdAt },
-      { tenantId: "tenant-ink", primaryColor: "#202124", secondaryColor: "#6f42c1", updatedAt: createdAt },
-    ],
-    professionals: [
-      { id: "professional-ana", tenantId: "tenant-bella", displayName: "Ana Martins", specialty: "Estética e laser", serviceIds: ["service-laser-face"], active: true, createdAt },
-      { id: "professional-ink", tenantId: "tenant-ink", displayName: "Rafael Ink", specialty: "Tatuagem", serviceIds: ["service-tattoo"], active: true, createdAt },
-    ],
-    services: [
-      { id: "service-laser-face", tenantId: "tenant-bella", name: "Depilação a laser - Face", category: "laser", durationMinutes: 30, priceCents: 12000, active: true, professionalIds: ["professional-ana"], deposit: { required: true, type: "percentage", value: 20 }, assessmentRequired: false, createdAt },
-      { id: "service-tattoo", tenantId: "tenant-ink", name: "Tatuagem autoral", category: "tatuagem", durationMinutes: 120, priceCents: 45000, active: true, professionalIds: ["professional-ink"], deposit: { required: true, type: "percentage", value: 30 }, assessmentRequired: true, createdAt },
-    ],
-    customers: [
-      { id: "customer-mariana", tenantId: "tenant-bella", fullName: "Mariana Oliveira", phone: "22999990001", email: "mariana@example.com", status: "active", relationshipProfile: "new", createdAt, updatedAt: createdAt },
-      { id: "customer-ink", tenantId: "tenant-ink", fullName: "Cliente Ink", phone: "22999990099", status: "active", relationshipProfile: "new", createdAt, updatedAt: createdAt },
-    ],
-    appointments: [],
-    deposits: [],
-    sessions: [],
-    payments: [],
-    leads: [],
-    audit: [],
-    outbox: [],
-    idempotency: [],
-  };
+  return createMemoryVolumeSeed();
 }
 
 function activeAppointment(status: Appointment["status"]): boolean {
