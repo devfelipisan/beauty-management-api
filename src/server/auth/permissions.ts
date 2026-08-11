@@ -135,7 +135,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Readonly<Record<SystemRoleCode, readonly 
     Permissions.AssessmentCreate,
     Permissions.AppointmentReadOwn,
     Permissions.EquipmentRead,
-    Permissions.PackageRead,
     Permissions.SessionStart,
     Permissions.SessionComplete,
     Permissions.TechnicalRecordRead,
