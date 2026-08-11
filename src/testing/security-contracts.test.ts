@@ -8,6 +8,11 @@ import {
   type OperationalTenantContext,
   type OperationalTenantContextRepository,
 } from "../modules/tenants/application/resolve-operational-tenant-context.ts";
+import {
+  WorkspaceContextResolver,
+  type WorkspaceCatalog,
+  type WorkspaceContextRepository,
+} from "../modules/workspace/application/workspace-context.ts";
 import { AuthorizationError, AuthorizationService, type AccessControlRepository, type TenantAccess } from "../server/auth/authorization.ts";
 import { Permissions } from "../server/auth/permissions.ts";
 import { ContractValidationError } from "../shared/contracts/runtime-schema.ts";
@@ -15,6 +20,7 @@ import { DomainError } from "../shared/domain/core.ts";
 
 const TEST_TENANT = "00000000-0000-0000-0000-000000000001";
 const OTHER_TENANT = "00000000-0000-0000-0000-000000000002";
+const TEST_PROFESSIONAL = "00000000-0000-0000-0000-000000000101";
 
 test("runtime DTO validation rejects missing required fields and unexpected properties", () => {
   assert.throws(
@@ -61,6 +67,54 @@ test("operational tenant context is always resolved through its repository", asy
   await assert.rejects(
     () => resolver.execute("tenant-bella"),
     (error) => error instanceof DomainError && error.code === "TENANT_SELECTION_INVALID",
+  );
+});
+
+test("pre-auth workspace resolves tenant, role and professional from repository data", async () => {
+  const catalog: WorkspaceCatalog = {
+    tenants: [
+      {
+        id: TEST_TENANT,
+        displayName: "Bella",
+        publicSlug: "bella",
+        status: "active",
+        roles: [
+          { code: "administrator", label: "Administrador" },
+          { code: "reception", label: "Recepção" },
+          {
+            code: "professional",
+            label: "Profissional",
+            professionals: [{ id: TEST_PROFESSIONAL, displayName: "Ana" }],
+          },
+        ],
+      },
+    ],
+  };
+  const repository: WorkspaceContextRepository = {
+    listCatalog: async () => catalog,
+    findTenant: async (tenantId) => catalog.tenants.find((tenant) => tenant.id === tenantId) ?? null,
+  };
+  const resolver = new WorkspaceContextResolver(repository);
+
+  assert.equal((await resolver.resolve({ tenantId: TEST_TENANT, role: "reception" })).role, "reception");
+  const professional = await resolver.resolve({
+    tenantId: TEST_TENANT,
+    role: "professional",
+    professionalId: TEST_PROFESSIONAL,
+  });
+  assert.equal(professional.professionalId, TEST_PROFESSIONAL);
+
+  await assert.rejects(
+    () => resolver.resolve({ tenantId: TEST_TENANT }),
+    (error) => error instanceof DomainError && error.code === "WORKSPACE_ROLE_REQUIRED",
+  );
+  await assert.rejects(
+    () => resolver.resolve({ tenantId: TEST_TENANT, role: "professional" }),
+    (error) => error instanceof DomainError && error.code === "PROFESSIONAL_CONTEXT_REQUIRED",
+  );
+  await assert.rejects(
+    () => resolver.resolve({ tenantId: "tenant-bella", role: "reception" }),
+    (error) => error instanceof DomainError && error.code === "WORKSPACE_SELECTION_INVALID",
   );
 });
 

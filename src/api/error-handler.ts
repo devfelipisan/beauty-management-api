@@ -27,7 +27,16 @@ function isForbiddenDomainCode(code: string): boolean {
     || code.includes("MEMBERSHIP")
     || code === "TENANT_SUSPENDED"
     || code === "TENANT_CLOSED"
-    || code === "PROFESSIONAL_CONTEXT_REQUIRED";
+    || code === "PROFESSIONAL_CONTEXT_REQUIRED"
+    || code === "PROFESSIONAL_CONTEXT_INVALID"
+    || code === "WORKSPACE_ROLE_UNAVAILABLE";
+}
+
+function isBadRequestDomainCode(code: string): boolean {
+  return code === "TENANT_SELECTION_REQUIRED"
+    || code === "TENANT_SELECTION_INVALID"
+    || code === "WORKSPACE_SELECTION_INVALID"
+    || code === "WORKSPACE_ROLE_REQUIRED";
 }
 
 export function registerApiErrorHandler(app: Hono) {
@@ -44,7 +53,7 @@ export function registerApiErrorHandler(app: Hono) {
     if (error instanceof DomainError) {
       const payload = { error: { code: error.code, message: error.message, details: error.details }, requestId };
       if (error.code === "NOT_FOUND") return context.json(payload, 404);
-      if (error.code === "TENANT_SELECTION_REQUIRED" || error.code === "TENANT_SELECTION_INVALID") return context.json(payload, 400);
+      if (isBadRequestDomainCode(error.code)) return context.json(payload, 400);
       if (isForbiddenDomainCode(error.code)) return context.json(payload, 403);
       return context.json(payload, 409);
     }
