@@ -54,6 +54,12 @@ async function seed(sql) {
   }
 }
 
+async function validateSeed(sql) {
+  const file = resolve("database/tests/demo_seed_smoke.sql");
+  console.log("[seed-check] demo_seed_smoke.sql");
+  await sql.unsafe(await readFile(file, "utf8"));
+}
+
 const command = process.argv[2] ?? "migrate";
 const mode = process.env.SPDatabaseConnectionMode === "runtime" ? "runtime" : "migration";
 const db = postgres(connectionString(mode), { max: 1, prepare: false, connect_timeout: 15, idle_timeout: 5 });
@@ -61,7 +67,8 @@ const db = postgres(connectionString(mode), { max: 1, prepare: false, connect_ti
 try {
   if (command === "migrate") await migrate(db);
   else if (command === "seed") await seed(db);
-  else if (command === "setup") { await migrate(db); await seed(db); }
+  else if (command === "setup") { await migrate(db); await seed(db); await validateSeed(db); }
+  else if (command === "seed-check") await validateSeed(db);
   else if (command === "check") {
     const [row] = await db`select current_database() as database, current_user as user, now() as now`;
     console.log(JSON.stringify(row));
