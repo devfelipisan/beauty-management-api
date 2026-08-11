@@ -1,6 +1,7 @@
 import { createEntityId } from "@/shared/domain/core";
 
 export type ExecutionSource = "web" | "api" | "worker" | "job" | "test";
+export type WorkspaceRole = "administrator" | "reception" | "professional";
 
 export interface ExecutionContext {
   requestId: string;
@@ -9,6 +10,7 @@ export interface ExecutionContext {
   actorId?: string;
   membershipId?: string;
   professionalId?: string;
+  workspaceRole?: WorkspaceRole;
   source: ExecutionSource;
   operation: string;
 }
@@ -18,6 +20,7 @@ export interface TenantContext {
   actorId?: string;
   membershipId?: string;
   professionalId?: string;
+  workspaceRole?: WorkspaceRole;
 }
 
 export function createExecutionContext(
@@ -32,6 +35,7 @@ export function createExecutionContext(
     actorId: overrides.actorId,
     membershipId: overrides.membershipId,
     professionalId: overrides.professionalId,
+    workspaceRole: overrides.workspaceRole,
     source: overrides.source ?? "web",
     operation,
   };
@@ -46,5 +50,6 @@ export function requireTenant(context: ExecutionContext): TenantContext {
     actorId: context.actorId,
     membershipId: context.membershipId,
     professionalId: context.professionalId,
+    workspaceRole: context.workspaceRole,
   };
 }
