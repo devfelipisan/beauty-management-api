@@ -31,7 +31,9 @@ import { CreateTechnicalRecordUseCase } from "@/modules/technical-records/applic
 import { UpdateTenantBrandingUseCase } from "@/modules/tenant-branding/application/update-tenant-branding";
 import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
 import { CreateTenantUseCase } from "@/modules/tenants/application/create-tenant";
+import { ResolveOperationalTenantContextUseCase } from "@/modules/tenants/application/resolve-operational-tenant-context";
 import { ResolvePublicTenantContextUseCase } from "@/modules/tenants/application/resolve-public-tenant-context";
+import { PostgresOperationalTenantContextRepository } from "@/modules/tenants/infrastructure/postgres-operational-tenant-context.repository";
 import { PostgresPublicTenantContextRepository } from "@/modules/tenants/infrastructure/postgres-public-tenant-context.repository";
 import { CreateTenantUserUseCase, UpdateTenantUserUseCase } from "@/modules/users/application/manage-users";
 import { SupabaseAuthVerifier, type AuthVerifier } from "@/server/auth/authentication";
@@ -45,6 +47,7 @@ let sqlClientSingleton: SqlClient | null = null;
 let postgresRuntimeSingleton: ReturnType<typeof createPostgresRuntime> | null = null;
 let authorizationSingleton: AuthorizationService | null = null;
 let publicTenantResolverSingleton: ResolvePublicTenantContextUseCase | null = null;
+let operationalTenantResolverSingleton: ResolveOperationalTenantContextUseCase | null = null;
 
 export function getSqlClient(): SqlClient {
   if (sqlClientSingleton) return sqlClientSingleton;
@@ -71,6 +74,14 @@ export function getAuthorizationService(): AuthorizationService {
   return authorizationSingleton;
 }
 
+export function getOperationalTenantResolver(): ResolveOperationalTenantContextUseCase {
+  if (operationalTenantResolverSingleton) return operationalTenantResolverSingleton;
+  operationalTenantResolverSingleton = new ResolveOperationalTenantContextUseCase(
+    new PostgresOperationalTenantContextRepository(getSqlClient()),
+  );
+  return operationalTenantResolverSingleton;
+}
+
 export function getPublicTenantResolver(): ResolvePublicTenantContextUseCase {
   if (publicTenantResolverSingleton) return publicTenantResolverSingleton;
   publicTenantResolverSingleton = new ResolvePublicTenantContextUseCase(new PostgresPublicTenantContextRepository(getSqlClient()));
@@ -80,6 +91,7 @@ export function getPublicTenantResolver(): ResolvePublicTenantContextUseCase {
 export function getAuthVerifier(): AuthVerifier {
   if (authVerifierSingleton) return authVerifierSingleton;
   const config = readSupabaseDatabaseConfig();
+  if (!config.apiKey) throw new Error("ApiKeySupaBase is required when AUTHENTICATION_ENABLED=true.");
   authVerifierSingleton = new SupabaseAuthVerifier(config.supabaseUrl, config.apiKey);
   return authVerifierSingleton;
 }

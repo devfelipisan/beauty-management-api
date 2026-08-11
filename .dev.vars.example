@@ -1,3 +1,8 @@
+# Authentication is not part of the current MVP stage.
+# false (default): tenant-scoped API works without Bearer token, but tenant is still resolved in PostgreSQL.
+# true: Supabase Auth + membership/RBAC are required.
+AUTHENTICATION_ENABLED=false
+
 # Supabase project/database configuration
 SPIdBD=zkzzptgbiwsxinzmfvss
 SBNameDB=postgres
@@ -7,27 +12,21 @@ SBNameDB=postgres
 DATABASE_URL=
 
 # Alternative decomposed pooler configuration when DATABASE_URL is not used.
-# Prefer the exact host/user shown by Supabase Connect instead of deriving them from the region.
 SBDatabaseHost=
 SBDatabasePort=6543
 SBDatabaseUser=postgres.zkzzptgbiwsxinzmfvss
-# Legacy fallback only when SBDatabaseHost is absent.
 SPRegionDB=
 
 # Direct migration connection. Defaults to db.<SPIdBD>.supabase.co:5432 / user postgres.
-# Override only when the environment needs a different endpoint.
 # MIGRATION_DATABASE_URL=
 # SBMigrationHost=db.zkzzptgbiwsxinzmfvss.supabase.co
 # SBMigrationPort=5432
 # SBMigrationUser=postgres
 
 # Secrets - never commit real values.
-# PostgreSQL database password. An API key cannot replace this credential.
 SPPasswordDB=
-# Supabase publishable/anon API key used only for Auth token verification.
+# Required only when AUTHENTICATION_ENABLED=true.
 ApiKeySupaBase=
 
 # Optional local migration tooling mode:
-# default = direct migration endpoint
-# runtime = DATABASE_URL / Transaction Pooler endpoint
 # SPDatabaseConnectionMode=runtime

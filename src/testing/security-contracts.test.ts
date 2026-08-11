@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { parseBusinessCommandInput } from "../api/contracts.ts";
+import { readAuthenticationPolicy } from "../config/authentication-policy.ts";
+import { createMemoryRuntime } from "../infrastructure/memory/memory-runtime.ts";
+import {
+  ResolveOperationalTenantContextUseCase,
+  type OperationalTenantContext,
+  type OperationalTenantContextRepository,
+} from "../modules/tenants/application/resolve-operational-tenant-context.ts";
 import { AuthorizationError, AuthorizationService, type AccessControlRepository, type TenantAccess } from "../server/auth/authorization.ts";
 import { Permissions } from "../server/auth/permissions.ts";
 import { ContractValidationError } from "../shared/contracts/runtime-schema.ts";
 import { DomainError } from "../shared/domain/core.ts";
-import { createMemoryRuntime } from "../infrastructure/memory/memory-runtime.ts";
 
 const TEST_TENANT = "00000000-0000-0000-0000-000000000001";
 const OTHER_TENANT = "00000000-0000-0000-0000-000000000002";
@@ -25,6 +31,37 @@ test("runtime DTO validation normalizes trimmed strings", () => {
   const parsed = parseBusinessCommandInput("customer.create", { fullName: "  Maria Silva  ", phone: " 22999999999 " }) as { fullName: string; phone: string };
   assert.equal(parsed.fullName, "Maria Silva");
   assert.equal(parsed.phone, "22999999999");
+});
+
+test("authentication gate is disabled by default and can be explicitly enabled", () => {
+  assert.equal(readAuthenticationPolicy({} as NodeJS.ProcessEnv).enabled, false);
+  assert.equal(readAuthenticationPolicy({ AUTHENTICATION_ENABLED: "true" } as NodeJS.ProcessEnv).enabled, true);
+  assert.equal(readAuthenticationPolicy({ AUTHENTICATION_ENABLED: "false" } as NodeJS.ProcessEnv).enabled, false);
+  assert.throws(() => readAuthenticationPolicy({ AUTHENTICATION_ENABLED: "invalid" } as NodeJS.ProcessEnv));
+});
+
+test("operational tenant context is always resolved through its repository", async () => {
+  const tenant = (id: string, status: OperationalTenantContext["status"] = "active"): OperationalTenantContext => ({
+    tenantId: id,
+    displayName: id,
+    status,
+  });
+  const tenants = [tenant(TEST_TENANT), tenant(OTHER_TENANT)];
+  const repository: OperationalTenantContextRepository = {
+    findById: async (tenantId) => tenants.find((item) => item.tenantId === tenantId) ?? null,
+    listOperational: async () => tenants.filter((item) => item.status === "active" || item.status === "trial"),
+  };
+  const resolver = new ResolveOperationalTenantContextUseCase(repository);
+
+  assert.equal((await resolver.execute(TEST_TENANT)).tenantId, TEST_TENANT);
+  await assert.rejects(
+    () => resolver.execute(),
+    (error) => error instanceof DomainError && error.code === "TENANT_SELECTION_REQUIRED",
+  );
+  await assert.rejects(
+    () => resolver.execute("tenant-bella"),
+    (error) => error instanceof DomainError && error.code === "TENANT_SELECTION_INVALID",
+  );
 });
 
 test("tenant membership and RBAC authorize only a database-resolved tenant context", async () => {

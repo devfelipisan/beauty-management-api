@@ -3,7 +3,7 @@ export interface SupabaseDatabaseConfig {
   projectId: string;
   databaseName: string;
   databasePassword: string;
-  apiKey: string;
+  apiKey?: string;
   supabaseUrl: string;
   runtimeConnectionString: string;
   migrationConnectionString: string;
@@ -40,25 +40,12 @@ function normalizeConnectionString(value: string): string {
   return trimmed;
 }
 
-/**
- * Supabase configuration owned by the API infrastructure layer.
- *
- * Preferred runtime configuration:
- * - DATABASE_URL: exact Transaction Pooler URI copied from Supabase Connect.
- *
- * Compatible decomposed configuration:
- * - SBDatabaseHost: exact Transaction Pooler host copied from Supabase Connect;
- * - SPRegionDB: legacy fallback used only when SBDatabaseHost/DATABASE_URL are absent;
- * - SPIdBD: Supabase project reference/id;
- * - SBNameDB: PostgreSQL database name (normally postgres);
- * - SPPasswordDB: PostgreSQL password;
- * - ApiKeySupaBase: Supabase API key used for Auth verification, never as DB password.
- */
+/** PostgreSQL configuration is independent from whether user authentication is enabled. */
 export function readSupabaseDatabaseConfig(env: NodeJS.ProcessEnv = process.env): SupabaseDatabaseConfig {
   const projectId = required(env, "SPIdBD");
   const databaseName = required(env, "SBNameDB");
   const databasePassword = required(env, "SPPasswordDB");
-  const apiKey = required(env, "ApiKeySupaBase");
+  const apiKey = optional(env, "ApiKeySupaBase");
   const region = optional(env, "SPRegionDB");
   const explicitRuntimeUrl = optional(env, "DATABASE_URL");
   const explicitPoolerHost = optional(env, "SBDatabaseHost");

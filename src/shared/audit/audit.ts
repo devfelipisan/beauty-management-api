@@ -51,10 +51,11 @@ export function createAuditEvent(
     actorType?: AuditEvent["actor"]["type"];
   },
 ): AuditEvent {
+  const actorType = input.actorType ?? (context.actorId ? "user" : "system");
   return {
     id: createEntityId(),
     tenantId: input.tenantId ?? context.tenantId ?? null,
-    actor: { type: input.actorType ?? "user", id: context.actorId },
+    actor: { type: actorType, id: context.actorId },
     action: input.action,
     resource: input.resource,
     requestId: context.requestId,
