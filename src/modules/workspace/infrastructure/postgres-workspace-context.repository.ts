@@ -40,6 +40,36 @@ function label(role: WorkspaceRole): string {
   return "Profissional";
 }
 
+function groupProfessionals(rows: ProfessionalRow[]): Map<string, WorkspaceProfessionalOption[]> {
+  const professionalsByTenant = new Map<string, WorkspaceProfessionalOption[]>();
+  for (const row of rows) {
+    const items = professionalsByTenant.get(row.tenant_id) ?? [];
+    items.push({ id: row.id, displayName: row.display_name, specialty: row.specialty ?? undefined });
+    professionalsByTenant.set(row.tenant_id, items);
+  }
+  return professionalsByTenant;
+}
+
+function groupRoles(
+  rows: RoleRow[],
+  professionalsByTenant: Map<string, WorkspaceProfessionalOption[]>,
+): Map<string, WorkspaceRoleOption[]> {
+  const rolesByTenant = new Map<string, WorkspaceRoleOption[]>();
+  for (const row of rows) {
+    const role = workspaceRole(row.code);
+    if (!role) continue;
+    const items = rolesByTenant.get(row.tenant_id) ?? [];
+    if (items.some((item) => item.code === role)) continue;
+    items.push({
+      code: role,
+      label: label(role),
+      professionals: role === "professional" ? professionalsByTenant.get(row.tenant_id) ?? [] : undefined,
+    });
+    rolesByTenant.set(row.tenant_id, items);
+  }
+  return rolesByTenant;
+}
+
 export class PostgresWorkspaceContextRepository implements WorkspaceContextRepository {
   constructor(private readonly sql: SqlClient) {}
 
@@ -65,30 +95,8 @@ export class PostgresWorkspaceContextRepository implements WorkspaceContextRepos
       ),
     ]);
 
-    const professionalsByTenant = new Map<string, WorkspaceProfessionalOption[]>();
-    for (const row of professionalsResult.rows) {
-      const items = professionalsByTenant.get(row.tenant_id) ?? [];
-      items.push({
-        id: row.id,
-        displayName: row.display_name,
-        specialty: row.specialty ?? undefined,
-      });
-      professionalsByTenant.set(row.tenant_id, items);
-    }
-
-    const rolesByTenant = new Map<string, WorkspaceRoleOption[]>();
-    for (const row of rolesResult.rows) {
-      const role = workspaceRole(row.code);
-      if (!role) continue;
-      const items = rolesByTenant.get(row.tenant_id) ?? [];
-      if (items.some((item) => item.code === role)) continue;
-      items.push({
-        code: role,
-        label: label(role),
-        professionals: role === "professional" ? professionalsByTenant.get(row.tenant_id) ?? [] : undefined,
-      });
-      rolesByTenant.set(row.tenant_id, items);
-    }
+    const professionalsByTenant = groupProfessionals(professionalsResult.rows);
+    const rolesByTenant = groupRoles(rolesResult.rows, professionalsByTenant);
 
     return {
       tenants: tenantsResult.rows.map((row) => ({
@@ -102,7 +110,43 @@ export class PostgresWorkspaceContextRepository implements WorkspaceContextRepos
   }
 
   async findTenant(tenantId: string): Promise<WorkspaceTenantOption | null> {
-    const catalog = await this.listCatalog();
-    return catalog.tenants.find((tenant) => tenant.id === tenantId) ?? null;
+    const [tenantResult, rolesResult, professionalsResult] = await Promise.all([
+      this.sql.query<TenantRow>(
+        `select id, display_name, public_slug, status
+         from app.tenants
+         where id = $1::uuid
+           and status in ('active','trial')
+         limit 1`,
+        [tenantId],
+      ),
+      this.sql.query<RoleRow>(
+        `select tenant_id, code
+         from identity.roles
+         where tenant_id = $1::uuid
+           and code in ('tenant_admin','reception','professional')
+         order by code`,
+        [tenantId],
+      ),
+      this.sql.query<ProfessionalRow>(
+        `select tenant_id, id, display_name, specialty
+         from app.professionals
+         where tenant_id = $1::uuid
+           and active = true
+         order by display_name, id`,
+        [tenantId],
+      ),
+    ]);
+
+    const row = tenantResult.rows[0];
+    if (!row) return null;
+    const professionalsByTenant = groupProfessionals(professionalsResult.rows);
+    const rolesByTenant = groupRoles(rolesResult.rows, professionalsByTenant);
+    return {
+      id: row.id,
+      displayName: row.display_name,
+      publicSlug: row.public_slug ?? undefined,
+      status: row.status,
+      roles: rolesByTenant.get(row.id) ?? [],
+    };
   }
 }
