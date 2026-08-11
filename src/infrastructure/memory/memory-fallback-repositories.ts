@@ -185,7 +185,7 @@ export class MemoryCommercialPolicyRepository implements CommercialPolicyReposit
   private readonly profiles: RelationshipProfileConfig[] = [];
   private readonly approvals: DiscountApproval[] = [];
 
-  async listRelationshipProfileConfigs(tenantId: string) { return this.profiles.filter((item) => item.tenantId === tenantId); }
+  async listRelationshipProfileConfigs(_tenantId: string) { return this.profiles.map((item) => ({ ...item })); }
   async listDiscountPolicies(tenantId: string) { return this.policies.filter((item) => item.tenantId === tenantId); }
   async listDiscountApprovals(tenantId: string) { return this.approvals.filter((item) => item.tenantId === tenantId); }
   async createDiscountPolicy(entity: DiscountPolicy) { this.policies.push(entity); return entity; }
