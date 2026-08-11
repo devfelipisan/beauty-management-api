@@ -4,7 +4,9 @@ The API is I/O-oriented. Increasing Worker CPU allowance is not a substitute for
 
 ## CPU budget
 
-`wrangler.jsonc` declares a 30,000 ms CPU ceiling for deployed Standard Usage Model environments. This is a guardrail, not a target. Local development does not enforce the Cloudflare runtime CPU limit.
+The production account currently runs on the Cloudflare Workers Free plan. Wrangler `limits.cpu_ms` is not supported on Free-plan deployments, so `wrangler.jsonc` intentionally does not declare a CPU limit. Adding `limits.cpu_ms` causes Cloudflare API error `100328` during `wrangler versions upload`.
+
+When the account is upgraded to a paid Standard Usage Model, an explicit CPU ceiling can be configured as a deployment guardrail. Until then, CPU usage must be monitored through Workers observability and optimized in code instead of declaring an unsupported limit.
 
 CPU time and wall-clock time must be interpreted separately. Time spent waiting on PostgreSQL/network I/O can make a request slow without consuming an equivalent amount of Worker CPU.
 
@@ -37,6 +39,6 @@ When workspace bootstrap latency rises:
 2. verify PostgreSQL/network latency;
 3. verify connection topology and pooling;
 4. inspect Worker CPU usage;
-5. increase CPU limits only when measured CPU work justifies it.
+5. configure or increase CPU limits only after upgrading to a paid Standard Usage Model and only when measured CPU work justifies it.
 
 Hyperdrive is the planned production connection layer after query/cardinality optimization. Runtime pooling and migration connections remain separate concerns.
