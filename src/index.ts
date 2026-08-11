@@ -7,6 +7,7 @@ import { registerExtractedContextRoutes } from "@/api/extracted-context-routes";
 import { registerPackageRoutes } from "@/api/package-routes";
 import { registerTenantContextRoutes } from "@/api/tenant-context-routes";
 import { registerTenantExperienceRoutes } from "@/api/tenant-experience-routes";
+import { registerWorkspaceRoutes } from "@/api/workspace-routes";
 import { getSqlClient } from "@/config/dependencies";
 
 const app = new Hono();
@@ -43,6 +44,7 @@ app.get("/health/ready", async (context) => {
   }
 });
 
+registerWorkspaceRoutes(app);
 registerBusinessRoutes(app);
 registerAdministrationRoutes(app);
 registerEquipmentRoutes(app);
