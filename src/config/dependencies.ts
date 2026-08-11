@@ -1,5 +1,6 @@
 import { AdministrationApi } from "@/api/administration-api";
 import { BusinessApi } from "@/api/business-api";
+import { createMemoryContextSeed } from "@/infrastructure/memory/memory-context-seed";
 import { MemoryAssessmentRepository, MemoryFollowUpRepository, MemoryTechnicalRecordRepository } from "@/infrastructure/memory/memory-extracted-context-repositories";
 import { createMemoryRuntime } from "@/infrastructure/memory/memory-runtime";
 import { CreateAssessmentUseCase } from "@/modules/assessments/application/create-assessment";
@@ -68,13 +69,14 @@ export function getAdministrationApi(): AdministrationApi {
 export function getBusinessApi(): BusinessApi {
   if (singleton) return singleton;
   const runtime = createMemoryRuntime();
-  const equipmentRepository = new MemoryEquipmentRepository();
-  const packageRepository = new MemoryPackageRepository();
-  const assessmentRepository = new MemoryAssessmentRepository();
-  const technicalRecordRepository = new MemoryTechnicalRecordRepository();
-  const followUpRepository = new MemoryFollowUpRepository();
+  const seed = createMemoryContextSeed();
+  const equipmentRepository = new MemoryEquipmentRepository(seed.equipment);
+  const packageRepository = new MemoryPackageRepository(seed.packages);
+  const assessmentRepository = new MemoryAssessmentRepository(seed.assessments);
+  const technicalRecordRepository = new MemoryTechnicalRecordRepository(seed.technicalRecords);
+  const followUpRepository = new MemoryFollowUpRepository(seed.followUps);
   const tenantSettingsRepository = new MemoryTenantSettingsRepository();
-  const landingPageRepository = new MemoryLandingPageRepository();
+  const landingPageRepository = new MemoryLandingPageRepository(seed.landingPages);
   const authorization = new AuthorizationService(runtime.accessControl);
   singleton = new BusinessApi({
     authorization,
