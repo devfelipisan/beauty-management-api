@@ -1,7 +1,7 @@
 import type { ExecutionContext } from "@/shared/application/execution-context";
 import type { UnitOfWork } from "@/shared/application/ports";
 import { AuditActions, createAuditEvent } from "@/shared/audit/audit";
-import { NotFoundError } from "@/shared/domain/core";
+import { ForbiddenError, NotFoundError } from "@/shared/domain/core";
 import { createOutboxEvent } from "@/shared/outbox/outbox";
 import { createAssessment, type Assessment, type AssessmentResult } from "../domain/assessment";
 import type { AssessmentRepository } from "../domain/assessment-repository";
@@ -22,6 +22,12 @@ export class CreateAssessmentUseCase {
     if (!context.tenantId) throw new Error("Tenant is required to create an assessment.");
     const tenantId = context.tenantId;
     return this.unitOfWork.execute(context, async (tx) => {
+      if (context.professionalId && input.professionalId !== context.professionalId) {
+        throw new ForbiddenError(
+          "PROFESSIONAL_ASSESSMENT_FORBIDDEN",
+          "A professional can create assessments only under their own professional profile.",
+        );
+      }
       const [customer, service, professional] = await Promise.all([
         tx.customers.findById(tenantId, input.customerId),
         tx.services.findById(tenantId, input.serviceId),
@@ -32,6 +38,18 @@ export class CreateAssessmentUseCase {
       if (!professional) throw new NotFoundError("professional", input.professionalId);
       if (!professional.serviceIds.includes(service.id) || !service.professionalIds.includes(professional.id)) {
         throw new NotFoundError("professional_service_qualification", `${professional.id}:${service.id}`);
+      }
+      if (context.professionalId) {
+        const linked = (await tx.appointments.list(tenantId)).some((appointment) =>
+          appointment.professionalId === context.professionalId && appointment.customerId === customer.id,
+        );
+        if (!linked) {
+          throw new ForbiddenError(
+            "PROFESSIONAL_CUSTOMER_FORBIDDEN",
+            "The customer is not linked to an appointment assigned to the authenticated professional.",
+            { customerId: customer.id },
+          );
+        }
       }
       const entity = createAssessment({ ...input, tenantId });
       await this.assessments.create(entity);
