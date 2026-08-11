@@ -1,5 +1,5 @@
 export interface SupabaseDatabaseConfig {
-  region: string;
+  region?: string;
   projectId: string;
   databaseName: string;
   databasePassword: string;
@@ -15,6 +15,10 @@ function required(env: NodeJS.ProcessEnv, name: string): string {
   return value;
 }
 
+function optional(env: NodeJS.ProcessEnv, name: string): string | undefined {
+  return env[name]?.trim() || undefined;
+}
+
 function connectionString(input: {
   host: string;
   port: number;
@@ -28,21 +32,53 @@ function connectionString(input: {
   return `postgresql://${user}:${password}@${input.host}:${input.port}/${database}?sslmode=require`;
 }
 
+function normalizeConnectionString(value: string): string {
+  const trimmed = value.trim();
+  if (!/^postgres(?:ql)?:\/\//i.test(trimmed)) {
+    throw new Error("DATABASE_URL must be a PostgreSQL connection string.");
+  }
+  return trimmed;
+}
+
 /**
  * Supabase configuration owned by the API infrastructure layer.
  *
- * SPRegionDB: Supabase/AWS region used by the shared Supavisor pooler (for example sa-east-1).
- * SPIdBD: Supabase project reference/id (for example zkzzptgbiwsxinzmfvss).
- * SBNameDB: PostgreSQL database name (normally postgres).
- * SPPasswordDB: PostgreSQL database password. This is intentionally distinct from ApiKeySupaBase.
- * ApiKeySupaBase: Supabase API key used to validate Auth access tokens, never as a DB password.
+ * Preferred runtime configuration:
+ * - DATABASE_URL: exact Transaction Pooler URI copied from Supabase Connect.
+ *
+ * Compatible decomposed configuration:
+ * - SBDatabaseHost: exact Transaction Pooler host copied from Supabase Connect;
+ * - SPRegionDB: legacy fallback used only when SBDatabaseHost/DATABASE_URL are absent;
+ * - SPIdBD: Supabase project reference/id;
+ * - SBNameDB: PostgreSQL database name (normally postgres);
+ * - SPPasswordDB: PostgreSQL password;
+ * - ApiKeySupaBase: Supabase API key used for Auth verification, never as DB password.
  */
 export function readSupabaseDatabaseConfig(env: NodeJS.ProcessEnv = process.env): SupabaseDatabaseConfig {
-  const region = required(env, "SPRegionDB");
   const projectId = required(env, "SPIdBD");
   const databaseName = required(env, "SBNameDB");
   const databasePassword = required(env, "SPPasswordDB");
   const apiKey = required(env, "ApiKeySupaBase");
+  const region = optional(env, "SPRegionDB");
+  const explicitRuntimeUrl = optional(env, "DATABASE_URL");
+  const explicitPoolerHost = optional(env, "SBDatabaseHost");
+
+  let runtimeConnectionString: string;
+  if (explicitRuntimeUrl) {
+    runtimeConnectionString = normalizeConnectionString(explicitRuntimeUrl);
+  } else {
+    const host = explicitPoolerHost ?? (region ? `aws-${region}.pooler.supabase.com` : undefined);
+    if (!host) {
+      throw new Error("Configure DATABASE_URL or SBDatabaseHost. SPRegionDB is accepted only as a legacy pooler-host fallback.");
+    }
+    runtimeConnectionString = connectionString({
+      host,
+      port: Number(optional(env, "SBDatabasePort") ?? "6543"),
+      database: databaseName,
+      user: optional(env, "SBDatabaseUser") ?? `postgres.${projectId}`,
+      password: databasePassword,
+    });
+  }
 
   return {
     region,
@@ -51,20 +87,12 @@ export function readSupabaseDatabaseConfig(env: NodeJS.ProcessEnv = process.env)
     databasePassword,
     apiKey,
     supabaseUrl: `https://${projectId}.supabase.co`,
-    // Supabase recommends transaction pooler for serverless/edge application traffic.
-    runtimeConnectionString: connectionString({
-      host: `aws-${region}.pooler.supabase.com`,
-      port: 6543,
-      database: databaseName,
-      user: `postgres.${projectId}`,
-      password: databasePassword,
-    }),
-    // Direct PostgreSQL endpoint is appropriate for migrations/native tooling.
+    runtimeConnectionString,
     migrationConnectionString: connectionString({
-      host: `db.${projectId}.supabase.co`,
-      port: 5432,
+      host: optional(env, "SBMigrationHost") ?? `db.${projectId}.supabase.co`,
+      port: Number(optional(env, "SBMigrationPort") ?? "5432"),
       database: databaseName,
-      user: "postgres",
+      user: optional(env, "SBMigrationUser") ?? "postgres",
       password: databasePassword,
     }),
   };
