@@ -90,6 +90,16 @@ function requireTenant(context: ExecutionContext): string {
   return context.tenantId;
 }
 
+async function linkedCustomerIds(unitOfWork: UnitOfWork, context: ExecutionContext): Promise<Set<string> | null> {
+  if (!context.professionalId) return null;
+  const tenantId = requireTenant(context);
+  return unitOfWork.execute(context, async (tx) => new Set(
+    (await tx.appointments.list(tenantId))
+      .filter((appointment) => appointment.professionalId === context.professionalId)
+      .map((appointment) => appointment.customerId),
+  ));
+}
+
 export class BusinessApi {
   constructor(private readonly dependencies: BusinessApiDependencies) {}
 
@@ -108,16 +118,9 @@ export class BusinessApi {
   listAssessments(context: ExecutionContext, customerId: string) {
     const tenantId = requireTenant(context);
     if (!context.professionalId) return this.dependencies.assessmentRepository.listByCustomer(tenantId, customerId);
-    return this.dependencies.unitOfWork.execute(context, async (tx) => {
-      const linked = (await tx.appointments.list(tenantId)).some((appointment) =>
-        appointment.professionalId === context.professionalId && appointment.customerId === customerId,
-      );
-      if (!linked) {
-        throw new ForbiddenError(
-          "PROFESSIONAL_CUSTOMER_FORBIDDEN",
-          "The customer is not linked to an appointment assigned to the authenticated professional.",
-          { customerId },
-        );
+    return linkedCustomerIds(this.dependencies.unitOfWork, context).then((linked) => {
+      if (!linked?.has(customerId)) {
+        throw new ForbiddenError("PROFESSIONAL_CUSTOMER_FORBIDDEN", "The customer is not linked to an appointment assigned to the authenticated professional.", { customerId });
       }
       return this.dependencies.assessmentRepository.listByCustomer(tenantId, customerId);
     });
@@ -135,13 +138,21 @@ export class BusinessApi {
       return this.dependencies.technicalRecordRepository.listBySession(tenantId, sessionId);
     });
   }
-  listFollowUps(context: ExecutionContext) { return this.dependencies.followUpRepository.list(requireTenant(context)); }
-  getFollowUpActions(context: ExecutionContext, followUpId: string) {
+  async listFollowUps(context: ExecutionContext) {
     const tenantId = requireTenant(context);
-    return this.dependencies.followUpRepository.findById(tenantId, followUpId).then((followUp) => {
-      if (!followUp) throw new NotFoundError("follow-up", followUpId);
-      return { followUpId: followUp.id, status: followUp.status, allowedActions: allowedFollowUpActions(followUp.status) };
-    });
+    const items = await this.dependencies.followUpRepository.list(tenantId);
+    const linked = await linkedCustomerIds(this.dependencies.unitOfWork, context);
+    return linked ? items.filter((item) => linked.has(item.customerId)) : items;
+  }
+  async getFollowUpActions(context: ExecutionContext, followUpId: string) {
+    const tenantId = requireTenant(context);
+    const followUp = await this.dependencies.followUpRepository.findById(tenantId, followUpId);
+    if (!followUp) throw new NotFoundError("follow-up", followUpId);
+    const linked = await linkedCustomerIds(this.dependencies.unitOfWork, context);
+    if (linked && !linked.has(followUp.customerId)) {
+      throw new ForbiddenError("PROFESSIONAL_CUSTOMER_FORBIDDEN", "The follow-up customer is not linked to the authenticated professional.", { customerId: followUp.customerId });
+    }
+    return { followUpId: followUp.id, status: followUp.status, allowedActions: allowedFollowUpActions(followUp.status) };
   }
   listPayments(context: ExecutionContext) {
     const tenantId = requireTenant(context);
