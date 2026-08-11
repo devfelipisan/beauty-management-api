@@ -9,6 +9,7 @@ import { registerTenantContextRoutes } from "@/api/tenant-context-routes";
 import { registerTenantExperienceRoutes } from "@/api/tenant-experience-routes";
 import { registerWorkspaceRoutes } from "@/api/workspace-routes";
 import { getSqlClient } from "@/config/dependencies";
+import { readDatabaseRuntimeConfig, RuntimeConfigurationError } from "@/config/supabase-config";
 
 const app = new Hono();
 
@@ -24,7 +25,10 @@ const healthPayload = {
 app.get("/health", (context) => context.json(healthPayload));
 app.get("/v1/health", (context) => context.json(healthPayload));
 app.get("/health/ready", async (context) => {
+  const requestId = context.req.header("x-request-id") ?? crypto.randomUUID();
+
   try {
+    const runtimeConfig = readDatabaseRuntimeConfig();
     const sql = getSqlClient();
     const result = await sql.query<{ database: string; migration: string | null }>(
       `select current_database() as database,
@@ -33,14 +37,37 @@ app.get("/health/ready", async (context) => {
     return context.json({
       service: "beauty-management-api",
       status: "ready",
+      configuration: "valid",
       database: "connected",
+      databaseSource: runtimeConfig.source,
       databaseName: result.rows[0]?.database,
       migration: result.rows[0]?.migration ?? "untracked",
     });
   } catch (error) {
-    const requestId = context.req.header("x-request-id") ?? crypto.randomUUID();
+    if (error instanceof RuntimeConfigurationError) {
+      console.error("Database readiness configuration failed", {
+        requestId,
+        code: error.code,
+        message: error.message,
+        missingVariable: error.variable,
+      });
+      return context.json({
+        service: "beauty-management-api",
+        status: "not_ready",
+        configuration: "invalid",
+        database: "not_tested",
+        requestId,
+      }, 503);
+    }
+
     console.error("Database readiness failed", { requestId, error });
-    return context.json({ service: "beauty-management-api", status: "not_ready", database: "unavailable", requestId }, 503);
+    return context.json({
+      service: "beauty-management-api",
+      status: "not_ready",
+      configuration: "valid",
+      database: "unavailable",
+      requestId,
+    }, 503);
   }
 });
 

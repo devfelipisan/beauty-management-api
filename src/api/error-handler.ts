@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { RuntimeConfigurationError } from "@/config/supabase-config";
 import { AuthenticationRequiredError } from "@/server/auth/authentication";
 import { ContractValidationError } from "@/shared/contracts/runtime-schema";
 import { DomainError } from "@/shared/domain/core";
@@ -63,7 +64,18 @@ export function registerApiErrorHandler(app: Hono) {
       requestId,
       operation: `${context.req.method} ${context.req.path}`,
       ...metadata,
+      ...(error instanceof RuntimeConfigurationError ? { missingVariable: error.variable } : {}),
     });
+
+    if (error instanceof RuntimeConfigurationError) {
+      return context.json({
+        error: {
+          code: "SERVICE_NOT_READY",
+          message: "Service runtime configuration is incomplete or invalid.",
+        },
+        requestId,
+      }, 503);
+    }
 
     if (isDatabaseUnavailable(error)) {
       return context.json({ error: { code: "DATABASE_UNAVAILABLE", message: "Database service is temporarily unavailable." }, requestId }, 503);

@@ -16,23 +16,13 @@ function validateUrl(value, name) {
   return value;
 }
 
-function connectionString(mode = "migration") {
+function migrationConnectionString() {
+  const explicit = optional("MIGRATION_DATABASE_URL");
+  if (explicit) return validateUrl(explicit, "MIGRATION_DATABASE_URL");
+
   const projectId = required("SPIdBD");
   const database = required("SBNameDB");
   const password = required("SPPasswordDB");
-
-  if (mode === "runtime") {
-    const explicit = optional("DATABASE_URL");
-    if (explicit) return validateUrl(explicit, "DATABASE_URL");
-    const host = optional("SBDatabaseHost") ?? (optional("SPRegionDB") ? `aws-${optional("SPRegionDB")}.pooler.supabase.com` : undefined);
-    if (!host) throw new Error("Configure DATABASE_URL or SBDatabaseHost for runtime/pooler database access.");
-    const port = optional("SBDatabasePort") ?? "6543";
-    const user = optional("SBDatabaseUser") ?? `postgres.${projectId}`;
-    return `postgresql://${encode(user)}:${encode(password)}@${host}:${port}/${encode(database)}?sslmode=require`;
-  }
-
-  const explicit = optional("MIGRATION_DATABASE_URL");
-  if (explicit) return validateUrl(explicit, "MIGRATION_DATABASE_URL");
   const host = optional("SBMigrationHost") ?? `db.${projectId}.supabase.co`;
   const port = optional("SBMigrationPort") ?? "5432";
   const user = optional("SBMigrationUser") ?? "postgres";
@@ -86,8 +76,7 @@ async function validateSecurity(sql) {
 }
 
 const command = process.argv[2] ?? "migrate";
-const mode = process.env.SPDatabaseConnectionMode === "runtime" ? "runtime" : "migration";
-const db = postgres(connectionString(mode), { max: 1, prepare: false, connect_timeout: 15, idle_timeout: 5 });
+const db = postgres(migrationConnectionString(), { max: 1, prepare: false, connect_timeout: 15, idle_timeout: 5 });
 
 try {
   if (command === "migrate") await migrate(db);
