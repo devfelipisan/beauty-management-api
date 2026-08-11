@@ -1,49 +1,52 @@
 import type { PermissionCode } from "@/server/auth/permissions";
-import { getAuthVerifier, getBusinessApi } from "@/config/dependencies";
+import { getAuthVerifier, getAuthorizationService, getBusinessApi } from "@/config/dependencies";
 import { readBearerToken } from "@/server/auth/authentication";
+import type { TenantAccess } from "@/server/auth/authorization";
 import { createExecutionContext } from "@/shared/application/execution-context";
-import { DomainError } from "@/shared/domain/core";
 
-export function readTenantSelection(request: Request): string {
+export function readTenantSelection(request: Request): string | undefined {
   const tenantId = request.headers.get("x-tenant-id")?.trim();
-  if (tenantId) return tenantId;
-  throw new DomainError(
-    "TENANT_CONTEXT_REQUIRED",
-    "A tenant selection is required for tenant-scoped operations.",
-  );
+  return tenantId || undefined;
 }
 
 export function createApiExecutionContext(
   request: Request,
   operation: string,
-  tenantId?: string,
-  actorId?: string,
+  access?: Pick<TenantAccess, "tenantId" | "actorId" | "membershipId" | "professionalId">,
 ) {
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   return createExecutionContext(operation, {
     requestId,
     correlationId: request.headers.get("x-correlation-id") ?? requestId,
-    tenantId,
-    actorId,
+    tenantId: access?.tenantId,
+    actorId: access?.actorId,
+    membershipId: access?.membershipId,
+    professionalId: access?.professionalId,
     source: "api",
   });
 }
 
 export async function authenticateRequest(request: Request) {
-  return getAuthVerifier().verify(readBearerToken(request));
+  const token = readBearerToken(request);
+  return getAuthVerifier().verify(token);
+}
+
+export async function resolveAuthenticatedTenant(request: Request) {
+  const identity = await authenticateRequest(request);
+  const selection = readTenantSelection(request);
+  const access = await getAuthorizationService().resolveTenantContext(identity.subject, selection);
+  return { identity, access };
 }
 
 export async function authorizeTenantRequest(request: Request, permission: PermissionCode) {
-  const api = getBusinessApi();
   const identity = await authenticateRequest(request);
-  const tenantId = readTenantSelection(request);
-  const access = await api.authorizeTenant(identity.subject, tenantId, permission);
-  return { api, tenantId, actorId: access.actorId, identity };
+  const selection = readTenantSelection(request);
+  const access = await getAuthorizationService().requireResolvedTenantPermission(identity.subject, selection, permission);
+  return { api: getBusinessApi(), access, tenantId: access.tenantId, actorId: access.actorId, identity };
 }
 
 export async function authorizePlatformRequest(request: Request, permission: PermissionCode) {
-  const api = getBusinessApi();
   const identity = await authenticateRequest(request);
-  const access = await api.authorizePlatform(identity.subject, permission);
-  return { api, actorId: access.actorId, identity };
+  const access = await getAuthorizationService().requirePlatformPermission(identity.subject, permission);
+  return { api: getBusinessApi(), actorId: access.actorId, identity };
 }
