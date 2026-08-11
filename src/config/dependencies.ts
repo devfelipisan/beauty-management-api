@@ -40,8 +40,10 @@ let businessSingleton: BusinessApi | null = null;
 let administrationSingleton: AdministrationApi | null = null;
 let authVerifierSingleton: AuthVerifier | null = null;
 let sqlClientSingleton: SqlClient | null = null;
+let postgresRuntimeSingleton: ReturnType<typeof createPostgresRuntime> | null = null;
+let authorizationSingleton: AuthorizationService | null = null;
 
-function getSqlClient(): SqlClient {
+export function getSqlClient(): SqlClient {
   if (sqlClientSingleton) return sqlClientSingleton;
   const config = readSupabaseDatabaseConfig();
   const factory = new PostgresJsSqlClientFactory(postgres as unknown as PostgresJsFactory, {
@@ -52,6 +54,18 @@ function getSqlClient(): SqlClient {
   });
   sqlClientSingleton = factory.create(config.runtimeConnectionString);
   return sqlClientSingleton;
+}
+
+function getPostgresRuntime() {
+  if (postgresRuntimeSingleton) return postgresRuntimeSingleton;
+  postgresRuntimeSingleton = createPostgresRuntime(getSqlClient());
+  return postgresRuntimeSingleton;
+}
+
+export function getAuthorizationService(): AuthorizationService {
+  if (authorizationSingleton) return authorizationSingleton;
+  authorizationSingleton = new AuthorizationService(getPostgresRuntime().accessControl);
+  return authorizationSingleton;
 }
 
 export function getAuthVerifier(): AuthVerifier {
@@ -79,7 +93,7 @@ export function getAdministrationApi(): AdministrationApi {
 export function getBusinessApi(): BusinessApi {
   if (businessSingleton) return businessSingleton;
   const sql = getSqlClient();
-  const runtime = createPostgresRuntime(sql);
+  const runtime = getPostgresRuntime();
   const equipmentRepository = new PostgresEquipmentRepository(sql);
   const packageRepository = new PostgresPackageRepository(sql);
   const assessmentRepository = new PostgresAssessmentRepository(sql);
@@ -87,10 +101,9 @@ export function getBusinessApi(): BusinessApi {
   const followUpRepository = new PostgresFollowUpRepository(sql);
   const tenantSettingsRepository = new PostgresTenantSettingsRepository(sql);
   const landingPageRepository = new PostgresLandingPageRepository(sql);
-  const authorization = new AuthorizationService(runtime.accessControl);
 
   businessSingleton = new BusinessApi({
-    authorization,
+    authorization: getAuthorizationService(),
     unitOfWork: runtime.unitOfWork,
     leadRepository: runtime.leadRepository,
     equipmentRepository,
