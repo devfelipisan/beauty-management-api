@@ -51,13 +51,13 @@ begin
 
   delete from identity.role_permissions
   where role_id = professional_role
-    and permission_code in ('appointment:read','customer:read');
+    and permission_code in ('appointment:read','customer:read','package:read');
 
   insert into identity.role_permissions (role_id, permission_code)
   select professional_role, code from identity.permissions
   where code in (
     'appointment:read-own','customer:read-linked',
-    'assessment:read','assessment:create','equipment:read','package:read',
+    'assessment:read','assessment:create','equipment:read',
     'session:start','session:complete','technical-record:read','technical-record:create',
     'follow-up:read','follow-up:create'
   )
