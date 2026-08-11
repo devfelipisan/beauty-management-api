@@ -4,11 +4,6 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-09",
   "compatibility_flags": ["nodejs_compat"],
-  "vars": {
-    "API_AUTH_MODE": "disabled",
-    "API_DEV_AUTH_SUBJECT": "user-tenant-admin",
-    "API_DEV_TENANT_ID": "tenant-bella"
-  },
   "observability": {
     "enabled": true
   }
