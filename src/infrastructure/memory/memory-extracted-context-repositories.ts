@@ -13,21 +13,24 @@ function replaceById<T extends { id: string }>(items: T[], entity: T): T {
 }
 
 export class MemoryAssessmentRepository implements AssessmentRepository {
-  private readonly items: Assessment[] = [];
+  private readonly items: Assessment[];
+  constructor(initialItems: Assessment[] = []) { this.items = initialItems.map((item) => ({ ...item, restrictions: [...item.restrictions] })); }
   async findById(tenantId: string, id: string) { return this.items.find((item) => item.tenantId === tenantId && item.id === id) ?? null; }
   async listByCustomer(tenantId: string, customerId: string) { return this.items.filter((item) => item.tenantId === tenantId && item.customerId === customerId); }
   async create(entity: Assessment) { this.items.push(entity); return entity; }
 }
 
 export class MemoryTechnicalRecordRepository implements TechnicalRecordRepository {
-  private readonly items: TechnicalRecord[] = [];
+  private readonly items: TechnicalRecord[];
+  constructor(initialItems: TechnicalRecord[] = []) { this.items = initialItems.map((item) => ({ ...item })); }
   async findById(tenantId: string, id: string) { return this.items.find((item) => item.tenantId === tenantId && item.id === id) ?? null; }
   async listBySession(tenantId: string, sessionId: string) { return this.items.filter((item) => item.tenantId === tenantId && item.sessionId === sessionId); }
   async create(entity: TechnicalRecord) { this.items.push(entity); return entity; }
 }
 
 export class MemoryFollowUpRepository implements FollowUpRepository {
-  private readonly items: FollowUp[] = [];
+  private readonly items: FollowUp[];
+  constructor(initialItems: FollowUp[] = []) { this.items = initialItems.map((item) => ({ ...item })); }
   async findById(tenantId: string, id: string) { return this.items.find((item) => item.tenantId === tenantId && item.id === id) ?? null; }
   async list(tenantId: string) { return this.items.filter((item) => item.tenantId === tenantId).sort((a, b) => a.suggestedAt.localeCompare(b.suggestedAt)); }
   async create(entity: FollowUp) { this.items.push(entity); return entity; }
