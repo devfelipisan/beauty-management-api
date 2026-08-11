@@ -1,62 +1,6 @@
 import type { CommercialPolicyRepository } from "../domain/commercial-policy-repository";
 import type { DiscountApproval, DiscountPolicy, RelationshipProfileConfig } from "../domain/commercial-policy";
 
-const timestamp = "2026-08-09T12:00:00.000Z";
-
-const demoConfigs: RelationshipProfileConfig[] = [
-  { profile: "new", minimumCompletedAppointments: 0, manualOverrideAllowed: true, updatedAt: timestamp },
-  { profile: "returning", minimumCompletedAppointments: 1, periodMonths: 12, manualOverrideAllowed: true, updatedAt: timestamp },
-  { profile: "loyal", minimumCompletedAppointments: 3, periodMonths: 6, maximumNoShows: 1, manualOverrideAllowed: true, updatedAt: timestamp },
-  { profile: "inactive", inactiveAfterDays: 180, manualOverrideAllowed: true, updatedAt: timestamp },
-  { profile: "frequent_no_show", maximumNoShows: 2, periodMonths: 6, manualOverrideAllowed: false, updatedAt: timestamp },
-];
-
-const demoPolicies: DiscountPolicy[] = [
-  {
-    id: "discount-loyal-10",
-    tenantId: "tenant-bella",
-    name: "Fidelidade 10%",
-    profile: "loyal",
-    type: "percentage",
-    status: "active",
-    percentage: 10,
-    singleUse: false,
-    requiresApproval: false,
-    stackable: false,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  },
-  {
-    id: "discount-reactivation-30",
-    tenantId: "tenant-bella",
-    name: "Reativação R$ 30",
-    profile: "inactive",
-    type: "fixed",
-    status: "active",
-    fixedAmountCents: 3000,
-    minimumAmountCents: 10000,
-    singleUse: true,
-    requiresApproval: false,
-    stackable: false,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  },
-];
-
-const demoApprovals: DiscountApproval[] = [
-  {
-    id: "discount-approval-demo-1",
-    tenantId: "tenant-bella",
-    customerId: "customer-mariana",
-    operationType: "appointment",
-    requestedBy: "user-reception",
-    requestedPercentage: 15,
-    justification: "Condição comercial solicitada pela recepção para retenção do cliente.",
-    status: "pending",
-    createdAt: timestamp,
-  },
-];
-
 function clonePolicy(policy: DiscountPolicy): DiscountPolicy {
   return {
     ...policy,
@@ -66,13 +10,24 @@ function clonePolicy(policy: DiscountPolicy): DiscountPolicy {
   };
 }
 
+/** Test double only. Production persistence is PostgreSQL. */
 export class MemoryCommercialPolicyRepository implements CommercialPolicyRepository {
-  private readonly policies = demoPolicies.map(clonePolicy);
-  private readonly approvals = demoApprovals.map((item) => ({ ...item }));
+  private readonly configs: RelationshipProfileConfig[];
+  private readonly policies: DiscountPolicy[];
+  private readonly approvals: DiscountApproval[];
 
-  async listRelationshipProfileConfigs(tenantId: string) {
-    if (tenantId !== "tenant-bella") return [];
-    return demoConfigs.map((item) => ({ ...item }));
+  constructor(initial: {
+    configs?: RelationshipProfileConfig[];
+    policies?: DiscountPolicy[];
+    approvals?: DiscountApproval[];
+  } = {}) {
+    this.configs = (initial.configs ?? []).map((item) => ({ ...item }));
+    this.policies = (initial.policies ?? []).map(clonePolicy);
+    this.approvals = (initial.approvals ?? []).map((item) => ({ ...item }));
+  }
+
+  async listRelationshipProfileConfigs(_tenantId: string) {
+    return this.configs.map((item) => ({ ...item }));
   }
 
   async listDiscountPolicies(tenantId: string) {
