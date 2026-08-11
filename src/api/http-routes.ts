@@ -45,8 +45,17 @@ export function registerBusinessRoutes(app: Hono) {
   });
 
   app.get("/v1/customers", async (c) => {
-    const { api, tenantId, actorId } = await authorizeTenant(c.req.raw, Permissions.CustomerRead);
-    return c.json(await api.listCustomers(createApiExecutionContext(c.req.raw, "customer.list", tenantId, actorId)));
+    const { api, tenantId, actorId, access } = await authorizeTenant(c.req.raw, Permissions.CustomerRead);
+    const context = createApiExecutionContext(c.req.raw, "customer.list", tenantId, actorId);
+    const customers = await api.listCustomers(context);
+    if (!access.professionalId) return c.json(customers);
+    const appointments = await api.listAppointments(context);
+    const linkedCustomerIds = new Set(
+      appointments
+        .filter((appointment) => appointment.professionalId === access.professionalId)
+        .map((appointment) => appointment.customerId),
+    );
+    return c.json(customers.filter((customer) => linkedCustomerIds.has(customer.id)));
   });
   app.post("/v1/customers", async (c) => {
     const { api, tenantId, actorId } = await authorizeTenant(c.req.raw, Permissions.CustomerCreate);
@@ -75,8 +84,13 @@ export function registerBusinessRoutes(app: Hono) {
   });
 
   app.get("/v1/appointments", async (c) => {
-    const { api, tenantId, actorId } = await authorizeTenant(c.req.raw, Permissions.AppointmentRead);
-    return c.json(await api.listAppointments(createApiExecutionContext(c.req.raw, "appointment.list", tenantId, actorId)));
+    const { api, tenantId, actorId, access } = await authorizeTenant(c.req.raw, Permissions.AppointmentRead);
+    const appointments = await api.listAppointments(createApiExecutionContext(c.req.raw, "appointment.list", tenantId, actorId));
+    return c.json(
+      access.professionalId
+        ? appointments.filter((appointment) => appointment.professionalId === access.professionalId)
+        : appointments,
+    );
   });
   app.post("/v1/appointments", async (c) => {
     const { api, tenantId, actorId } = await authorizeTenant(c.req.raw, Permissions.AppointmentCreate);
