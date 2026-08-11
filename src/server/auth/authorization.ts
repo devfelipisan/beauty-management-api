@@ -60,8 +60,12 @@ function assertOperationalTenant(access: TenantAccess): TenantAccess {
 export class AuthorizationService {
   constructor(private readonly accessControl: AccessControlRepository) {}
 
+  listTenantMemberships(authSubject: string): Promise<TenantAccess[]> {
+    return this.accessControl.listTenantAccesses(authSubject);
+  }
+
   async listAvailableTenants(authSubject: string): Promise<TenantAccess[]> {
-    return (await this.accessControl.listTenantAccesses(authSubject))
+    return (await this.listTenantMemberships(authSubject))
       .filter((access) => access.membershipStatus === "active" && (access.tenantStatus === "active" || access.tenantStatus === "trial"));
   }
 
