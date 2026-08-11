@@ -9,7 +9,6 @@ import type { OutboxStore } from "@/shared/outbox/outbox";
 export interface TenantRepository {
   findById(id: EntityId): Promise<Tenant | null>;
   findByDocument(document: string): Promise<Tenant | null>;
-  findByPublicSlug(slug: string): Promise<Tenant | null>;
   list(): Promise<Tenant[]>;
   create(entity: Tenant): Promise<Tenant>;
 }
@@ -44,7 +43,6 @@ export interface CustomerRepository {
 export interface AppointmentRepository {
   findById(tenantId: EntityId, id: EntityId): Promise<Appointment | null>;
   list(tenantId: EntityId): Promise<Appointment[]>;
-  listByProfessional(tenantId: EntityId, professionalId: EntityId): Promise<Appointment[]>;
   findConflicts(tenantId: EntityId, professionalId: EntityId, startsAt: string, endsAt: string, ignoreId?: EntityId): Promise<Appointment[]>;
   create(entity: Appointment): Promise<Appointment>;
   update(entity: Appointment): Promise<Appointment>;
