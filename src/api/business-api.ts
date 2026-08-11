@@ -32,12 +32,12 @@ import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/applicati
 import type { TenantSettingsRepository } from "@/modules/tenant-settings/domain/tenant-settings-repository";
 import type { UpdateTenantSettingsInput } from "@/modules/tenant-settings/domain/tenant-settings";
 import { CreateTenantUseCase, type CreateTenantInput } from "@/modules/tenants/application/create-tenant";
-import { normalizePublicTenantSlug, publicTenantSlug } from "@/modules/tenants/domain/public-tenant-slug";
+import type { ResolvePublicTenantContextUseCase } from "@/modules/tenants/application/resolve-public-tenant-context";
 import type { PlatformAccess, TenantAccess } from "@/server/auth/authorization";
 import type { PermissionCode } from "@/server/auth/permissions";
 import type { ExecutionContext } from "@/shared/application/execution-context";
 import type { UnitOfWork } from "@/shared/application/ports";
-import { NotFoundError } from "@/shared/domain/core";
+import { ForbiddenError, NotFoundError } from "@/shared/domain/core";
 
 export interface AuthorizationPort {
   requireTenantPermission(authSubject: string, tenantId: string, permission: PermissionCode): Promise<TenantAccess> | TenantAccess;
@@ -72,6 +72,7 @@ export interface BusinessApiUseCases {
 
 export interface BusinessApiDependencies {
   authorization: AuthorizationPort;
+  publicTenantResolver: ResolvePublicTenantContextUseCase;
   unitOfWork: UnitOfWork;
   leadRepository: LeadRepository;
   equipmentRepository: EquipmentRepository;
@@ -95,14 +96,8 @@ export class BusinessApi {
   authorizeTenant(authSubject: string, tenantId: string, permission: PermissionCode) { return this.dependencies.authorization.requireTenantPermission(authSubject, tenantId, permission); }
   authorizePlatform(authSubject: string, permission: PermissionCode) { return this.dependencies.authorization.requirePlatformPermission(authSubject, permission); }
 
-  private resolvePublicTenantId(context: ExecutionContext, slug: string): Promise<string> {
-    const normalizedSlug = normalizePublicTenantSlug(slug);
-    return this.dependencies.unitOfWork.execute(context, async (tx) => {
-      const tenants = await tx.tenants.list();
-      const tenant = tenants.find((candidate) => (candidate.status === "active" || candidate.status === "trial") && publicTenantSlug(candidate) === normalizedSlug);
-      if (!tenant) throw new NotFoundError("public_tenant", normalizedSlug);
-      return tenant.id;
-    });
+  private async resolvePublicTenantId(_context: ExecutionContext, slug: string): Promise<string> {
+    return (await this.dependencies.publicTenantResolver.execute(slug)).tenantId;
   }
 
   listCustomers(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.customers.list(tenantId)); }
@@ -110,9 +105,36 @@ export class BusinessApi {
   listServices(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.services.list(tenantId)); }
   listEquipment(context: ExecutionContext) { return this.dependencies.equipmentRepository.list(requireTenant(context)); }
   listPackages(context: ExecutionContext) { return this.dependencies.packageRepository.list(requireTenant(context)); }
-  listAssessments(context: ExecutionContext, customerId: string) { return this.dependencies.assessmentRepository.listByCustomer(requireTenant(context), customerId); }
+  listAssessments(context: ExecutionContext, customerId: string) {
+    const tenantId = requireTenant(context);
+    if (!context.professionalId) return this.dependencies.assessmentRepository.listByCustomer(tenantId, customerId);
+    return this.dependencies.unitOfWork.execute(context, async (tx) => {
+      const linked = (await tx.appointments.list(tenantId)).some((appointment) =>
+        appointment.professionalId === context.professionalId && appointment.customerId === customerId,
+      );
+      if (!linked) {
+        throw new ForbiddenError(
+          "PROFESSIONAL_CUSTOMER_FORBIDDEN",
+          "The customer is not linked to an appointment assigned to the authenticated professional.",
+          { customerId },
+        );
+      }
+      return this.dependencies.assessmentRepository.listByCustomer(tenantId, customerId);
+    });
+  }
   listAppointments(context: ExecutionContext) { const tenantId = requireTenant(context); return this.dependencies.unitOfWork.execute(context, (tx) => tx.appointments.list(tenantId)); }
-  listTechnicalRecords(context: ExecutionContext, sessionId: string) { return this.dependencies.technicalRecordRepository.listBySession(requireTenant(context), sessionId); }
+  listTechnicalRecords(context: ExecutionContext, sessionId: string) {
+    const tenantId = requireTenant(context);
+    if (!context.professionalId) return this.dependencies.technicalRecordRepository.listBySession(tenantId, sessionId);
+    return this.dependencies.unitOfWork.execute(context, async (tx) => {
+      const session = await tx.sessions.findById(tenantId, sessionId);
+      if (!session) throw new NotFoundError("session", sessionId);
+      if (session.professionalId !== context.professionalId) {
+        throw new ForbiddenError("PROFESSIONAL_SESSION_FORBIDDEN", "A professional can read technical records only from their own sessions.", { sessionId });
+      }
+      return this.dependencies.technicalRecordRepository.listBySession(tenantId, sessionId);
+    });
+  }
   listFollowUps(context: ExecutionContext) { return this.dependencies.followUpRepository.list(requireTenant(context)); }
   getFollowUpActions(context: ExecutionContext, followUpId: string) {
     const tenantId = requireTenant(context);
@@ -159,6 +181,9 @@ export class BusinessApi {
     return this.dependencies.unitOfWork.execute(context, async (tx) => {
       const appointment = await tx.appointments.findById(tenantId, appointmentId);
       if (!appointment) throw new NotFoundError("appointment", appointmentId);
+      if (context.professionalId && appointment.professionalId !== context.professionalId) {
+        throw new ForbiddenError("PROFESSIONAL_APPOINTMENT_FORBIDDEN", "A professional can access only their own appointments.", { appointmentId });
+      }
       return { appointmentId: appointment.id, status: appointment.status, allowedActions: allowedAppointmentActions(appointment.status) };
     });
   }
