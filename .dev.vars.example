@@ -1,10 +1,18 @@
-# Temporary authentication-disabled mode for implementation/integration testing.
-# Protected endpoints do not require Authorization while this mode is active.
-API_AUTH_MODE=disabled
-API_DEV_AUTH_SUBJECT=user-tenant-admin
-API_DEV_TENANT_ID=tenant-bella
+# Supabase project/database configuration
+# SPRegionDB is the Supabase/AWS region used by the shared Supavisor pooler, e.g. sa-east-1.
+SPRegionDB=
+# Supabase project reference/id. Example derived from db.<project-ref>.supabase.co.
+SPIdBD=zkzzptgbiwsxinzmfvss
+# Database name; Supabase default is postgres.
+SBNameDB=postgres
 
-# Future real authentication mode:
-# API_AUTH_MODE=supabase
-# SUPABASE_URL=
-# SUPABASE_ANON_KEY=
+# Secrets - never commit real values.
+# PostgreSQL database password. An API key cannot replace this credential.
+SPPasswordDB=
+# Supabase publishable/anon API key used only for Auth token verification.
+ApiKeySupaBase=
+
+# Optional for local migration tooling only:
+# direct (default) uses db.<project-ref>.supabase.co:5432.
+# runtime uses aws-<region>.pooler.supabase.com:6543 when direct IPv6 is unavailable locally.
+# SPDatabaseConnectionMode=runtime
