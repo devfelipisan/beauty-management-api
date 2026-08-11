@@ -1,7 +1,7 @@
 import type { ExecutionContext } from "@/shared/application/execution-context";
 import type { UnitOfWork } from "@/shared/application/ports";
 import { AuditActions, createAuditEvent } from "@/shared/audit/audit";
-import { DomainError, NotFoundError } from "@/shared/domain/core";
+import { DomainError, ForbiddenError, NotFoundError } from "@/shared/domain/core";
 import { createOutboxEvent } from "@/shared/outbox/outbox";
 import { createTechnicalRecord, type TechnicalRecord } from "../domain/technical-record";
 import type { TechnicalRecordRepository } from "../domain/technical-record-repository";
@@ -30,6 +30,13 @@ export class CreateTechnicalRecordUseCase {
     return this.unitOfWork.execute(context, async (tx) => {
       const session = await tx.sessions.findById(tenantId, input.sessionId);
       if (!session) throw new NotFoundError("session", input.sessionId);
+      if (context.professionalId && session.professionalId !== context.professionalId) {
+        throw new ForbiddenError(
+          "PROFESSIONAL_SESSION_FORBIDDEN",
+          "A professional can add technical records only to their own sessions.",
+          { sessionId: session.id },
+        );
+      }
       if (session.status !== "in_progress") {
         throw new DomainError("SESSION_NOT_IN_PROGRESS", "Technical records can only be added to an in-progress session.", { sessionId: session.id, status: session.status });
       }
