@@ -31,6 +31,8 @@ import { CreateTechnicalRecordUseCase } from "@/modules/technical-records/applic
 import { UpdateTenantBrandingUseCase } from "@/modules/tenant-branding/application/update-tenant-branding";
 import { UpdateTenantSettingsUseCase } from "@/modules/tenant-settings/application/update-tenant-settings";
 import { CreateTenantUseCase } from "@/modules/tenants/application/create-tenant";
+import { ResolvePublicTenantContextUseCase } from "@/modules/tenants/application/resolve-public-tenant-context";
+import { PostgresPublicTenantContextRepository } from "@/modules/tenants/infrastructure/postgres-public-tenant-context.repository";
 import { CreateTenantUserUseCase, UpdateTenantUserUseCase } from "@/modules/users/application/manage-users";
 import { SupabaseAuthVerifier, type AuthVerifier } from "@/server/auth/authentication";
 import { AuthorizationService } from "@/server/auth/authorization";
@@ -42,6 +44,7 @@ let authVerifierSingleton: AuthVerifier | null = null;
 let sqlClientSingleton: SqlClient | null = null;
 let postgresRuntimeSingleton: ReturnType<typeof createPostgresRuntime> | null = null;
 let authorizationSingleton: AuthorizationService | null = null;
+let publicTenantResolverSingleton: ResolvePublicTenantContextUseCase | null = null;
 
 export function getSqlClient(): SqlClient {
   if (sqlClientSingleton) return sqlClientSingleton;
@@ -66,6 +69,12 @@ export function getAuthorizationService(): AuthorizationService {
   if (authorizationSingleton) return authorizationSingleton;
   authorizationSingleton = new AuthorizationService(getPostgresRuntime().accessControl);
   return authorizationSingleton;
+}
+
+export function getPublicTenantResolver(): ResolvePublicTenantContextUseCase {
+  if (publicTenantResolverSingleton) return publicTenantResolverSingleton;
+  publicTenantResolverSingleton = new ResolvePublicTenantContextUseCase(new PostgresPublicTenantContextRepository(getSqlClient()));
+  return publicTenantResolverSingleton;
 }
 
 export function getAuthVerifier(): AuthVerifier {
