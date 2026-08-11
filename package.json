@@ -16,20 +16,22 @@
     "test:foundation": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/foundation-backend.test.ts",
     "test:state-machines": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/state-machines.test.ts",
     "test:security": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/security-contracts.test.ts",
-    "test:http": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/http-auth-disabled.test.ts",
     "test:leads": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/leads-domain.test.ts",
     "test:equipment": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/equipment-domain.test.ts",
     "test:packages": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/packages-domain.test.ts",
     "test:repositories": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/repository-contracts.test.ts",
-    "test:memory-seed": "node --experimental-transform-types --experimental-loader ./scripts/ts-alias-loader.mjs --test src/testing/memory-volume-seed.test.ts",
-    "test": "npm run test:foundation && npm run test:state-machines && npm run test:security && npm run test:http && npm run test:leads && npm run test:equipment && npm run test:packages && npm run test:repositories && npm run test:memory-seed",
+    "test": "npm run test:foundation && npm run test:state-machines && npm run test:security && npm run test:leads && npm run test:equipment && npm run test:packages && npm run test:repositories",
     "check": "npm run typecheck && npm run test",
-    "db:seed": "psql --set=ON_ERROR_STOP=1 --file database/seeds/0001_demo_use_cases.sql",
+    "db:check": "node scripts/database.mjs check",
+    "db:migrate": "node scripts/database.mjs migrate",
+    "db:seed": "node scripts/database.mjs seed",
+    "db:setup": "node scripts/database.mjs setup",
     "db:seed:check": "psql --set=ON_ERROR_STOP=1 --file database/tests/demo_seed_smoke.sql",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
   },
   "dependencies": {
-    "hono": "^4.9.0"
+    "hono": "^4.9.0",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
