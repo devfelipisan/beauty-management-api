@@ -1,24 +1,12 @@
 import type { PermissionCode } from "@/server/auth/permissions";
 import { getAuthVerifier, getBusinessApi } from "@/config/dependencies";
-import { readBearerToken, resolveApiAuthMode } from "@/server/auth/authentication";
+import { readBearerToken } from "@/server/auth/authentication";
 import { createExecutionContext } from "@/shared/application/execution-context";
 import { DomainError } from "@/shared/domain/core";
-
-function currentAuthMode() {
-  return resolveApiAuthMode(process.env.API_AUTH_MODE);
-}
 
 export function readTenantSelection(request: Request): string {
   const tenantId = request.headers.get("x-tenant-id")?.trim();
   if (tenantId) return tenantId;
-
-  // Authentication is temporarily disabled for implementation/integration
-  // testing. In this mode the backend provides a deterministic tenant context
-  // when the BFF does not explicitly select one.
-  if (currentAuthMode() === "disabled") {
-    return process.env.API_DEV_TENANT_ID?.trim() || "tenant-bella";
-  }
-
   throw new DomainError(
     "TENANT_CONTEXT_REQUIRED",
     "A tenant selection is required for tenant-scoped operations.",
@@ -42,20 +30,13 @@ export function createApiExecutionContext(
 }
 
 export async function authenticateRequest(request: Request) {
-  if (currentAuthMode() === "disabled") {
-    return getAuthVerifier().verify("");
-  }
-  const token = readBearerToken(request);
-  return getAuthVerifier().verify(token);
+  return getAuthVerifier().verify(readBearerToken(request));
 }
 
 export async function authorizeTenantRequest(request: Request, permission: PermissionCode) {
   const api = getBusinessApi();
   const identity = await authenticateRequest(request);
   const tenantId = readTenantSelection(request);
-
-  // x-tenant-id is only a selection hint. Membership and permission are always
-  // resolved authoritatively by the backend before a tenant context is created.
   const access = await api.authorizeTenant(identity.subject, tenantId, permission);
   return { api, tenantId, actorId: access.actorId, identity };
 }
