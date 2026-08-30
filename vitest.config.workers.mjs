@@ -1,4 +1,5 @@
 import { cloudflareTest } from '@cloudflare/vitest-plugin';
+import { readD1Migrations } from '@cloudflare/vitest-plugin';
 import { defineConfig } from 'vitest/config';
 import { build } from 'esbuild';
 import { mkdtemp, writeFile } from 'node:fs/promises';
@@ -28,6 +29,8 @@ async function auxiliaryWorker(entryPoint, name) {
   };
 }
 
+const migrations = await readD1Migrations('./database/d1/migrations');
+
 export default defineConfig({
   plugins: [
     cloudflareTest(async () => ({
@@ -35,6 +38,7 @@ export default defineConfig({
         configPath: './apps/operations-worker/wrangler.jsonc',
       },
       miniflare: {
+        bindings: { TEST_MIGRATIONS: migrations },
         workers: [
           await auxiliaryWorker('./apps/clinical-worker/src/worker.ts', 'beauty-clinical-worker'),
           await auxiliaryWorker('./apps/billing-worker/src/worker.ts', 'beauty-billing-worker'),
@@ -48,5 +52,6 @@ export default defineConfig({
     include: ['test/workers/**/*.spec.ts'],
     maxWorkers: 1,
     minWorkers: 1,
+    setupFiles: ['./test/workers/setup.ts'],
   },
 });

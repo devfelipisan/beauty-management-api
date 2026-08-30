@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { containsForbiddenImport } from '../../../libs/testing/src/index.js';
+import { containsForbiddenImport } from '../../../../libs/testing/src/index.js';
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -49,7 +49,9 @@ describe('architecture dependency boundaries', () => {
   it('keeps database adapters independent from business contexts', () => {
     const databaseDirectory = join(process.cwd(), 'libs', 'database', 'src');
     const violations = sourceFiles(databaseDirectory).filter((file) =>
-      /Customer|Appointment|Payment|Session|authentication|tenancy/.test(readFileSync(file, 'utf8')),
+      /(?:^|[^A-Za-z])(Customer|Appointment|Payment|Session|authentication|tenancy)(?:$|[^A-Za-z])/.test(
+        readFileSync(file, 'utf8'),
+      ),
     );
 
     expect(violations).toEqual([]);

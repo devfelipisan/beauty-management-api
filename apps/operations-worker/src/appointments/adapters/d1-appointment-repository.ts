@@ -1,12 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { D1_DATABASE, type D1DatabaseLike } from '../../../../../libs/database/src/index.js';
 import { Appointment, type AppointmentProps } from '../domain/appointment.js';
 import { TimeInterval } from '../domain/time-interval.js';
 import type { AppointmentRepository } from '../ports/appointment-repository.js';
 import type { TransactionalWriteContext } from '../../../../../libs/reliability/src/index.js';
 type Row = { id:string; tenant_id:string; customer_id:string; service_id:string; professional_id:string; starts_at:string; ends_at:string; duration_minutes:number; base_price_cents?:number; discount_cents?:number; final_price_cents?:number; deposit_cents?:number; origin:AppointmentProps['origin']; status:AppointmentProps['status']; created_at:string; updated_at:string };
-@Injectable() export class D1AppointmentRepository implements AppointmentRepository {
-  constructor(@Inject(D1_DATABASE) private readonly db: D1DatabaseLike) {}
+export class D1AppointmentRepository implements AppointmentRepository {
+  constructor(private readonly db: D1Database) {}
   private map(r: Row) { return Appointment.create(r.id, { tenantId:r.tenant_id, customerId:r.customer_id, serviceId:r.service_id, professionalId:r.professional_id, startsAt:r.starts_at, durationMinutes:r.duration_minutes, basePriceCents:r.base_price_cents, discountCents:r.discount_cents, finalPriceCents:r.final_price_cents, depositCents:r.deposit_cents, origin:r.origin, status:r.status, createdAt:r.created_at, updatedAt:r.updated_at }); }
   async findById(tenantId:string,id:string) { const r=await this.db.prepare('SELECT * FROM appointments WHERE tenant_id = ? AND id = ?').bind(tenantId,id).first<Row>(); return r?this.map(r):null; }
   async findConflicts(tenantId:string,professionalId:string,interval:TimeInterval) { const r=await this.db.prepare("SELECT * FROM appointments WHERE tenant_id = ? AND professional_id = ? AND starts_at < ? AND ends_at > ? AND status NOT IN ('CANCELED','RESCHEDULED','EXPIRED')").bind(tenantId,professionalId,interval.endsAt,interval.startsAt).all<Row>(); return r.results.map((x)=>this.map(x)); }

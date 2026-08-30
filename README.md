@@ -17,6 +17,7 @@ npx wrangler deploy --dry-run
 
 `npm run dev:workers` inicia o conjunto local de Workers para desenvolvimento manual.
 `npm run test:workers` executa os testes no runtime workerd via `@cloudflare/vitest-plugin`.
+`npm run gate:physical-safety` executa lint, typecheck, suítes e dry-run dos três Workers.
 
 O Worker inicial de Operations e um runtime Nest isolado, com apenas `GET /health`.
 Ele nao acessa banco nesta fundacao e deve ser iniciado com `SERVICE_ID=beauty-operations-worker`.

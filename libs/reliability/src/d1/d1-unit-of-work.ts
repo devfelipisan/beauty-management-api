@@ -1,5 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { D1_DATABASE, type D1DatabaseLike } from '../../../database/src/index.js';
+import type { D1DatabaseLike } from '../../../database/src/d1/d1.types.js';
 import type { AuditEvent } from '../audit/audit-event.js';
 import type { IdempotencyRecord } from '../idempotency/idempotency-record.js';
 import type { OutboxEvent } from '../outbox/outbox-event.js';
@@ -8,9 +7,8 @@ import type { UnitOfWork } from '../unit-of-work/unit-of-work.js';
 import type { AuditWriter } from '../audit/audit-writer.js';
 import type { OutboxWriter } from '../outbox/outbox-writer.js';
 import type { IdempotencyStore } from '../idempotency/idempotency-store.js';
-@Injectable()
 export class D1UnitOfWork implements UnitOfWork {
-  constructor(@Inject(D1_DATABASE) private readonly db: D1DatabaseLike) {}
+  constructor(private readonly db: D1DatabaseLike) {}
   async execute<T>(operation: (context: TransactionContext) => Promise<T>): Promise<T> {
     const idempotency: IdempotencyRecord[] = []; const audits: AuditEvent[] = []; const outbox: OutboxEvent[] = [];
     const mutations: { sql: string; params: unknown[] }[] = [];

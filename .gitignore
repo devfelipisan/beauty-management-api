@@ -72,4 +72,7 @@ Thumbs.db
 !/docs/business/operations-contracts.md
 !/docs/plans/
 !/docs/plans/PR-05-operations-worker-foundation.md
-/test/
+/test/*
+!/test/workers/
+!/test/workers/**
+!/test/tsconfig.json
