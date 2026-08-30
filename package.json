@@ -27,6 +27,7 @@
     "workers:dry-run": "node scripts/workers-dry-run.mjs",
     "gate:physical-safety": "npm run lint && npm run typecheck && npm run test:unit && npm run test:workers && npm run workers:dry-run",
     "gate:create-appointment": "npm run gate:physical-safety && npm run test:clinical-persistence",
+    "gate:pr12": "npm run gate:create-appointment",
     "test:watch": "vitest --config ./vitest.config.ts",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
