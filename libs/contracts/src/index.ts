@@ -7,3 +7,4 @@ export * from './appointment-lifecycle/index.js';
 export * from './session-start/index.js';
 export * from './technical-forms/index.js';
 export * from './equipment/index.js';
+export * from './intercurrence/index.js';

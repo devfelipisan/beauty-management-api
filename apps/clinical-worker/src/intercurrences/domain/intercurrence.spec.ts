@@ -1,0 +1,3 @@
+import { describe, expect, it } from 'vitest';import { Intercurrence } from './intercurrence.js';
+const make=()=>new Intercurrence('i','t','s','c','svc','p','TECHNICAL','HIGH','description','conduct','2028-01-01T09:00:00.000Z','2028-01-01T09:01:00.000Z','p',false,false,false,'OPEN');
+describe('Intercurrence',()=>{it('accepts an open clinical fact with explicit severity',()=>expect(make().status).toBe('OPEN'));it('rejects missing clinical content',()=>expect(()=>new Intercurrence('i','t','s','c','svc','p','TECHNICAL','HIGH','','conduct','now','now','p',false,false,false)).toThrow());it('keeps blocking as an explicit consequence',()=>expect(make().blocksNewAppointments).toBe(false));});
