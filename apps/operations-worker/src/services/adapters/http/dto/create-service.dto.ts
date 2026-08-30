@@ -1,1 +1,1 @@
-export class CreateServiceDto { name!: string; category!: string; durationMinutes!: number; basePriceCents!: number; }
+export class CreateServiceDto { name!: string; category!: string; durationMinutes!: number; basePriceCents!: number; requiresEquipment?: boolean; requiresPhotography?: boolean; hasTechnicalForm?: boolean; technicalRequirements?: Record<string, unknown>; }
