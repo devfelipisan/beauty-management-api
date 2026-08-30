@@ -1,0 +1,4 @@
+import { Injectable } from '@nestjs/common';
+import type { AssessmentEligibilityPort } from '../ports/assessment-eligibility.port.js';
+type ClinicalBinding={check(input:{tenantId:string;customerId:string;serviceId:string;professionalId:string}):Promise<{eligible:boolean}>};
+@Injectable() export class ClinicalAssessmentEligibilityAdapter implements AssessmentEligibilityPort { async check(input:{tenantId:string;customerId:string;serviceId:string;professionalId?:string;required:boolean}){ if(!input.required)return {required:false,valid:true}; const binding=(globalThis as {CLINICAL_ASSESSMENT_BINDING?:ClinicalBinding}).CLINICAL_ASSESSMENT_BINDING; if(!binding||!input.professionalId)return {required:true,valid:false}; const result=await binding.check({tenantId:input.tenantId,customerId:input.customerId,serviceId:input.serviceId,professionalId:input.professionalId}); return {required:true,valid:result.eligible}; } }

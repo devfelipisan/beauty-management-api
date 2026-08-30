@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
-    "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "paths": {
       "@beauty/kernel": [
@@ -96,6 +96,9 @@
     },
     {
       "path": "./apps/billing-worker/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/clinical-worker/tsconfig.app.json"
     }
   ]
 }

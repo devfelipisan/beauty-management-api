@@ -1,0 +1,2 @@
+import { License, LicenseStatus } from './license.js';
+export class LicenseOperationalPolicy { admitsAppointments(license:License, now=new Date()):boolean { const x=license.data; if(x.status===LicenseStatus.ACTIVE) return true; if(x.status===LicenseStatus.TRIAL) return true; if(x.status===LicenseStatus.PAYMENT_PENDING||x.status===LicenseStatus.GRACE) return Boolean(x.toleranceUntil && now.getTime()<=Date.parse(x.toleranceUntil)); return false; } }

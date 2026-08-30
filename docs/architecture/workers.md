@@ -22,3 +22,10 @@ PR-05; este documento registra apenas o limite arquitetural.
 Cada Worker devera possuir posteriormente seu proprio wrangler, bindings,
 composicao, health check e observabilidade. O Operations Worker atual nao tem
 binding D1 porque nao executa consultas.
+## Operations Worker
+
+Logical ownership includes tenant operations, professionals, services, customers, scheduling, appointment admission and the SaaS license read-side. Licensing remains logically bounded but co-deployed for the MVP. Platform administration may be split in a future worker.
+
+## Clinical Worker
+
+Owns technical assessments and their eligibility decision. Operations consumes the narrow shared contract through a Service Binding boundary; Clinical domain does not import Operations domain.

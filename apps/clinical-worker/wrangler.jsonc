@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "beauty-clinical-worker",
+  "main": "../../dist/apps/clinical-worker/apps/clinical-worker/src/main.js",
+  "compatibility_date": "2026-08-30",
+  "d1_databases": [{
+    "binding": "D1_DATABASE",
+    "database_name": "beauty-operations-local",
+    "migrations_dir": "../../database/d1/migrations"
+  }]
+}

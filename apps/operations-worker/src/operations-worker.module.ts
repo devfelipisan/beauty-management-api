@@ -12,8 +12,9 @@ import { D1RuntimeModule } from './d1-runtime.module.js';
 import { ReliabilityModule } from '../../../libs/reliability/src/index.js';
 import { AppointmentsModule } from './appointments/appointments.module.js';
 import { AppointmentEligibilityModule } from './appointment-eligibility/appointment-eligibility.module.js';
+import { LicensingModule } from './licensing/licensing.module.js';
 
 @Module({
-  imports: [RuntimeConfigModule, ObservabilityModule, AuthenticationModule, TenancyModule, HealthModule, D1RuntimeModule, ReliabilityModule, TenantsModule, ProfessionalsModule, ServicesModule, CustomersModule, AppointmentsModule, AppointmentEligibilityModule],
+  imports: [RuntimeConfigModule, ObservabilityModule, AuthenticationModule, TenancyModule, HealthModule, D1RuntimeModule, ReliabilityModule, TenantsModule, ProfessionalsModule, ServicesModule, CustomersModule, LicensingModule, AppointmentsModule, AppointmentEligibilityModule],
 })
 export class OperationsWorkerModule {}

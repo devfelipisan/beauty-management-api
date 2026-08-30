@@ -27,6 +27,15 @@
         "tsConfigPath": "apps/billing-worker/tsconfig.app.json"
       }
     },
+    "clinical-worker": {
+      "type": "application",
+      "root": "apps/clinical-worker",
+      "entryFile": "main",
+      "sourceRoot": "apps/clinical-worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/clinical-worker/tsconfig.app.json"
+      }
+    },
     "operations-worker": {
       "type": "application",
       "root": "apps/operations-worker",
