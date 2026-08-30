@@ -9,7 +9,7 @@
     "migrations_dir": "../../database/d1/migrations"
   }],
   "services": [
-    { "binding": "CLINICAL_SERVICE", "service": "beauty-clinical-worker", "entrypoint": "default" },
-    { "binding": "BILLING_SERVICE", "service": "beauty-billing-worker", "entrypoint": "default" }
+    { "binding": "CLINICAL_SERVICE", "service": "beauty-clinical-worker" },
+    { "binding": "BILLING_SERVICE", "service": "beauty-billing-worker" }
   ]
 }
