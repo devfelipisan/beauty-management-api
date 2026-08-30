@@ -1,0 +1,3 @@
+export type AppointmentEligibilityStatus = 'READY' | 'BLOCKED';
+export type AppointmentEligibilityReason = 'TENANT_NOT_OPERATIONAL'|'LICENSE_NOT_OPERATIONAL'|'CUSTOMER_INACTIVE'|'CUSTOMER_RESTRICTED'|'ASSESSMENT_REQUIRED'|'ASSESSMENT_INVALID'|'PLAN_LIMIT_REACHED'|'PROFESSIONAL_INACTIVE'|'SERVICE_INACTIVE'|'PROFESSIONAL_NOT_ENABLED'|'PROFESSIONAL_UNAVAILABLE'|'TIME_CONFLICT';
+export class AppointmentEligibilityResult { private constructor(readonly status: AppointmentEligibilityStatus, readonly reason?: AppointmentEligibilityReason) {} static ready() { return new AppointmentEligibilityResult('READY'); } static blocked(reason: AppointmentEligibilityReason) { return new AppointmentEligibilityResult('BLOCKED', reason); } get eligible() { return this.status === 'READY'; } }
