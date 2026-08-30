@@ -5,10 +5,11 @@ import { PROFESSIONAL_REPOSITORY } from './ports/professional-repository.js';
 import { CreateProfessionalUseCase, DeactivateProfessionalUseCase, GetProfessionalUseCase, ListProfessionalsUseCase, UpdateProfessionalUseCase } from './application/use-cases.js';
 import { TenancyModule } from '../../../../libs/tenancy/src/index.js';
 import { D1ProfessionalServiceRepository } from './adapters/d1-professional-service-repository.js';
+import { AuthenticationModule } from '../../../../libs/authentication/src/index.js';
 import { PROFESSIONAL_SERVICE_REPOSITORY } from './ports/professional-service-repository.js';
 
 @Module({
-  imports: [TenancyModule],
+  imports: [TenancyModule, AuthenticationModule],
   controllers: [ProfessionalsController],
   providers: [D1ProfessionalRepository, D1ProfessionalServiceRepository, { provide: PROFESSIONAL_REPOSITORY, useExisting: D1ProfessionalRepository }, { provide: PROFESSIONAL_SERVICE_REPOSITORY, useExisting: D1ProfessionalServiceRepository }, CreateProfessionalUseCase, DeactivateProfessionalUseCase, GetProfessionalUseCase, ListProfessionalsUseCase, UpdateProfessionalUseCase],
   exports: [PROFESSIONAL_REPOSITORY, CreateProfessionalUseCase, DeactivateProfessionalUseCase, GetProfessionalUseCase, ListProfessionalsUseCase, UpdateProfessionalUseCase],

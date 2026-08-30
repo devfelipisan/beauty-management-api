@@ -1,0 +1,3 @@
+import { AppointmentStateMachine } from './appointment-state-machine.js';
+import { AppointmentStatus } from './appointment.js';
+describe('AppointmentStateMachine', () => { const machine = new AppointmentStateMachine(); it('accepts documented transitions', () => { expect(machine.transition(AppointmentStatus.CONFIRMED, 'check_in')).toBe(AppointmentStatus.CHECKED_IN); expect(machine.transition(AppointmentStatus.IN_PROGRESS, 'complete')).toBe(AppointmentStatus.COMPLETED); }); it('rejects transitions from terminal states', () => { expect(() => machine.transition(AppointmentStatus.COMPLETED, 'cancel')).toThrow('APPOINTMENT_TRANSITION_NOT_ALLOWED'); }); });

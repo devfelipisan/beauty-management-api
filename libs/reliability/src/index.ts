@@ -2,6 +2,7 @@ export * from './tokens.js';
 export * from './reliability.module.js';
 export * from './unit-of-work/unit-of-work.js';
 export * from './unit-of-work/transaction-context.js';
+export * from './unit-of-work/transactional-write-context.js';
 export * from './idempotency/idempotency-record.js';
 export * from './idempotency/idempotency-store.js';
 export * from './idempotency/idempotency.service.js';

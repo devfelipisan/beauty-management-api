@@ -13,13 +13,16 @@ export class D1UnitOfWork implements UnitOfWork {
   constructor(@Inject(D1_DATABASE) private readonly db: D1DatabaseLike) {}
   async execute<T>(operation: (context: TransactionContext) => Promise<T>): Promise<T> {
     const idempotency: IdempotencyRecord[] = []; const audits: AuditEvent[] = []; const outbox: OutboxEvent[] = [];
+    const mutations: { sql: string; params: unknown[] }[] = [];
     const context: TransactionContext = {
       idempotency: { find: async (tenantId, operation, key) => idempotency.find((r) => r.tenantId === tenantId && r.operation === operation && r.key === key) ?? null, reserve: async (r) => { idempotency.push(r); }, complete: async (tenantId, operation, key, response) => { const r = idempotency.find((item) => item.tenantId === tenantId && item.operation === operation && item.key === key); if (r) { r.status = 'COMPLETED'; r.response = response; r.updatedAt = new Date().toISOString(); } }, fail: async (tenantId, operation, key) => { const r = idempotency.find((item) => item.tenantId === tenantId && item.operation === operation && item.key === key); if (r) { r.status = 'FAILED'; r.updatedAt = new Date().toISOString(); } } } as IdempotencyStore,
       audit: { append: async (e) => { audits.push(e); } } as AuditWriter,
       outbox: { append: async (e) => { outbox.push(e); } } as OutboxWriter,
+      persistence: { add: (command) => { mutations.push(command); } },
     };
     const result = await operation(context);
     const statements = [
+      ...mutations.map((m) => this.db.prepare(m.sql).bind(...m.params)),
       ...idempotency.map((r) => this.db.prepare('INSERT INTO idempotency_records (id, tenant_id, operation, idempotency_key, request_hash, status, response_payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(r.id, r.tenantId, r.operation, r.key, r.requestHash, r.status, r.response === undefined ? null : JSON.stringify(r.response), r.createdAt, r.updatedAt)),
       ...audits.map((e) => this.db.prepare('INSERT INTO audit_events (id, tenant_id, actor_id, action, resource_type, resource_id, request_id, correlation_id, metadata_json, occurred_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(e.id, e.tenantId ?? null, e.actorId ?? null, e.action, e.resourceType, e.resourceId ?? null, e.requestId, e.correlationId, e.metadata ? JSON.stringify(e.metadata) : null, e.occurredAt)),
       ...outbox.map((e) => this.db.prepare('INSERT INTO outbox_events (id, tenant_id, event_type, aggregate_type, aggregate_id, correlation_id, payload_json, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(e.id, e.tenantId ?? null, e.type, e.aggregateType, e.aggregateId, e.correlationId, JSON.stringify(e.payload), e.status, e.createdAt)),

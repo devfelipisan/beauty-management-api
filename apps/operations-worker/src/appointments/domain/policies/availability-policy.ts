@@ -1,0 +1,3 @@
+import { TimeInterval } from '../time-interval.js';
+export interface AvailabilityContext { interval: TimeInterval; existing: TimeInterval[]; blocked: TimeInterval[]; workingPeriods?: TimeInterval[]; }
+export class AvailabilityPolicy { isAvailable(context: AvailabilityContext): boolean { if (context.existing.some((item) => item.overlaps(context.interval))) return false; if (context.blocked.some((item) => item.overlaps(context.interval))) return false; if (context.workingPeriods && !context.workingPeriods.some((item) => item.startsAt <= context.interval.startsAt && item.endsAt >= context.interval.endsAt)) return false; return true; } }
