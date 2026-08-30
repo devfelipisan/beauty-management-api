@@ -1,0 +1,52 @@
+import { cloudflareTest } from '@cloudflare/vitest-plugin';
+import { defineConfig } from 'vitest/config';
+import { build } from 'esbuild';
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+async function auxiliaryWorker(entryPoint, name) {
+  const result = await build({
+    entryPoints: [entryPoint],
+    bundle: true,
+    format: 'esm',
+    platform: 'neutral',
+    target: 'es2022',
+    external: ['cloudflare:workers'],
+    write: false,
+  });
+
+  const directory = await mkdtemp(join(tmpdir(), 'beauty-workers-'));
+  const path = join(directory, 'worker.js');
+  await writeFile(path, result.outputFiles[0].text, 'utf8');
+
+  return {
+    name,
+    compatibilityDate: '2026-08-30',
+    d1Databases: name === 'beauty-clinical-worker' ? ['D1_DATABASE'] : undefined,
+    modules: [{ type: 'ESModule', path }],
+  };
+}
+
+export default defineConfig({
+  plugins: [
+    cloudflareTest(async () => ({
+      wrangler: {
+        configPath: './apps/operations-worker/wrangler.jsonc',
+      },
+      miniflare: {
+        workers: [
+          await auxiliaryWorker('./apps/clinical-worker/src/worker.ts', 'beauty-clinical-worker'),
+          await auxiliaryWorker('./apps/billing-worker/src/worker.ts', 'beauty-billing-worker'),
+        ],
+      },
+    })),
+  ],
+  test: {
+    globals: true,
+    root: './',
+    include: ['test/workers/**/*.spec.ts'],
+    maxWorkers: 1,
+    minWorkers: 1,
+  },
+});

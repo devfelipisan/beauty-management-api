@@ -19,8 +19,10 @@
     "start:clinical": "nest start clinical-worker",
     "dev:workers": "wrangler dev -c apps/operations-worker/wrangler.jsonc -c apps/clinical-worker/wrangler.jsonc -c apps/billing-worker/wrangler.jsonc",
     "lint": "oxlint apps/ libs/",
-    "test": "vitest run --config ./vitest.config.mts",
-    "test:watch": "vitest --config ./vitest.config.mts",
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:unit": "vitest run --config ./vitest.config.ts",
+    "test:workers": "vitest run --config ./vitest.config.workers.mjs",
+    "test:watch": "vitest --config ./vitest.config.ts",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
@@ -47,6 +49,7 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.1.2",
     "@cloudflare/workers-types": "^5.20260830.1",
     "@nestjs/cli": "^12.0.0",
     "@nestjs/mau": "^0.2.6",
@@ -63,6 +66,7 @@
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "typescript": "^6.0.2",
+    "vite": "^7.2.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.2",
     "wrangler": "^4.127.1"

@@ -1,11 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { D1_DATABASE, type D1DatabaseLike } from '../../../../../libs/database/src/index.js';
+/// <reference types="@cloudflare/workers-types" />
 import { Customer, type CustomerProps } from '../domain/customer.js';
 import type { CustomerRepository } from '../ports/customer-repository.js';
 type Row = { id: string; tenant_id: string; full_name: string; phone?: string; email?: string; document?: string; status: CustomerProps['status']; relationship_profile: CustomerProps['relationshipProfile']; blocked_for_new_appointments?: number; created_at: string; updated_at: string };
-@Injectable()
 export class D1CustomerRepository implements CustomerRepository {
-  constructor(@Inject(D1_DATABASE) private readonly db: D1DatabaseLike) {}
+  constructor(private readonly db: D1Database) {}
   private map(r: Row) { return Customer.create(r.id, { tenantId: r.tenant_id, fullName: r.full_name, phone: r.phone, email: r.email, document: r.document, status: r.status, relationshipProfile: r.relationship_profile, blockedForNewAppointments: Boolean(r.blocked_for_new_appointments), createdAt: r.created_at, updatedAt: r.updated_at }); }
   async findById(tenantId: string, id: string) { const r = await this.db.prepare('SELECT * FROM customers WHERE tenant_id = ? AND id = ?').bind(tenantId, id).first<Row>(); return r ? this.map(r) : null; }
   async findByPhone(tenantId: string, phone: string) { const r = await this.db.prepare('SELECT * FROM customers WHERE tenant_id = ? AND phone = ?').bind(tenantId, phone).first<Row>(); return r ? this.map(r) : null; }

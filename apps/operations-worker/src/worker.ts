@@ -1,10 +1,13 @@
+/// <reference types="@cloudflare/workers-types" />
 import { GetCustomerUseCase, ListCustomersUseCase, UpdateCustomerUseCase } from './customers/application/use-cases.js';
 import { D1CustomerRepository } from './customers/adapters/d1-customer-repository.js';
 import { MockIdentityProvider } from '../../../libs/authentication/src/adapters/mock-identity-provider.js';
 import { MockTenantMembershipProvider } from '../../../libs/tenancy/src/adapters/mock-tenant-membership-provider.js';
 import { dispatchHealth, ids, json, mappedError, notFound } from '../../../libs/cloudflare-runtime/src/index.js';
-import type { D1DatabaseLike } from '../../../libs/database/src/index.js';
-export interface OperationsEnv { D1_DATABASE:D1DatabaseLike; CLINICAL_SERVICE:unknown; BILLING_SERVICE:unknown; }
+import type { AssessmentEligibilityRequest, AssessmentEligibilityResponse, CalculateCommercialTermsRequest, CommercialTermsResponse } from '../../../libs/contracts/src/index.js';
+export interface OperationsEnv { D1_DATABASE:D1Database; CLINICAL_SERVICE:unknown; BILLING_SERVICE:unknown; }
+export async function invokeClinicalAssessment(env:OperationsEnv,input:AssessmentEligibilityRequest):Promise<AssessmentEligibilityResponse>{const binding=env.CLINICAL_SERVICE as {checkAssessmentEligibility(input:AssessmentEligibilityRequest):Promise<AssessmentEligibilityResponse>}; return binding.checkAssessmentEligibility(input);}
+export async function invokeCommercialTerms(env:OperationsEnv,input:CalculateCommercialTermsRequest):Promise<CommercialTermsResponse>{const binding=env.BILLING_SERVICE as {calculateCommercialTerms(input:CalculateCommercialTermsRequest):Promise<CommercialTermsResponse>}; return binding.calculateCommercialTerms(input);}
 type Runtime={get:GetCustomerUseCase;list:ListCustomersUseCase;update:UpdateCustomerUseCase}; let runtime:Runtime|undefined;
 function getRuntime(env:OperationsEnv):Runtime { if(!runtime){const repository=new D1CustomerRepository(env.D1_DATABASE); runtime={get:new GetCustomerUseCase(repository),list:new ListCustomersUseCase(repository),update:new UpdateCustomerUseCase(repository)};} return runtime; }
 function route(path:string){const m=path.match(/^\/tenants\/([^/]+)\/customers(?:\/([^/]+))?$/); return m?{tenantId:m[1],customerId:m[2]}:null;}

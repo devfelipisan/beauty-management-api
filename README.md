@@ -7,12 +7,16 @@ Backend multiempresa para agenda, confirmação, sinal, clientes, histórico té
 ```bash
 npm install
 npm test
+npm run test:workers
 npm run lint
 npm run build
 npx wrangler deploy --dry-run
 ```
 
 ## Operations Worker
+
+`npm run dev:workers` inicia o conjunto local de Workers para desenvolvimento manual.
+`npm run test:workers` executa os testes no runtime workerd via `@cloudflare/vitest-plugin`.
 
 O Worker inicial de Operations e um runtime Nest isolado, com apenas `GET /health`.
 Ele nao acessa banco nesta fundacao e deve ser iniciado com `SERVICE_ID=beauty-operations-worker`.
