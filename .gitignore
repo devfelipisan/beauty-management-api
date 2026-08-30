@@ -10,6 +10,8 @@ docs
 # test e coverage directory
 test
 
+# lock files
+*lock*
 
 # Logs
 logs
