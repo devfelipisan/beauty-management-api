@@ -1,5 +1,5 @@
 {
   "name": "beauty-billing-worker",
-  "main": "../../dist/apps/billing-worker/src/main.js",
+  "main": "src/worker.ts",
   "compatibility_date": "2026-08-30"
 }

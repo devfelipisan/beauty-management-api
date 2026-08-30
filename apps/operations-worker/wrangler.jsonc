@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "beauty-operations-worker",
-  "main": "../../dist/apps/operations-worker/src/main.js",
+  "main": "src/worker.ts",
   "compatibility_date": "2026-08-30",
   "d1_databases": [{
     "binding": "D1_DATABASE",

@@ -6,6 +6,6 @@
     "rootDir": "../..",
     "outDir": "../../dist/apps/clinical-worker"
   },
-  "include": ["src/**/*", "../../libs/**/*"],
+  "include": ["src/**/*", "../../libs/**/*", "worker-configuration.d.ts"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }

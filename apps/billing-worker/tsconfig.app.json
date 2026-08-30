@@ -6,6 +6,6 @@
     "rootDir": "../../",
     "outDir": "../../dist"
   },
-  "include": ["src/**/*", "../../libs/**/*.ts"],
+  "include": ["src/**/*", "../../libs/**/*.ts", "worker-configuration.d.ts"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }

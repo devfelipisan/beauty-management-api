@@ -29,3 +29,7 @@ Logical ownership includes tenant operations, professionals, services, customers
 ## Clinical Worker
 
 Owns technical assessments and their eligibility decision. Operations consumes the narrow shared contract through a Service Binding boundary; Clinical domain does not import Operations domain.
+
+## Runtime entrypoints
+
+Each Worker has an independent `wrangler.jsonc` pointing to `src/worker.ts`. `main.ts` is retained only for Node/dev smoke. The Module Worker adapter currently qualifies `fetch`, health and 404; full Nest HTTP pipeline qualification remains explicit work, not an implicit consequence of the Node entrypoint.
