@@ -63,4 +63,13 @@ Thumbs.db
 /docker/.env.*
 !/docker/.env.example
 /docs/
+!/docs/
+!/docs/adr/
+!/docs/adr/0009-d1-persistence-for-cloudflare-workers.md
+!/docs/architecture/
+!/docs/architecture/workers.md
+!/docs/business/
+!/docs/business/operations-contracts.md
+!/docs/plans/
+!/docs/plans/PR-05-operations-worker-foundation.md
 /test/

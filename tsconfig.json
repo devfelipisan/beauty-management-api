@@ -6,24 +6,60 @@
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "paths": {
-      "@beauty/kernel": ["libs/kernel/src/index.ts"],
-      "@beauty/kernel/*": ["libs/kernel/src/*"],
-      "@beauty/contracts": ["libs/contracts/src/index.ts"],
-      "@beauty/contracts/*": ["libs/contracts/src/*"],
-      "@beauty/config": ["libs/config/src/index.ts"],
-      "@beauty/config/*": ["libs/config/src/*"],
-      "@beauty/testing": ["libs/testing/src/index.ts"],
-      "@beauty/testing/*": ["libs/testing/src/*"],
-      "@beauty/execution-context": ["libs/execution-context/src/index.ts"],
-      "@beauty/execution-context/*": ["libs/execution-context/src/*"],
-      "@beauty/observability": ["libs/observability/src/index.ts"],
-      "@beauty/observability/*": ["libs/observability/src/*"],
-      "@beauty/authentication": ["libs/authentication/src/index.ts"],
-      "@beauty/authentication/*": ["libs/authentication/src/*"],
-      "@beauty/tenancy": ["libs/tenancy/src/index.ts"],
-      "@beauty/tenancy/*": ["libs/tenancy/src/*"],
-      "@beauty/database": ["libs/database/src/index.ts"],
-      "@beauty/database/*": ["libs/database/src/*"]
+      "@beauty/kernel": [
+        "libs/kernel/src/index.ts"
+      ],
+      "@beauty/kernel/*": [
+        "libs/kernel/src/*"
+      ],
+      "@beauty/contracts": [
+        "libs/contracts/src/index.ts"
+      ],
+      "@beauty/contracts/*": [
+        "libs/contracts/src/*"
+      ],
+      "@beauty/config": [
+        "libs/config/src/index.ts"
+      ],
+      "@beauty/config/*": [
+        "libs/config/src/*"
+      ],
+      "@beauty/testing": [
+        "libs/testing/src/index.ts"
+      ],
+      "@beauty/testing/*": [
+        "libs/testing/src/*"
+      ],
+      "@beauty/execution-context": [
+        "libs/execution-context/src/index.ts"
+      ],
+      "@beauty/execution-context/*": [
+        "libs/execution-context/src/*"
+      ],
+      "@beauty/observability": [
+        "libs/observability/src/index.ts"
+      ],
+      "@beauty/observability/*": [
+        "libs/observability/src/*"
+      ],
+      "@beauty/authentication": [
+        "libs/authentication/src/index.ts"
+      ],
+      "@beauty/authentication/*": [
+        "libs/authentication/src/*"
+      ],
+      "@beauty/tenancy": [
+        "libs/tenancy/src/index.ts"
+      ],
+      "@beauty/tenancy/*": [
+        "libs/tenancy/src/*"
+      ],
+      "@beauty/database": [
+        "libs/database/src/index.ts"
+      ],
+      "@beauty/database/*": [
+        "libs/database/src/*"
+      ]
     },
     "esModuleInterop": true,
     "isolatedModules": true,
@@ -39,6 +75,18 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": ["vitest/globals", "node"]
-  }
+    "types": [
+      "vitest/globals",
+      "node"
+    ]
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/beauty-management-api/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/operations-worker/tsconfig.app.json"
+    }
+  ]
 }
