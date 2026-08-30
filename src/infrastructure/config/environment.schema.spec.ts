@@ -34,4 +34,16 @@ describe('environmentSchema', () => {
     });
     expect(result.error).toBeDefined();
   });
+
+  it('rejects the mock auth provider in production', () => {
+    const result = environmentSchema.validate({
+      ...base,
+      NODE_ENV: 'production',
+      OBSERVE_ENABLED: true,
+      OBSERVE_APP_KEY: 'key',
+      OBSERVE_APP_SECRET: 'secret',
+      AUTH_PROVIDER: 'mock',
+    });
+    expect(result.error?.message).toContain('AUTH_PROVIDER=mock');
+  });
 });

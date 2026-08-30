@@ -17,7 +17,11 @@
       "@beauty/execution-context": ["libs/execution-context/src/index.ts"],
       "@beauty/execution-context/*": ["libs/execution-context/src/*"],
       "@beauty/observability": ["libs/observability/src/index.ts"],
-      "@beauty/observability/*": ["libs/observability/src/*"]
+      "@beauty/observability/*": ["libs/observability/src/*"],
+      "@beauty/authentication": ["libs/authentication/src/index.ts"],
+      "@beauty/authentication/*": ["libs/authentication/src/*"],
+      "@beauty/tenancy": ["libs/tenancy/src/index.ts"],
+      "@beauty/tenancy/*": ["libs/tenancy/src/*"]
     },
     "esModuleInterop": true,
     "isolatedModules": true,

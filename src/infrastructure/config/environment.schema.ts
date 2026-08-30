@@ -13,6 +13,7 @@ export const environmentSchema = Joi.object({
   PORT: Joi.number().port().default(3000),
   SERVICE_ID: Joi.string().required(),
   SERVICE_VERSION: Joi.string().default('local'),
+  AUTH_PROVIDER: Joi.string().valid('mock').default('mock'),
   OBSERVE_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
   OBSERVE_APP_KEY: Joi.string().allow('').optional(),
   OBSERVE_APP_SECRET: Joi.string().allow('').optional(),
@@ -39,6 +40,11 @@ export const environmentSchema = Joi.object({
   if (value.APP_ENV === 'production' && !value.OBSERVE_ENABLED) {
     return helpers.error('any.custom', {
       message: 'OBSERVE_ENABLED must be true in production',
+    });
+  }
+  if (value.NODE_ENV === 'production' && value.AUTH_PROVIDER === 'mock') {
+    return helpers.error('any.custom', {
+      message: 'AUTH_PROVIDER=mock is not allowed in production',
     });
   }
   return value;
