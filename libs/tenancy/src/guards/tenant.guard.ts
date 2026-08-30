@@ -32,7 +32,7 @@ export class TenantGuard implements CanActivate {
     if (!request.user) throw new UnauthorizedException({ code: 'AUTHENTICATION_REQUIRED' });
 
     const candidateTenantId = request.params?.tenantId;
-    if (!candidateTenantId) {
+    if (typeof candidateTenantId !== 'string' || !candidateTenantId) {
       throw new ForbiddenException({ code: 'TENANT_ACCESS_DENIED' });
     }
 

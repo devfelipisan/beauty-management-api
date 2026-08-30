@@ -21,7 +21,9 @@
       "@beauty/authentication": ["libs/authentication/src/index.ts"],
       "@beauty/authentication/*": ["libs/authentication/src/*"],
       "@beauty/tenancy": ["libs/tenancy/src/index.ts"],
-      "@beauty/tenancy/*": ["libs/tenancy/src/*"]
+      "@beauty/tenancy/*": ["libs/tenancy/src/*"],
+      "@beauty/database": ["libs/database/src/index.ts"],
+      "@beauty/database/*": ["libs/database/src/*"]
     },
     "esModuleInterop": true,
     "isolatedModules": true,
