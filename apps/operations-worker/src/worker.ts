@@ -4,7 +4,7 @@ import { GetCustomerUseCase, ListCustomersUseCase, UpdateCustomerUseCase } from 
 import { MockIdentityProvider } from '../../../libs/authentication/src/adapters/mock-identity-provider.js';
 import { MockTenantMembershipProvider } from '../../../libs/tenancy/src/adapters/mock-tenant-membership-provider.js';
 import { dispatchHealth, ids, json, mappedError, notFound } from '../../../libs/cloudflare-runtime/src/index.js';
-import type { AssessmentEligibilityRequest, AssessmentEligibilityResponse, CalculateCommercialTermsRequest, CommercialTermsResponse, CreateAppointmentRequest, ConfirmAppointmentRequest, CheckInAppointmentRequest } from '../../../libs/contracts/src/index.js';
+import type { AssessmentEligibilityRequest, AssessmentEligibilityResponse, CalculateCommercialTermsRequest, CommercialTermsResponse, CreateAppointmentRequest, ConfirmAppointmentRequest, CheckInAppointmentRequest, GetSessionStartContextRequest, ApplySessionStartedRequest } from '../../../libs/contracts/src/index.js';
 import { CreateAppointment, type CreateAppointmentCommand } from './appointments/application/create-appointment.js';
 import { D1AppointmentRepository } from './appointments/adapters/d1-appointment-repository.js';
 import { D1AvailabilityRepository } from './appointments/adapters/d1-availability-repository.js';
@@ -22,6 +22,7 @@ import { D1IdempotencyStore } from '../../../libs/reliability/src/d1/d1-reliabil
 import { D1UnitOfWork } from '../../../libs/reliability/src/d1/d1-unit-of-work.js';
 import { ApplyDepositTransition } from './appointments/application/apply-deposit-transition.js';
 import { CheckInAppointment, ConfirmAppointment } from './appointments/application/appointment-lifecycle.js';
+import { ApplySessionStarted, GetSessionStartContext } from './appointments/application/session-start.js';
 export interface OperationsEnv { D1_DATABASE:D1Database; CLINICAL_SERVICE:unknown; BILLING_SERVICE:unknown; }
 export async function invokeClinicalAssessment(env:OperationsEnv,input:AssessmentEligibilityRequest):Promise<AssessmentEligibilityResponse>{const binding=env.CLINICAL_SERVICE as {checkAssessmentEligibility(input:AssessmentEligibilityRequest):Promise<AssessmentEligibilityResponse>}; return binding.checkAssessmentEligibility(input);}
 export async function invokeCommercialTerms(env:OperationsEnv,input:CalculateCommercialTermsRequest):Promise<CommercialTermsResponse>{const binding=env.BILLING_SERVICE as {calculateCommercialTerms(input:CalculateCommercialTermsRequest):Promise<CommercialTermsResponse>}; return binding.calculateCommercialTerms(input);}
@@ -29,6 +30,7 @@ export async function invokeCreateAppointment(env:OperationsEnv,input:CreateAppo
 function appointmentLifecycle(env:OperationsEnv){return {repository:new D1AppointmentRepository(env.D1_DATABASE),uow:new D1UnitOfWork(env.D1_DATABASE),store:new D1IdempotencyStore(env.D1_DATABASE)};}
 export async function invokeConfirmAppointment(env:OperationsEnv,input:ConfirmAppointmentRequest){const x=appointmentLifecycle(env);return new ConfirmAppointment(x.repository,x.uow,x.store).execute(input);}
 export async function invokeCheckInAppointment(env:OperationsEnv,input:CheckInAppointmentRequest){const x=appointmentLifecycle(env);return new CheckInAppointment(x.repository,x.uow,x.store).execute(input);}
+export async function invokeSessionStartContext(env:OperationsEnv,input:GetSessionStartContextRequest){return new GetSessionStartContext(new D1AppointmentRepository(env.D1_DATABASE),new D1ProfessionalRepository(env.D1_DATABASE),new D1TenantRepository(env.D1_DATABASE)).execute(input);}
 type Runtime={get:GetCustomerUseCase;list:ListCustomersUseCase;update:UpdateCustomerUseCase}; let runtime:Runtime|undefined;
 function getRuntime(env:OperationsEnv):Runtime { if(!runtime){const repository=new D1CustomerRepository(env.D1_DATABASE); runtime={get:new GetCustomerUseCase(repository),list:new ListCustomersUseCase(repository),update:new UpdateCustomerUseCase(repository)};} return runtime; }
 function route(path:string){const lifecycle=path.match(/^\/tenants\/([^/]+)\/appointments\/([^/]+)\/(confirm|check-in)$/); if(lifecycle)return {kind:lifecycle[3] as 'confirm'|'check-in',tenantId:lifecycle[1],appointmentId:lifecycle[2]}; const customer=path.match(/^\/tenants\/([^/]+)\/customers(?:\/([^/]+))?$/); if(customer)return {kind:'customer' as const,tenantId:customer[1],customerId:customer[2]}; const appointment=path.match(/^\/tenants\/([^/]+)\/appointments$/); return appointment?{kind:'appointment' as const,tenantId:appointment[1]}:null;}
@@ -41,4 +43,6 @@ export default class OperationsWorker extends WorkerEntrypoint<OperationsEnv> {
   async fetch(request:any):Promise<any>{return handle(request,this.env);}
   applyDepositConfirmed(input:import('../../../libs/contracts/src/index.js').ApplyDepositTransitionRequest){return new ApplyDepositTransition(new D1AppointmentRepository(this.env.D1_DATABASE),new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE)).execute(input,'confirmed');}
   applyDepositExpired(input:import('../../../libs/contracts/src/index.js').ApplyDepositTransitionRequest){return new ApplyDepositTransition(new D1AppointmentRepository(this.env.D1_DATABASE),new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE)).execute(input,'expired');}
+  getSessionStartContext(input:GetSessionStartContextRequest){return new GetSessionStartContext(new D1AppointmentRepository(this.env.D1_DATABASE),new D1ProfessionalRepository(this.env.D1_DATABASE),new D1TenantRepository(this.env.D1_DATABASE)).execute(input);}
+  applySessionStarted(input:ApplySessionStartedRequest){return new ApplySessionStarted(new D1AppointmentRepository(this.env.D1_DATABASE),new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE)).execute(input);}
 }

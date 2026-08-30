@@ -7,5 +7,6 @@
     "binding": "D1_DATABASE",
     "database_name": "beauty-operations-local",
     "migrations_dir": "../../database/d1/migrations"
-  }]
+  }],
+  "services": [{ "binding": "OPERATIONS_SERVICE", "service": "beauty-operations-worker" }]
 }

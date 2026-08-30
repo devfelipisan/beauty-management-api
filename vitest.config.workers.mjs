@@ -42,7 +42,7 @@ export default defineConfig({
         bindings: { TEST_MIGRATIONS: migrations },
         workers: [
           await auxiliaryWorker('./apps/operations-worker/src/worker.ts', 'beauty-operations-runtime'),
-          await auxiliaryWorker('./apps/clinical-worker/src/worker.ts', 'beauty-clinical-worker'),
+          await auxiliaryWorker('./apps/clinical-worker/src/worker.ts', 'beauty-clinical-worker', { OPERATIONS_SERVICE: 'beauty-operations-runtime' }),
           await auxiliaryWorker('./apps/billing-worker/src/worker.ts', 'beauty-billing-worker', { OPERATIONS_SERVICE: 'beauty-operations-runtime' }),
         ],
       },

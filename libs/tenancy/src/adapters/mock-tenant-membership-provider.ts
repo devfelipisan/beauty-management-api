@@ -13,7 +13,7 @@ export class MockTenantMembershipProvider implements TenantMembershipProvider {
         'customer.create', 'customer.read',
         'professional.create', 'professional.read',
         'service.create', 'service.read',
-        'appointment.create', 'appointment.confirm', 'appointment.check-in',
+        'appointment.create', 'appointment.confirm', 'appointment.check-in', 'session.start',
       ],
     };
   }
