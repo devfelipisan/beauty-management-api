@@ -1,0 +1,12 @@
+{
+  "name": "beauty-operations-worker",
+  "main": "dist/apps/operations-worker/src/main.js",
+  "compatibility_date": "2026-08-30",
+  "d1_databases": [
+    {
+      "binding": "D1_DATABASE",
+      "database_name": "beauty-operations-local",
+      "migrations_dir": "database/d1/migrations"
+    }
+  ]
+}

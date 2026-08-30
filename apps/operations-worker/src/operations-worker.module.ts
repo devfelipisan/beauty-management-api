@@ -4,8 +4,13 @@ import { ObservabilityModule } from '../../../libs/observability/src/index.js';
 import { AuthenticationModule } from '../../../libs/authentication/src/index.js';
 import { TenancyModule } from '../../../libs/tenancy/src/index.js';
 import { HealthModule } from './health/health.module.js';
+import { TenantsModule } from './tenants/tenants.module.js';
+import { ProfessionalsModule } from './professionals/professionals.module.js';
+import { ServicesModule } from './services/services.module.js';
+import { CustomersModule } from './customers/customers.module.js';
+import { D1RuntimeModule } from './d1-runtime.module.js';
 
 @Module({
-  imports: [RuntimeConfigModule, ObservabilityModule, AuthenticationModule, TenancyModule, HealthModule],
+  imports: [RuntimeConfigModule, ObservabilityModule, AuthenticationModule, TenancyModule, HealthModule, D1RuntimeModule, TenantsModule, ProfessionalsModule, ServicesModule, CustomersModule],
 })
 export class OperationsWorkerModule {}

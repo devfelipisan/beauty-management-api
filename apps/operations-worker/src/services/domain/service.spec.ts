@@ -1,0 +1,2 @@
+import { Service } from './service.js';
+describe('Service', () => { it('rejects invalid duration and fractional cents', () => { expect(() => Service.create('s1', { tenantId: 't1', name: 'X', category: 'Y', durationMinutes: 0, basePriceCents: 100 })).toThrow(); expect(() => Service.create('s1', { tenantId: 't1', name: 'X', category: 'Y', durationMinutes: 30, basePriceCents: 1.5 })).toThrow(); }); });

@@ -11,7 +11,12 @@ export class MockTenantMembershipProvider implements TenantMembershipProvider {
       actorId,
       active: true,
       roles: ['admin'],
-      permissions: ['customer.read', 'appointment.create'],
+      permissions: [
+        'customer.create', 'customer.read',
+        'professional.create', 'professional.read',
+        'service.create', 'service.read',
+        'appointment.create',
+      ],
     };
   }
 }

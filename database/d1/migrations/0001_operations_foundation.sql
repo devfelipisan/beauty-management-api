@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, legal_name TEXT NOT NULL, display_name TEXT NOT NULL, document TEXT NOT NULL, timezone TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_tenants_document ON tenants(document);
+CREATE TABLE IF NOT EXISTS professionals (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, name TEXT NOT NULL, status TEXT NOT NULL, public_visible INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (tenant_id) REFERENCES tenants(id));
+CREATE INDEX IF NOT EXISTS idx_professionals_tenant_status ON professionals(tenant_id, status);
+CREATE TABLE IF NOT EXISTS services (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, name TEXT NOT NULL, category TEXT NOT NULL, duration_minutes INTEGER NOT NULL, base_price_cents INTEGER NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (tenant_id) REFERENCES tenants(id));
+CREATE INDEX IF NOT EXISTS idx_services_tenant_status ON services(tenant_id, status);
+CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, full_name TEXT NOT NULL, phone TEXT, email TEXT, document TEXT, status TEXT NOT NULL, relationship_profile TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (tenant_id) REFERENCES tenants(id));
+CREATE INDEX IF NOT EXISTS idx_customers_tenant_phone ON customers(tenant_id, phone);
+CREATE INDEX IF NOT EXISTS idx_customers_tenant_document ON customers(tenant_id, document);
+CREATE INDEX IF NOT EXISTS idx_customers_tenant_email ON customers(tenant_id, email);
+CREATE TABLE IF NOT EXISTS professional_services (tenant_id TEXT NOT NULL, professional_id TEXT NOT NULL, service_id TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (tenant_id, professional_id, service_id), FOREIGN KEY (tenant_id) REFERENCES tenants(id));

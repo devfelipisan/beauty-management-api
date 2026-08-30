@@ -1,5 +1,5 @@
-export abstract class DomainError extends Error {
-  protected constructor(
+export class DomainError extends Error {
+  constructor(
     public readonly code: string,
     message: string,
   ) {

@@ -1,0 +1,3 @@
+import type { Customer } from '../domain/customer.js';
+export interface CustomerRepository { findById(tenantId: string, id: string): Promise<Customer | null>; findByPhone(tenantId: string, phone: string): Promise<Customer | null>; findByDocument(tenantId: string, document: string): Promise<Customer | null>; findByEmail(tenantId: string, email: string): Promise<Customer | null>; list(tenantId: string, limit: number, cursor?: string): Promise<Customer[]>; create(customer: Customer): Promise<void>; update(customer: Customer): Promise<void>; }
+export const CUSTOMER_REPOSITORY = Symbol('CUSTOMER_REPOSITORY');
