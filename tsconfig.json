@@ -13,7 +13,11 @@
       "@beauty/config": ["libs/config/src/index.ts"],
       "@beauty/config/*": ["libs/config/src/*"],
       "@beauty/testing": ["libs/testing/src/index.ts"],
-      "@beauty/testing/*": ["libs/testing/src/*"]
+      "@beauty/testing/*": ["libs/testing/src/*"],
+      "@beauty/execution-context": ["libs/execution-context/src/index.ts"],
+      "@beauty/execution-context/*": ["libs/execution-context/src/*"],
+      "@beauty/observability": ["libs/observability/src/index.ts"],
+      "@beauty/observability/*": ["libs/observability/src/*"]
     },
     "esModuleInterop": true,
     "isolatedModules": true,

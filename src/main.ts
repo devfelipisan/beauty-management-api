@@ -1,7 +1,7 @@
 ﻿import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module.js';
-import { ObserveInstrument } from './infrastructure/observability/observability.module.js';
+import { ObserveInstrument } from '@beauty/observability';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
