@@ -7,3 +7,5 @@ O adapter atual roteia `GET /health` e retorna 404 para rotas não implementadas
 Operations declara D1 e os bindings `CLINICAL_SERVICE`/`BILLING_SERVICE`; Billing não recebe D1; Clinical declara D1. Contexto de tenant/actor não é armazenado em singleton global pelo adapter.
 
 Clinical e Billing usam `WorkerEntrypoint` para RPC interno. Os adapters de Operations aceitam somente contratos de transporte e mantêm falhas downstream como bloqueio. O binding local precisa ser conectado pelo mecanismo de descoberta do Wrangler antes da qualificação final de integração.
+
+O harness oficial é `npm run dev:workers`, com Operations primeiro. A ordem futura de deploy é Clinical, Billing e Operations. O estado `not connected` do Wrangler local não é considerado prova de RPC.

@@ -17,6 +17,7 @@
     "start:operations": "nest start operations-worker",
     "start:billing": "nest start billing-worker",
     "start:clinical": "nest start clinical-worker",
+    "dev:workers": "wrangler dev -c apps/operations-worker/wrangler.jsonc -c apps/clinical-worker/wrangler.jsonc -c apps/billing-worker/wrangler.jsonc",
     "lint": "oxlint apps/ libs/",
     "test": "vitest run --config ./vitest.config.mts",
     "test:watch": "vitest --config ./vitest.config.mts",
