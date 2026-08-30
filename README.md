@@ -26,6 +26,17 @@ A decisao de persistencia para os Workers Cloudflare esta registrada em
 `docs/adr/0009-d1-persistence-for-cloudflare-workers.md`. O dominio de Operations
 e os bindings D1 permanecem para o proximo PR.
 
+## Billing Worker
+
+O Billing Worker e a autoridade futura para Commercial Terms, Discount e Deposit.
+Nesta fundacao ele expoe somente `GET /health`; policies indisponiveis retornam
+`BLOCKED` e nao ha Payment, Refund ou persistencia de Deposit.
+
+```bash
+npm run start:billing
+npx nest build billing-worker
+```
+
 ## Documentação
 
 - Produto e negócio: `docs/00-product/` e `docs/01-business/`

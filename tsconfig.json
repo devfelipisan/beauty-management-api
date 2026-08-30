@@ -93,6 +93,9 @@
     },
     {
       "path": "./apps/operations-worker/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/billing-worker/tsconfig.app.json"
     }
   ]
 }

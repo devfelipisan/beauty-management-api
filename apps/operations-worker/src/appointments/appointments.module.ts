@@ -7,5 +7,7 @@ import { APPOINTMENT_REPOSITORY } from './ports/appointment-repository.js';
 import { AVAILABILITY_REPOSITORY } from './ports/availability-repository.js';
 import { TenancyModule } from '../../../../libs/tenancy/src/index.js';
 import { AuthenticationModule } from '../../../../libs/authentication/src/index.js';
-@Module({ imports:[TenancyModule, AuthenticationModule], controllers:[AppointmentsController], providers:[D1AppointmentRepository,D1AvailabilityRepository,{provide:APPOINTMENT_REPOSITORY,useExisting:D1AppointmentRepository},{provide:AVAILABILITY_REPOSITORY,useExisting:D1AvailabilityRepository},CheckProfessionalAvailabilityUseCase], exports:[APPOINTMENT_REPOSITORY,AVAILABILITY_REPOSITORY] })
+import { UnavailableCommercialTerms } from './adapters/unavailable-commercial-terms.js';
+import { COMMERCIAL_TERMS } from './ports/commercial-terms-port.js';
+@Module({ imports:[TenancyModule, AuthenticationModule], controllers:[AppointmentsController], providers:[D1AppointmentRepository,D1AvailabilityRepository,UnavailableCommercialTerms,{provide:APPOINTMENT_REPOSITORY,useExisting:D1AppointmentRepository},{provide:AVAILABILITY_REPOSITORY,useExisting:D1AvailabilityRepository},{provide:COMMERCIAL_TERMS,useExisting:UnavailableCommercialTerms},CheckProfessionalAvailabilityUseCase], exports:[APPOINTMENT_REPOSITORY,AVAILABILITY_REPOSITORY,COMMERCIAL_TERMS] })
 export class AppointmentsModule {}

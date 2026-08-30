@@ -15,6 +15,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/apps/beauty-management-api/src/main.js",
     "start:operations": "nest start operations-worker",
+    "start:billing": "nest start billing-worker",
     "lint": "oxlint apps/ libs/",
     "test": "vitest run",
     "test:watch": "vitest",

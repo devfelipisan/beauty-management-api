@@ -18,6 +18,15 @@
         "tsConfigPath": "apps/beauty-management-api/tsconfig.app.json"
       }
     },
+    "billing-worker": {
+      "type": "application",
+      "root": "apps/billing-worker",
+      "entryFile": "main",
+      "sourceRoot": "apps/billing-worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/billing-worker/tsconfig.app.json"
+      }
+    },
     "operations-worker": {
       "type": "application",
       "root": "apps/operations-worker",
