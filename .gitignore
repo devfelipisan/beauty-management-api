@@ -1,66 +1,66 @@
-# compiled output
-/dist
-/node_modules
-/build
+﻿# =========================
+# Compiled output
+# =========================
+/dist/
+/build/
+/node_modules/
 
-# codex documentation
-/.codex
-docs
+# =========================
+# Codex local/private files
+# =========================
+/.codex/
 
-# test e coverage directory
-test
+# =========================
+# Lock files
+# =========================
+*.lock
 
-# lock files
-*lock*
-
+# =========================
 # Logs
-logs
+# =========================
+/logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 
+# =========================
 # OS
+# =========================
 .DS_Store
+Thumbs.db
 
-# Tests
-/coverage
-/.nyc_output
+# =========================
+# Tests / Coverage artifacts
+# =========================
+/coverage/
+/.nyc_output/
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
+# =========================
+# IDE
+# =========================
+.idea/
 .vscode/*
 !.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
 
-# dotenv environment variable files
+# =========================
+# Environment variables
+# =========================
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+!.env.example
 
-# temp directory
-.temp
-.tmp
+# =========================
+# linters
+# =========================
+.yarn
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+# =========================
+# docker
+# =========================
+/docker/.env
+/docker/.env.*
+!/docker/.env.example
+/docs/
+/test/
