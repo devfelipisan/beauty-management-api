@@ -4,6 +4,7 @@
 export {};
 declare global {
 	const D1_DATABASE: D1Database;
+	const SESSION_MEDIA: R2Bucket;
 }
 
 // Begin runtime types

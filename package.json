@@ -35,6 +35,7 @@
     "gate:pr17": "npm run gate:pr16 && npm run test:unit && npm run test:workers && npm run workers:dry-run && git diff --check",
     "gate:pr18": "npm run gate:pr17 && npm run test:unit && npm run test:workers && npm run workers:dry-run && git diff --check",
     "gate:pr19": "npm run gate:pr18 && npm run test:unit && npm run test:workers && npm run workers:dry-run && git diff --check",
+    "gate:pr20": "npm run gate:pr19 && npm run test:unit && npm run test:workers && npm run workers:dry-run && git diff --check",
     "test:watch": "vitest --config ./vitest.config.ts",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",

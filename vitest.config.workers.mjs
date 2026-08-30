@@ -6,7 +6,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-async function auxiliaryWorker(entryPoint, name, serviceBindings = {}) {
+async function auxiliaryWorker(entryPoint, name, serviceBindings = {}, r2Buckets = []) {
   const result = await build({
     entryPoints: [entryPoint],
     bundle: true,
@@ -25,6 +25,7 @@ async function auxiliaryWorker(entryPoint, name, serviceBindings = {}) {
     name,
     compatibilityDate: '2026-08-30',
     d1Databases: ['D1_DATABASE'],
+    r2Buckets,
     serviceBindings,
     modules: [{ type: 'ESModule', path }],
   };
@@ -39,10 +40,10 @@ export default defineConfig({
         configPath: './apps/operations-worker/wrangler.jsonc',
       },
       miniflare: {
-        bindings: { TEST_MIGRATIONS: migrations },
+        bindings: { TEST_MIGRATIONS: migrations, MAX_CLINICAL_PHOTO_BYTES: '10485760' },
         workers: [
           await auxiliaryWorker('./apps/operations-worker/src/worker.ts', 'beauty-operations-runtime'),
-          await auxiliaryWorker('./apps/clinical-worker/src/worker.ts', 'beauty-clinical-worker', { OPERATIONS_SERVICE: 'beauty-operations-runtime' }),
+          await auxiliaryWorker('./apps/clinical-worker/src/worker.ts', 'beauty-clinical-worker', { OPERATIONS_SERVICE: 'beauty-operations-runtime' }, ['SESSION_MEDIA']),
           await auxiliaryWorker('./apps/billing-worker/src/worker.ts', 'beauty-billing-worker', { OPERATIONS_SERVICE: 'beauty-operations-runtime' }),
         ],
       },
