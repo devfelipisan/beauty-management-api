@@ -59,6 +59,12 @@
       ],
       "@beauty/database/*": [
         "libs/database/src/*"
+      ],
+      "@beauty/reliability": [
+        "libs/reliability/src/index.ts"
+      ],
+      "@beauty/reliability/*": [
+        "libs/reliability/src/*"
       ]
     },
     "esModuleInterop": true,

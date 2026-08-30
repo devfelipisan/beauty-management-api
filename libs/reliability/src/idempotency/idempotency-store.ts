@@ -1,0 +1,2 @@
+import type { IdempotencyRecord } from './idempotency-record.js';
+export interface IdempotencyStore { find(tenantId: string, operation: string, key: string): Promise<IdempotencyRecord | null>; reserve(record: IdempotencyRecord): Promise<void>; complete(tenantId: string, operation: string, key: string, response: unknown): Promise<void>; fail(tenantId: string, operation: string, key: string): Promise<void>; }

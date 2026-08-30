@@ -26,6 +26,9 @@ A Business API é a autoridade de negócio. O BFF compõe respostas e não acess
 - FSM é local ao agregado; não existe FSM global.
 - Não inventar endpoint, estado, tabela, permissão ou integração.
 
+Antes de implementar mutacao critica, avaliar idempotencia, UnitOfWork,
+auditoria, outbox e isolamento por tenant.
+
 ## Desenvolvimento
 
 Usar Nest CLI quando houver generator oficial. Antes de alterar, ler a documentação pertinente, inspecionar código, testes e migrations. Depois executar lint, testes, build e, quando aplicável, `npx wrangler deploy --dry-run`. Nunca fazer deploy real sem autorização.
@@ -33,4 +36,3 @@ Usar Nest CLI quando houver generator oficial. Antes de alterar, ler a documenta
 ## Nunca inferir
 
 Endpoint, tabela, status, transição, permissão, timeout, retry, cron, desconto, sinal, regra financeira, retenção, tenant, variável de ambiente, integração externa ou política de armazenamento.
-

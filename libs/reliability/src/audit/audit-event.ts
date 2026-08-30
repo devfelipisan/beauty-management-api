@@ -1,0 +1,1 @@
+export interface AuditEvent { id: string; tenantId?: string; actorId?: string; action: string; resourceType: string; resourceId?: string; requestId: string; correlationId: string; occurredAt: string; metadata?: Record<string, unknown>; }
