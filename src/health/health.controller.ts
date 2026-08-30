@@ -1,20 +1,16 @@
-﻿import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
-import { DatabaseService } from '../infrastructure/database/database.service.js';
+import { Controller, Get } from '@nestjs/common';
+import { RuntimeConfigService } from '../infrastructure/config/runtime-config.service.js';
+
 @Controller('health')
 export class HealthController {
-  constructor(private readonly database: DatabaseService) {}
-  @Get('live') live() {
-    return { status: 'ok' };
-  }
-  @Get('ready') async ready() {
-    try {
-      await this.database.isReachable();
-      return { status: 'ready' };
-    } catch {
-      throw new ServiceUnavailableException({
-        status: 'not_ready',
-        checks: { database: 'down' },
-      });
-    }
+  constructor(private readonly config: RuntimeConfigService) {}
+
+  @Get()
+  getHealth() {
+    return {
+      status: 'ok' as const,
+      service: this.config.serviceId,
+      version: this.config.serviceVersion,
+    };
   }
 }

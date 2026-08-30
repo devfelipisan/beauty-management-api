@@ -3,6 +3,18 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@beauty/kernel": ["libs/kernel/src/index.ts"],
+      "@beauty/kernel/*": ["libs/kernel/src/*"],
+      "@beauty/contracts": ["libs/contracts/src/index.ts"],
+      "@beauty/contracts/*": ["libs/contracts/src/*"],
+      "@beauty/config": ["libs/config/src/index.ts"],
+      "@beauty/config/*": ["libs/config/src/*"],
+      "@beauty/testing": ["libs/testing/src/index.ts"],
+      "@beauty/testing/*": ["libs/testing/src/*"]
+    },
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
