@@ -1,11 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { D1_DATABASE, type D1DatabaseLike } from '../../../../../libs/database/src/index.js';
+import type { D1DatabaseLike } from '../../../../../libs/database/src/d1/d1.types.js';
 import { Service, type ServiceProps } from '../domain/service.js';
 import type { ServiceRepository } from '../ports/service-repository.js';
 type Row = { id: string; tenant_id: string; name: string; category: string; duration_minutes: number; base_price_cents: number; status: ServiceProps['status']; requires_assessment?: number; allows_discount?: number; minimum_price_cents?: number; deposit_mode?: ServiceProps['depositMode']; deposit_fixed_cents?: number; deposit_percentage_basis_points?: number; created_at: string; updated_at: string };
-@Injectable()
 export class D1ServiceRepository implements ServiceRepository {
-  constructor(@Inject(D1_DATABASE) private readonly db: D1DatabaseLike) {}
+  constructor(private readonly db: D1DatabaseLike) {}
   private map(r: Row) { return Service.create(r.id, { tenantId: r.tenant_id, name: r.name, category: r.category, durationMinutes: r.duration_minutes, basePriceCents: r.base_price_cents, status: r.status, requiresAssessment: Boolean(r.requires_assessment), allowsDiscount: Boolean(r.allows_discount), minimumPriceCents: r.minimum_price_cents ?? undefined, depositMode: r.deposit_mode ?? 'NOT_REQUIRED', depositFixedCents: r.deposit_fixed_cents ?? undefined, depositPercentageBasisPoints: r.deposit_percentage_basis_points ?? undefined, createdAt: r.created_at, updatedAt: r.updated_at }); }
   async findById(tenantId: string, id: string) { const r = await this.db.prepare('SELECT * FROM services WHERE tenant_id = ? AND id = ?').bind(tenantId, id).first<Row>(); return r ? this.map(r) : null; }
   async list(tenantId: string, limit: number, cursor?: string) { const r = await this.db.prepare(cursor ? 'SELECT * FROM services WHERE tenant_id = ? AND id > ? ORDER BY id LIMIT ?' : 'SELECT * FROM services WHERE tenant_id = ? ORDER BY id LIMIT ?').bind(...(cursor ? [tenantId, cursor, limit] : [tenantId, limit])).all<Row>(); return r.results.map((row) => this.map(row)); }

@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { D1_DATABASE, type D1DatabaseLike } from '../../../../../libs/database/src/index.js';
+import { D1_DATABASE } from '../../../../../libs/database/src/tokens.js';
+import type { D1DatabaseLike } from '../../../../../libs/database/src/d1/d1.types.js';
 import type { ProfessionalServiceRepository } from '../ports/professional-service-repository.js';
 @Injectable()
 export class D1ProfessionalServiceRepository implements ProfessionalServiceRepository {

@@ -1,5 +1,7 @@
 import type { CreateAppointmentResponse } from '../../../../../libs/contracts/src/index.js';
-import { IdempotencyService, type IdempotencyStore, type UnitOfWork } from '../../../../../libs/reliability/src/index.js';
+import { IdempotencyService } from '../../../../../libs/reliability/src/idempotency/idempotency.service.js';
+import type { IdempotencyStore } from '../../../../../libs/reliability/src/idempotency/idempotency-store.js';
+import type { UnitOfWork } from '../../../../../libs/reliability/src/unit-of-work/unit-of-work.js';
 import { Appointment, AppointmentOrigin } from '../domain/appointment.js';
 import type { AppointmentRepository } from '../ports/appointment-repository.js';
 import type { CommercialTermsPort } from '../ports/commercial-terms-port.js';

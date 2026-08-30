@@ -1,12 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { D1_DATABASE, type D1DatabaseLike } from '../../../../../libs/database/src/index.js';
+import type { D1DatabaseLike } from '../../../../../libs/database/src/d1/d1.types.js';
 import { Tenant, type TenantProps } from '../domain/tenant.js';
 import type { TenantRepository } from '../ports/tenant-repository.js';
 
 type TenantRow = TenantProps & { id: string; legal_name: string; display_name: string; created_at: string; updated_at: string };
-@Injectable()
 export class D1TenantRepository implements TenantRepository {
-  constructor(@Inject(D1_DATABASE) private readonly db: D1DatabaseLike) {}
+  constructor(private readonly db: D1DatabaseLike) {}
   private map(row: TenantRow): Tenant { return Tenant.create(row.id, { legalName: row.legal_name, displayName: row.display_name, document: row.document, timezone: row.timezone, status: row.status, createdAt: row.created_at, updatedAt: row.updated_at }); }
   async findById(id: string) { const row = await this.db.prepare('SELECT * FROM tenants WHERE id = ?').bind(id).first<TenantRow>(); return row ? this.map(row) : null; }
   async findByDocument(document: string) { const row = await this.db.prepare('SELECT * FROM tenants WHERE document = ?').bind(document.replace(/\D/g, '')).first<TenantRow>(); return row ? this.map(row) : null; }

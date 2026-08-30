@@ -6,7 +6,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-async function auxiliaryWorker(entryPoint, name) {
+async function auxiliaryWorker(entryPoint, name, serviceBindings = {}) {
   const result = await build({
     entryPoints: [entryPoint],
     bundle: true,
@@ -25,6 +25,7 @@ async function auxiliaryWorker(entryPoint, name) {
     name,
     compatibilityDate: '2026-08-30',
     d1Databases: ['D1_DATABASE'],
+    serviceBindings,
     modules: [{ type: 'ESModule', path }],
   };
 }
@@ -40,8 +41,9 @@ export default defineConfig({
       miniflare: {
         bindings: { TEST_MIGRATIONS: migrations },
         workers: [
+          await auxiliaryWorker('./apps/operations-worker/src/worker.ts', 'beauty-operations-runtime'),
           await auxiliaryWorker('./apps/clinical-worker/src/worker.ts', 'beauty-clinical-worker'),
-          await auxiliaryWorker('./apps/billing-worker/src/worker.ts', 'beauty-billing-worker'),
+          await auxiliaryWorker('./apps/billing-worker/src/worker.ts', 'beauty-billing-worker', { OPERATIONS_SERVICE: 'beauty-operations-runtime' }),
         ],
       },
     })),

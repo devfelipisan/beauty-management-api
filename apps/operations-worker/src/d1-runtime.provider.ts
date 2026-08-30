@@ -1,5 +1,6 @@
 import type { Provider } from '@nestjs/common';
-import { D1_DATABASE, type D1DatabaseLike } from '../../../libs/database/src/index.js';
+import { D1_DATABASE } from '../../../libs/database/src/tokens.js';
+import type { D1DatabaseLike } from '../../../libs/database/src/d1/d1.types.js';
 
 // Cloudflare injects the binding at the Worker composition boundary. Local
 // Nest health must remain bootable when that boundary is not present.
