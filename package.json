@@ -30,6 +30,7 @@
     "gate:pr12": "npm run gate:create-appointment",
     "gate:pr13": "npm run gate:pr12 && npm run test:workers -- test/workers/deposit-lifecycle.spec.ts",
     "gate:pr14": "npm run gate:pr13 && npm run test:unit && npm run test:workers && npm run workers:dry-run",
+    "gate:pr15": "npm run gate:pr14 && npm run test:workers -- test/workers/appointment-confirmation-checkin.spec.ts && npm run workers:dry-run",
     "test:watch": "vitest --config ./vitest.config.ts",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
