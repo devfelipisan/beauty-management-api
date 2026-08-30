@@ -32,6 +32,15 @@ describe('Operations Worker physical runtime', () => {
     expect(billing).toMatchObject({ status: 'BLOCKED' });
   });
 
+  it('reaches a normative READY commercial path through Billing RPC', async () => {
+    const billing = await invokeCommercialTerms(env as never, {
+      tenantId: 'tenant-dev-001', customerId: 'customer-1', serviceId: 'service-1', basePriceCents: 20000,
+      commercialContext: { serviceId: 'service-1', category: 'GENERAL', allowsDiscount: false, depositMode: 'PERCENTAGE', depositPercentageBasisPoints: 2000 },
+    });
+
+    expect(billing).toMatchObject({ status: 'READY', discountCents: 0, finalPriceCents: 20000, depositRequired: true, depositCents: 4000 });
+  });
+
   it('preserves request and correlation context across concurrent requests', async () => {
     const responses = await Promise.all(Array.from({ length: 100 }, (_, index) => {
       const requestId = `context-${index}`;

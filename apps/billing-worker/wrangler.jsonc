@@ -1,5 +1,6 @@
 {
   "name": "beauty-billing-worker",
   "main": "src/worker.ts",
-  "compatibility_date": "2026-08-30"
+  "compatibility_date": "2026-08-30",
+  "d1_databases": [{"binding":"D1_DATABASE","database_name":"beauty-operations-local","migrations_dir":"../../database/d1/migrations"}]
 }

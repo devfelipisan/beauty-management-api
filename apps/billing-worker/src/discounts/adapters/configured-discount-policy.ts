@@ -1,0 +1,6 @@
+import type { DiscountPolicyPort, DiscountDecision } from '../ports/discount-policy.port.js';
+import type { DiscountPolicyRepository } from '../ports/discount-policy-repository.js';
+export class ConfiguredDiscountPolicy implements DiscountPolicyPort {
+  constructor(private readonly repository:DiscountPolicyRepository) {}
+  async evaluate(input:Parameters<DiscountPolicyPort['evaluate']>[0]):Promise<DiscountDecision> { if (!input.commercialContext?.allowsDiscount) return { available:true, discountCents:0 }; if (!input.relationshipProfile) return { available:true, discountCents:0 }; try { const policies=await this.repository.findApplicablePolicies(input.tenantId, input.relationshipProfile, input.serviceId, input.commercialContext.category, input.basePriceCents, new Date().toISOString()); const usable=policies.filter((policy) => !policy.data.singleUse && !policy.data.requiresApproval); if (!usable.length) return { available:true, discountCents:0 }; const policy=usable[0]; return { available:true, discountCents:Math.max(0, Math.min(policy.calculate(input.basePriceCents), input.basePriceCents - (input.commercialContext.minimumPriceCents ?? 0))), policyId:policy.data.id, snapshot:{ ...policy.data } }; } catch { return { available:false }; } }
+}

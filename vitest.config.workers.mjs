@@ -24,7 +24,7 @@ async function auxiliaryWorker(entryPoint, name) {
   return {
     name,
     compatibilityDate: '2026-08-30',
-    d1Databases: name === 'beauty-clinical-worker' ? ['D1_DATABASE'] : undefined,
+    d1Databases: ['D1_DATABASE'],
     modules: [{ type: 'ESModule', path }],
   };
 }
