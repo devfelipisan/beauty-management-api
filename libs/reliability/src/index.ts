@@ -10,5 +10,8 @@ export * from './audit/audit-event.js';
 export * from './audit/audit-writer.js';
 export * from './outbox/outbox-event.js';
 export * from './outbox/outbox-writer.js';
+export * from './outbox/outbox-delivery.js';
+export * from './outbox/outbox-retry-policy.js';
+export * from './outbox/dispatch-outbox-batch.js';
 export * from './d1/d1-unit-of-work.js';
 export * from './d1/d1-reliability-store.js';

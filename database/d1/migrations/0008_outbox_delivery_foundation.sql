@@ -1,0 +1,10 @@
+ALTER TABLE outbox_events ADD COLUMN attempt_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE outbox_events ADD COLUMN available_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00.000Z';
+ALTER TABLE outbox_events ADD COLUMN claimed_at TEXT;
+ALTER TABLE outbox_events ADD COLUMN claim_expires_at TEXT;
+ALTER TABLE outbox_events ADD COLUMN claimed_by TEXT;
+ALTER TABLE outbox_events ADD COLUMN sent_at TEXT;
+ALTER TABLE outbox_events ADD COLUMN last_error_code TEXT;
+ALTER TABLE outbox_events ADD COLUMN last_error_at TEXT;
+CREATE INDEX IF NOT EXISTS idx_outbox_dispatchable ON outbox_events(status, available_at, created_at, id);
+CREATE INDEX IF NOT EXISTS idx_outbox_expired_claims ON outbox_events(status, claim_expires_at);

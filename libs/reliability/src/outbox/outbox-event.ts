@@ -1,2 +1,2 @@
-export type OutboxStatus = 'PENDING' | 'PROCESSING' | 'PUBLISHED' | 'FAILED';
-export interface OutboxEvent { id: string; tenantId?: string; type: string; aggregateType: string; aggregateId: string; correlationId: string; payload: Record<string, unknown>; status: OutboxStatus; createdAt: string; publishedAt?: string; }
+export type OutboxStatus = 'PENDING' | 'PROCESSING' | 'SENT' | 'DEAD';
+export interface OutboxEvent { id: string; tenantId?: string; type: string; aggregateType: string; aggregateId: string; correlationId: string; payload: Record<string, unknown>; status: OutboxStatus; createdAt: string; availableAt?: string; attemptCount?: number; claimedAt?: string; claimExpiresAt?: string; claimedBy?: string; sentAt?: string; lastErrorCode?: string; lastErrorAt?: string; publishedAt?: string; }

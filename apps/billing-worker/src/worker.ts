@@ -11,6 +11,9 @@ import { D1DepositRepository } from './deposits/adapters/d1-deposit-repository.j
 import { D1IdempotencyStore } from '../../../libs/reliability/src/d1/d1-reliability-store.js';
 import { D1UnitOfWork } from '../../../libs/reliability/src/d1/d1-unit-of-work.js';
 import type { AppointmentDepositTransitionPort } from './deposits/ports/appointment-deposit-transition.port.js';
+import { D1OutboxDeliveryRepository } from '../../../libs/reliability/src/d1/d1-outbox-delivery-repository.js';
+import { DispatchOutboxBatch } from '../../../libs/reliability/src/outbox/dispatch-outbox-batch.js';
+import { OperationsDepositDelivery } from './outbox/operations-deposit-delivery.js';
 export interface BillingEnv { D1_DATABASE:D1Database; OPERATIONS_SERVICE?:unknown; }
 export default class BillingWorker extends WorkerEntrypoint<BillingEnv> {
   async fetch(request:Request):Promise<Response>{return dispatchHealth(request,'beauty-billing-worker')??notFound();}
@@ -18,4 +21,5 @@ export default class BillingWorker extends WorkerEntrypoint<BillingEnv> {
   async createDepositForAppointment(input:CreateDepositRequest){return new CreateDepositForAppointment(new D1DepositRepository(this.env.D1_DATABASE),new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE)).execute(input);}
   async confirmDeposit(input:ConfirmDepositRequest){const transitions=this.env.OPERATIONS_SERVICE as AppointmentDepositTransitionPort|undefined;return new ConfirmDeposit(new D1DepositRepository(this.env.D1_DATABASE),new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE),transitions).execute(input);}
   async expireDeposit(input:ExpireDepositRequest){const transitions=this.env.OPERATIONS_SERVICE as AppointmentDepositTransitionPort|undefined;return new ExpireDeposit(new D1DepositRepository(this.env.D1_DATABASE),new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE),transitions).execute(input);}
+  async dispatchOutboxBatch(input:{workerId:string;batchSize:number;leaseSeconds:number;now?:string}){return new DispatchOutboxBatch(new D1OutboxDeliveryRepository(this.env.D1_DATABASE),new OperationsDepositDelivery(this.env.OPERATIONS_SERVICE as never)).execute(input);}
 }

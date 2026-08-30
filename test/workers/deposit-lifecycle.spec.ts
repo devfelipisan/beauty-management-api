@@ -5,6 +5,7 @@ type BillingService = {
   createDepositForAppointment(input: Record<string, unknown>): Promise<{ id: string; status: string; amountCents: number }>;
   confirmDeposit(input: Record<string, unknown>): Promise<{ deposit: { status: string }; appointmentPropagation: string }>;
   expireDeposit(input: Record<string, unknown>): Promise<{ deposit: { status: string }; appointmentPropagation: string }>;
+  dispatchOutboxBatch(input: { workerId: string; batchSize: number; leaseSeconds: number; now: string }): Promise<{ sent: number }>;
 };
 
 const db = env.D1_DATABASE;
@@ -32,6 +33,8 @@ describe('Deposit lifecycle through Billing and Operations service bindings', ()
     const confirmed = await billing.confirmDeposit({ tenantId, depositId: created.id, idempotencyKey: `confirm-${run}`, correlationId: `correlation-${run}` });
     expect(confirmed).toMatchObject({ deposit: { status: 'CONFIRMED' }, appointmentPropagation: 'APPLIED' });
     expect((await db.prepare('SELECT status FROM appointments WHERE tenant_id = ? AND id = ?').bind(tenantId, appointmentId).first<{ status: string }>())?.status).toBe('AWAITING_CONFIRMATION');
+    expect(await billing.dispatchOutboxBatch({ workerId: `dispatcher-${run}`, batchSize: 10, leaseSeconds: 60, now: '2028-01-01T00:00:00.000Z' })).toMatchObject({ sent: 1 });
+    expect((await db.prepare("SELECT status, attempt_count FROM outbox_events WHERE aggregate_id = ? AND event_type = 'DepositConfirmed'").bind(created.id).first<{ status: string; attempt_count: number }>())).toMatchObject({ status: 'SENT', attempt_count: 1 });
   });
 
   it('expires only when due and keeps the lifecycle idempotent', async () => {
