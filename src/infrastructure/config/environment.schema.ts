@@ -1,5 +1,9 @@
 ﻿import Joi from 'joi';
+
 export const environmentSchema = Joi.object({
+  NODE_ENV: Joi.string()
+    .valid('development', 'test', 'production')
+    .default('development'),
   APP_ENV: Joi.string()
     .valid('local', 'test', 'development', 'staging', 'production')
     .required(),
@@ -15,24 +19,27 @@ export const environmentSchema = Joi.object({
   OBSERVE_ENDPOINT: Joi.string()
     .uri()
     .default('https://observe-api.nestjs.com'),
-  OBSERVE_TRACE_SAMPLE_RATE: Joi.number().min(0).max(1).default(0.1),
+  OBSERVE_TRACE_SAMPLE_RATE: Joi.number().min(0).max(1).default(1),
   OBSERVE_DEBUG: Joi.boolean().truthy('true').falsy('false').default(false),
-})
-  .custom((value, helpers) => {
-    if (
-      value.OBSERVE_ENABLED &&
-      (!value.OBSERVE_APP_KEY || !value.OBSERVE_APP_SECRET)
-    ) {
-      return helpers.error('any.custom', {
-        message:
-          'OBSERVE_APP_KEY and OBSERVE_APP_SECRET are required when OBSERVE_ENABLED=true',
-      });
-    }
-    if (value.APP_ENV === 'production' && !value.OBSERVE_ENABLED) {
-      return helpers.error('any.custom', {
-        message: 'OBSERVE_ENABLED must be true in production',
-      });
-    }
-    return value;
-  })
-  .messages({ 'any.custom': '{{#message}}' });
+  OBSERVE_FORWARD_LOGS: Joi.boolean().truthy('true').falsy('false').default(true),
+  OBSERVE_RUNTIME_METRICS: Joi.boolean().truthy('true').falsy('false').default(true),
+  OBSERVE_RUNTIME_METRICS_INTERVAL: Joi.number().integer().positive().default(60000),
+  OBSERVE_MAX_TRACES_PER_BATCH: Joi.number().integer().positive().default(1000),
+  OBSERVE_FLUSH_INTERVAL: Joi.number().integer().positive().default(5000),
+}).custom((value, helpers) => {
+  if (
+    value.OBSERVE_ENABLED &&
+    (!value.OBSERVE_APP_KEY || !value.OBSERVE_APP_SECRET)
+  ) {
+    return helpers.error('any.custom', {
+      message:
+        'OBSERVE_APP_KEY and OBSERVE_APP_SECRET are required when OBSERVE_ENABLED=true',
+    });
+  }
+  if (value.APP_ENV === 'production' && !value.OBSERVE_ENABLED) {
+    return helpers.error('any.custom', {
+      message: 'OBSERVE_ENABLED must be true in production',
+    });
+  }
+  return value;
+}).messages({ 'any.custom': '{{#message}}' });
