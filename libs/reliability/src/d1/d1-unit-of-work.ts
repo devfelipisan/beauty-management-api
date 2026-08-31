@@ -20,19 +20,21 @@ export class D1UnitOfWork implements UnitOfWork {
       persistence: { add: (command) => { mutations.push(command); } },
     };
     const result = await operation(context);
-    const statements = [
-      ...mutations.map((m) => this.db.prepare(m.sql).bind(...m.params)),
+    const mutationIndexes:number[] = [];
+    const statements:any[] = [];
+    for (const mutation of mutations) { mutationIndexes.push(statements.length); statements.push(this.db.prepare(mutation.sql).bind(...mutation.params)); if (mutation.expectedChanges !== undefined) { const id=crypto.randomUUID(); statements.push(this.db.prepare('INSERT INTO uow_assertions (id,expected_changes) VALUES (?,?)').bind(id,mutation.expectedChanges)); statements.push(this.db.prepare('DELETE FROM uow_assertions WHERE id=?').bind(id)); } }
+    const finalStatements = [
+      ...statements,
       ...idempotency.map((r) => this.db.prepare('INSERT INTO idempotency_records (id, tenant_id, operation, idempotency_key, request_hash, status, response_payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(r.id, r.tenantId, r.operation, r.key, r.requestHash, r.status, r.response === undefined ? null : JSON.stringify(r.response), r.createdAt, r.updatedAt)),
       ...audits.map((e) => this.db.prepare('INSERT INTO audit_events (id, tenant_id, actor_id, action, resource_type, resource_id, request_id, correlation_id, metadata_json, occurred_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(e.id, e.tenantId ?? null, e.actorId ?? null, e.action, e.resourceType, e.resourceId ?? null, e.requestId, e.correlationId, e.metadata ? JSON.stringify(e.metadata) : null, e.occurredAt)),
       ...outbox.map((e) => this.db.prepare('INSERT INTO outbox_events (id, tenant_id, event_type, aggregate_type, aggregate_id, correlation_id, payload_json, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(e.id, e.tenantId ?? null, e.type, e.aggregateType, e.aggregateId, e.correlationId, JSON.stringify(e.payload), e.status, e.createdAt)),
     ];
     if (statements.length) {
-      const results = await this.db.batch(statements);
+      const results = await this.db.batch(finalStatements);
       for (let index = 0; index < mutations.length; index += 1) {
-        const result = results[index] as { success?: boolean; changes?: number; meta?: { changes?: number } };
+        const result = results[mutationIndexes[index]] as { success?: boolean; changes?: number; meta?: { changes?: number } };
         const mutation = mutations[index];
         if (result?.success === false) throw new Error(mutation.failureCode ?? 'UNIT_OF_WORK_FAILED');
-        if (mutation.expectedChanges !== undefined && (result?.meta?.changes ?? result?.changes) !== mutation.expectedChanges) throw new Error(mutation.failureCode ?? 'UNIT_OF_WORK_FAILED');
       }
       if (results.some((r) => (r as { success?: boolean })?.success === false)) throw new Error('UNIT_OF_WORK_FAILED');
     }

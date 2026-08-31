@@ -28,6 +28,10 @@ import { ApplySessionCompleted } from './appointments/application/apply-session-
 import { D1CustomerHistoryRepository } from './customer-history/adapters/d1-customer-history-repository.js';
 import { ApplyReturnRecommended } from './returns/application/apply-return-recommended.js';
 import { ApplyPackageUnitConsumed } from './customer-history/application/apply-package-unit-consumed.js';
+import { ApplyPaymentReceived } from './customer-history/application/apply-payment-received.js';
+import { D1OutboxDeliveryRepository } from '../../../libs/reliability/src/d1/d1-outbox-delivery-repository.js';
+import { DispatchOutboxBatch } from '../../../libs/reliability/src/outbox/dispatch-outbox-batch.js';
+import { BillingFinancialSettlementDelivery } from './outbox/billing-financial-settlement-delivery.js';
 import { AssignPackageToAppointment } from './appointments/application/assign-package-to-appointment.js';
 import { D1PackageAssignmentRepository } from './appointments/adapters/d1-package-assignment-repository.js';
 export interface OperationsEnv { D1_DATABASE:D1Database; CLINICAL_SERVICE:unknown; BILLING_SERVICE:unknown; }
@@ -59,6 +63,8 @@ export default class OperationsWorker extends WorkerEntrypoint<OperationsEnv> {
   applyReturnRecommended(input:import('../../../libs/contracts/src/index.js').ApplyReturnRecommendedRequest){return new ApplyReturnRecommended(new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE),new D1CustomerHistoryRepository(this.env.D1_DATABASE)).execute(input);}
   assignPackageToAppointment(input:import('../../../libs/contracts/src/index.js').AssignPackageToAppointmentRequest){return new AssignPackageToAppointment(new D1AppointmentRepository(this.env.D1_DATABASE),new D1PackageAssignmentRepository(this.env.D1_DATABASE),this.env.BILLING_SERVICE as never,new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE)).execute(input);}
   applyPackageUnitConsumed(input:import('../../../libs/contracts/src/index.js').PackageUnitConsumedEvent){return new ApplyPackageUnitConsumed(new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE),new D1CustomerHistoryRepository(this.env.D1_DATABASE)).execute(input);}
+  applyPaymentReceived(input:import('../../../libs/contracts/src/index.js').PaymentReceivedEvent){return new ApplyPaymentReceived(new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE),new D1CustomerHistoryRepository(this.env.D1_DATABASE)).execute(input);}
+  async dispatchOutboxBatch(input:{workerId:string;batchSize:number;leaseSeconds:number;now?:string}){return new DispatchOutboxBatch(new D1OutboxDeliveryRepository(this.env.D1_DATABASE,['FinancialSettlementRequested']),{deliver:e=>new BillingFinancialSettlementDelivery(this.env.BILLING_SERVICE as never).deliver(e)}).execute(input);}
   resolveClinicalRestriction(input:import('../../../libs/contracts/src/index.js').ClinicalRestrictionEvent){return new ApplyClinicalRestriction(this.env.D1_DATABASE,new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE)).execute(input,true);}
   getServiceTechnicalContext(input:import('../../../libs/contracts/src/index.js').GetServiceTechnicalContextRequest){return invokeServiceTechnicalContext(this.env,input);}
 }
