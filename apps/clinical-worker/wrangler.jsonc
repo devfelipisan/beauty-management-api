@@ -8,6 +8,6 @@
     "database_name": "beauty-operations-local",
     "migrations_dir": "../../database/d1/migrations"
   }],
-  "services": [{ "binding": "OPERATIONS_SERVICE", "service": "beauty-operations-worker" }],
+  "services": [{ "binding": "OPERATIONS_SERVICE", "service": "beauty-operations-worker" }, { "binding": "BILLING_SERVICE", "service": "beauty-billing-worker" }],
   "r2_buckets": [{ "binding": "SESSION_MEDIA", "bucket_name": "beauty-session-media" }]
 }

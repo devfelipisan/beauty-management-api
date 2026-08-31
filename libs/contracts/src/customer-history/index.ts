@@ -1,4 +1,4 @@
-export type CustomerTimelineEventType = 'SESSION_COMPLETED' | 'RETURN_RECOMMENDED' | 'RELATIONSHIP_PROFILE_CHANGED';
+export type CustomerTimelineEventType = 'SESSION_COMPLETED' | 'RETURN_RECOMMENDED' | 'RELATIONSHIP_PROFILE_CHANGED' | 'PACKAGE_CONSUMED';
 export interface CustomerTimelineEvent { id:string; tenantId:string; customerId:string; eventType:CustomerTimelineEventType; occurredAt:string; sourceWorker:string; sourceAggregateType:string; sourceAggregateId:string; sourceEventId:string; serviceId?:string; professionalId?:string; status?:string; summaryCode?:string; createdAt:string; }
 export interface CustomerHistoryQuery { tenantId:string; customerId:string; from?:string; to?:string; serviceId?:string; professionalId?:string; eventType?:CustomerTimelineEventType; status?:string; cursor?:string; limit?:number; }
 export interface CustomerHistoryPage { items:CustomerTimelineEvent[]; nextCursor?:string; }

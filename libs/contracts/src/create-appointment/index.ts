@@ -7,6 +7,7 @@ export interface CreateAppointmentRequest {
   professionalId: string;
   startsAt: string;
   origin: AppointmentOrigin;
+  customerPackageId?: string;
 }
 
 export interface CreateAppointmentResponse {
@@ -15,6 +16,7 @@ export interface CreateAppointmentResponse {
   customerId: string;
   serviceId: string;
   professionalId: string;
+  customerPackageId?: string;
   startsAt: string;
   endsAt: string;
   durationMinutes: number;

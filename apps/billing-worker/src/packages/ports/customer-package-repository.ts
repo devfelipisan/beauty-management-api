@@ -1,0 +1,3 @@
+import type { CustomerPackage } from '../domain/customer-package.js';
+import type { TransactionalWriteContext } from '../../../../../libs/reliability/src/unit-of-work/transactional-write-context.js';
+export interface CustomerPackageRepository { findById(tenantId:string,id:string):Promise<CustomerPackage|null>; list(tenantId:string,customerId:string,limit:number,cursor?:string):Promise<CustomerPackage[]>; create(input:CustomerPackage,sourceOperationId:string,tx:TransactionalWriteContext):void; consume(input:{tenantId:string;packageId:string;customerId:string;serviceId:string;sessionId:string;appointmentId:string;sourceEventId:string;at:string;createdBy:string},tx:TransactionalWriteContext):void; }
