@@ -18,6 +18,7 @@ import { OperationsPackageDelivery } from './outbox/operations-package-delivery.
 import { ApplySessionPackageConsumption } from './packages/application/apply-session-package-consumption.js';
 import { D1CustomerPackageRepository } from './packages/adapters/d1-customer-package-repository.js';
 import { MaterializeCustomerPackage } from './packages/application/materialize-customer-package.js';
+import { CheckPackageUsageEligibility } from './packages/application/check-package-usage-eligibility.js';
 export interface BillingEnv { D1_DATABASE:D1Database; OPERATIONS_SERVICE?:unknown; }
 export default class BillingWorker extends WorkerEntrypoint<BillingEnv> {
   async fetch(request:Request):Promise<Response>{return dispatchHealth(request,'beauty-billing-worker')??notFound();}
@@ -28,4 +29,5 @@ export default class BillingWorker extends WorkerEntrypoint<BillingEnv> {
   async dispatchOutboxBatch(input:{workerId:string;batchSize:number;leaseSeconds:number;now?:string}){return new DispatchOutboxBatch(new D1OutboxDeliveryRepository(this.env.D1_DATABASE),{deliver:async e=>e.type==='PackageUnitConsumed'?new OperationsPackageDelivery(this.env.OPERATIONS_SERVICE as never).deliver(e):new OperationsDepositDelivery(this.env.OPERATIONS_SERVICE as never).deliver(e)}).execute(input);}
   async applyPackageConsumptionRequested(input:import('../../../libs/contracts/src/index.js').ApplyPackageConsumptionRequest){return new ApplySessionPackageConsumption(new D1CustomerPackageRepository(this.env.D1_DATABASE),new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE)).execute(input);}
   async materializeCustomerPackage(input:import('../../../libs/contracts/src/index.js').MaterializeCustomerPackageRequest){return new MaterializeCustomerPackage(new D1CustomerPackageRepository(this.env.D1_DATABASE),new D1UnitOfWork(this.env.D1_DATABASE),new D1IdempotencyStore(this.env.D1_DATABASE)).execute(input);}
+  async checkPackageUsageEligibility(input:import('../../../libs/contracts/src/index.js').CheckPackageUsageEligibilityRequest){return new CheckPackageUsageEligibility(new D1CustomerPackageRepository(this.env.D1_DATABASE)).execute(input);}
 }

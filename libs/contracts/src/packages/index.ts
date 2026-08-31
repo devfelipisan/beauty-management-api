@@ -8,4 +8,7 @@ export interface PackageUnitConsumedEvent { eventId:string; tenantId:string; cus
 export interface ApplyPackageConsumptionRequest extends PackageConsumptionRequestedEvent {}
 export interface ApplyPackageConsumptionResponse { applied:boolean; customerPackageId:string; sessionId:string; balanceBefore:number; balanceAfter:number; status:PackageStatus; }
 export interface PackageListQuery { tenantId:string; customerId?:string; status?:PackageStatus; serviceId?:string; cursor?:string; limit?:number; }
+export interface CheckPackageUsageEligibilityRequest { tenantId:string; customerPackageId:string; customerId:string; serviceId:string; appointmentId?:string; correlationId:string; }
+export interface CheckPackageUsageEligibilityResponse { status:'READY'|'BLOCKED'; reason?:PackageUsageBlockReason; }
+export interface AssignPackageToAppointmentRequest { tenantId:string; appointmentId:string; customerPackageId:string; actorId:string; idempotencyKey:string; requestId:string; correlationId:string; }
 export interface MaterializeCustomerPackageRequest { tenantId:string; customerId:string; packageDefinitionId?:string; serviceId:string; totalQuantity:number; basePriceCents:number; discountCents:number; finalPriceCents:number; purchasedAt:string; validUntil:string; sourceOperationId:string; actorId:string; idempotencyKey:string; requestId:string; correlationId:string; }
