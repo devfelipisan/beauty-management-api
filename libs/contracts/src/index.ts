@@ -14,3 +14,5 @@ export * from './customer-history/index.js';
 export * from './returns/index.js';
 export * from './packages/index.js';
 export * from './financial/index.js';
+export * from './refunds/index.js';
+export * from './credits/index.js';

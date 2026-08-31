@@ -1,0 +1,10 @@
+ALTER TABLE payments ADD COLUMN refunded_amount_cents INTEGER NOT NULL DEFAULT 0 CHECK(refunded_amount_cents >= 0 AND refunded_amount_cents <= amount_cents);
+DROP INDEX IF EXISTS idx_ledger_receivable;
+ALTER TABLE ledger_movements RENAME TO ledger_movements_legacy;
+CREATE TABLE ledger_movements (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, customer_id TEXT NOT NULL, receivable_id TEXT, type TEXT NOT NULL CHECK(type IN ('RECEIVABLE_CREATED','DEPOSIT_APPLIED','PAYMENT_RECEIVED','REFUND_ISSUED','CREDIT_GRANTED','CREDIT_APPLIED')), amount_cents INTEGER NOT NULL CHECK(amount_cents>0), direction TEXT NOT NULL CHECK(direction IN ('CREDIT','DEBIT')), source_type TEXT NOT NULL, source_id TEXT NOT NULL, occurred_at TEXT NOT NULL, created_by TEXT NOT NULL, correlation_id TEXT NOT NULL, UNIQUE(tenant_id,type,source_type,source_id,receivable_id), FOREIGN KEY(tenant_id) REFERENCES tenants(id));
+INSERT INTO ledger_movements SELECT * FROM ledger_movements_legacy;
+DROP TABLE ledger_movements_legacy;
+CREATE INDEX IF NOT EXISTS idx_ledger_receivable ON ledger_movements(tenant_id,receivable_id,occurred_at,id);
+CREATE TABLE IF NOT EXISTS refunds (id TEXT PRIMARY KEY,tenant_id TEXT NOT NULL,payment_id TEXT NOT NULL,receivable_id TEXT NOT NULL,customer_id TEXT NOT NULL,amount_cents INTEGER NOT NULL CHECK(amount_cents>0),reason_code TEXT,notes TEXT,status TEXT NOT NULL CHECK(status IN ('CONFIRMED')),refunded_at TEXT NOT NULL,refunded_by TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(tenant_id,id),FOREIGN KEY(tenant_id) REFERENCES tenants(id),FOREIGN KEY(payment_id) REFERENCES payments(id));
+CREATE INDEX IF NOT EXISTS idx_refunds_payment ON refunds(tenant_id,payment_id,refunded_at,id);
+CREATE TABLE IF NOT EXISTS customer_credit_balances (tenant_id TEXT NOT NULL,customer_id TEXT NOT NULL,available_amount_cents INTEGER NOT NULL CHECK(available_amount_cents>=0),updated_at TEXT NOT NULL,PRIMARY KEY(tenant_id,customer_id),FOREIGN KEY(tenant_id) REFERENCES tenants(id));
