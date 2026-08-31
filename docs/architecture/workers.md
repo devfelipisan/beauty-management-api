@@ -33,3 +33,5 @@ Owns technical assessments and their eligibility decision. Operations consumes t
 ## Runtime entrypoints
 
 Each Worker has an independent `wrangler.jsonc` pointing to `src/worker.ts`. `main.ts` is retained only for Node/dev smoke. The Module Worker adapter currently qualifies `fetch`, health and 404; full Nest HTTP pipeline qualification remains explicit work, not an implicit consequence of the Node entrypoint.
+
+Clinical sessions may transition authoritatively from `IN_PROGRESS` to `COMPLETED` in Clinical. The minimal `SessionCompleted` fact is delivered through the Clinical outbox and Operations applies the tenant-scoped Appointment transition to `COMPLETED`.
