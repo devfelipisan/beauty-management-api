@@ -1,6 +1,6 @@
 import { DomainError, Entity } from '../../../../../libs/kernel/src/index.js';
 
-export type DepositStatus = 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'CANCELED';
+export type DepositStatus = 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'CANCELED' | 'RETURNED' | 'RETAINED' | 'CONVERTED_TO_CREDIT';
 export interface DepositProps { tenantId:string; appointmentId:string; amountCents:number; status:DepositStatus; expiresAt?:string; confirmedAt?:string; canceledAt?:string; createdAt:string; updatedAt:string; }
 export class Deposit extends Entity<string> {
   private constructor(id:string, private props:DepositProps) { super(id); }

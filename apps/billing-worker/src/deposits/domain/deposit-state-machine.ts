@@ -3,7 +3,7 @@ import { DepositStatus } from './deposit.js';
 
 const transitions: Record<DepositStatus, Partial<Record<'confirm' | 'expire' | 'cancel', DepositStatus>>> = {
   PENDING: { confirm: 'CONFIRMED', expire: 'EXPIRED', cancel: 'CANCELED' },
-  CONFIRMED: {}, EXPIRED: {}, CANCELED: {},
+  CONFIRMED: {}, EXPIRED: {}, CANCELED: {}, RETURNED: {}, RETAINED: {}, CONVERTED_TO_CREDIT: {},
 };
 
 export class DepositStateMachine {

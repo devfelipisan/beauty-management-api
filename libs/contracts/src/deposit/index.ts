@@ -1,4 +1,4 @@
-export type DepositStatus = 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'CANCELED';
+export type DepositStatus = 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'CANCELED' | 'RETURNED' | 'RETAINED' | 'CONVERTED_TO_CREDIT';
 export interface CreateDepositRequest { tenantId:string; appointmentId:string; amountCents:number; depositRequired:boolean; expiresAt?:string; idempotencyKey:string; correlationId:string; }
 export interface DepositResponse { id:string; tenantId:string; appointmentId:string; amountCents:number; status:DepositStatus; expiresAt?:string; confirmedAt?:string; canceledAt?:string; createdAt:string; }
 export interface ConfirmDepositRequest { tenantId:string; depositId:string; idempotencyKey:string; actorId?:string; correlationId:string; }
