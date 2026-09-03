@@ -11,7 +11,7 @@ export class MockTenantMembershipProvider implements TenantMembershipProvider {
       roles: ['admin'],
       permissions: [
         'customer.create', 'customer.read', 'customer.history.read', 'appointment.package.assign', 'clinical.photo.upload', 'clinical.photo.read', 'session.complete', 'receivable.read', 'payment.create', 'payment.read', 'ledger.read',
-        'appointment.reschedule',
+        'appointment.reschedule', 'appointment.cancel', 'appointment.no-show',
         'professional.create', 'professional.read',
         'service.create', 'service.read',
         'appointment.create', 'appointment.confirm', 'appointment.check-in', 'session.start', 'technical-form.create', 'technical-form.publish', 'technical-form.read', 'session.technical.update', 'equipment.create', 'equipment.update', 'equipment.status.change', 'equipment.read', 'variation-policy.configure', 'intercurrence.report', 'intercurrence.resolve', 'intercurrence.read',

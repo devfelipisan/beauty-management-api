@@ -17,3 +17,4 @@ export * from './financial/index.js';
 export * from './refunds/index.js';
 export * from './credits/index.js';
 export * from './appointment-changes/index.js';
+export * from './appointment-change-policies/index.js';
