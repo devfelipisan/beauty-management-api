@@ -9,6 +9,7 @@
 **/node_modules/
 **/.wrangler/
 /.playwright-mcp/
+/.local/mock-data/
 /packages/cloudflare-runtime/src/generated/swagger-assets.ts
 
 # =========================

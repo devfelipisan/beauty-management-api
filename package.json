@@ -78,7 +78,10 @@
     "build:clinical": "npm run build -w @beauty/clinical-worker",
     "dev:clinical": "npm run dev -w @beauty/clinical-worker",
     "prepare": "node scripts/generate-swagger-assets.mjs",
-    "swagger:assets": "node scripts/generate-swagger-assets.mjs"
+    "swagger:assets": "node scripts/generate-swagger-assets.mjs",
+    "db:seed": "node scripts/seed-local.mjs",
+    "db:seed:preview": "node scripts/seed-local.mjs --preview",
+    "test:seed": "vitest run --config ./vitest.config.workers.mjs test/workers/development-seed.spec.ts"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "13.1.0",

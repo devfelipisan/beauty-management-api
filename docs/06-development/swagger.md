@@ -1,5 +1,8 @@
 # Swagger nos Workers Cloudflare
 
+Para preparar dados sintéticos locais antes dos testes manuais, execute
+`npm run db:seed`. Consulte [a massa e os cenários de QA](../../database/seeds/README.md).
+
 Após `npm ci`, execute `npm run dev:workers`. Na URL HTTP indicada pelo Wrangler,
 abra `/swagger` ou `/api-docs`. A especificação está em `/openapi.json`.
 Cada Worker publica sua própria documentação, com chamadas para sua própria origem.
