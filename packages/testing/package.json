@@ -1,0 +1,25 @@
+{
+  "name": "@beauty/testing",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./architecture/dependency-boundaries": {
+      "beauty": "./src/architecture/dependency-boundaries.ts",
+      "types": "./dist/architecture/dependency-boundaries.d.ts",
+      "workerd": "./src/architecture/dependency-boundaries.ts",
+      "default": "./dist/architecture/dependency-boundaries.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {}
+}

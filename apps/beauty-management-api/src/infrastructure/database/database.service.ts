@@ -1,6 +1,6 @@
 ﻿import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import pg from 'pg';
-import { RuntimeConfigService } from '../../../../../libs/config/src/index.js';
+import { RuntimeConfigService } from '@beauty/config';
 const { Pool } = pg;
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {

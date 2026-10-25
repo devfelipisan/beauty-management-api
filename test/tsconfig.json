@@ -1,8 +1,14 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "moduleResolution": "bundler",
-    "types": ["@cloudflare/vitest-plugin/types"]
+    "types": [
+      "@cloudflare/vitest-plugin/types"
+    ],
+    "module": "esnext"
   },
-  "include": ["./**/*.ts", "../apps/operations-worker/worker-configuration.d.ts"]
+  "include": [
+    "./**/*.ts",
+    "../apps/operations-worker/worker-configuration.d.ts"
+  ]
 }

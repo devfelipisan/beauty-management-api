@@ -1,0 +1,31 @@
+{
+  "name": "@beauty/cloudflare-runtime",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./swagger": {
+      "beauty": "./src/swagger.ts",
+      "types": "./dist/swagger.d.ts",
+      "workerd": "./src/swagger.ts",
+      "default": "./dist/swagger.js"
+    },
+    "./openapi": {
+      "beauty": "./src/openapi.ts",
+      "types": "./dist/openapi.d.ts",
+      "workerd": "./src/openapi.ts",
+      "default": "./dist/openapi.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {}
+}

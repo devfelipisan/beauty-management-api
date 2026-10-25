@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { CurrentTenant, TenantGuard, type TenantContext } from '../../../../libs/tenancy/src/index.js';
-import { AuthenticationGuard, PermissionGuard, RequirePermission } from '../../../../libs/authentication/src/index.js';
-import { CreateProfessionalUseCase, DeactivateProfessionalUseCase, GetProfessionalUseCase, ListProfessionalsUseCase, UpdateProfessionalUseCase } from './application/use-cases.js';
-import type { CreateProfessionalDto } from './adapters/http/dto/create-professional.dto.js';
+import { CurrentTenant, TenantGuard, type TenantContext } from '@beauty/tenancy';
+import { AuthenticationGuard, PermissionGuard, RequirePermission } from '@beauty/authentication';
+import { CreateProfessionalUseCase, DeactivateProfessionalUseCase, GetProfessionalUseCase, ListProfessionalsUseCase, UpdateProfessionalUseCase } from '@beauty/operations/modules/professionals/application/use-cases';
+import type { CreateProfessionalDto } from './http/dto/create-professional.dto.js';
 
 @UseGuards(AuthenticationGuard, TenantGuard, PermissionGuard)
 @Controller('tenants/:tenantId/professionals')

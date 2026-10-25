@@ -1,104 +1,59 @@
 {
-  "compilerOptions": {
-    "baseUrl": ".",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "resolvePackageJsonExports": true,
-    "ignoreDeprecations": "6.0",
-    "paths": {
-      "@beauty/kernel": [
-        "libs/kernel/src/index.ts"
-      ],
-      "@beauty/kernel/*": [
-        "libs/kernel/src/*"
-      ],
-      "@beauty/contracts": [
-        "libs/contracts/src/index.ts"
-      ],
-      "@beauty/contracts/*": [
-        "libs/contracts/src/*"
-      ],
-      "@beauty/config": [
-        "libs/config/src/index.ts"
-      ],
-      "@beauty/config/*": [
-        "libs/config/src/*"
-      ],
-      "@beauty/testing": [
-        "libs/testing/src/index.ts"
-      ],
-      "@beauty/testing/*": [
-        "libs/testing/src/*"
-      ],
-      "@beauty/execution-context": [
-        "libs/execution-context/src/index.ts"
-      ],
-      "@beauty/execution-context/*": [
-        "libs/execution-context/src/*"
-      ],
-      "@beauty/observability": [
-        "libs/observability/src/index.ts"
-      ],
-      "@beauty/observability/*": [
-        "libs/observability/src/*"
-      ],
-      "@beauty/authentication": [
-        "libs/authentication/src/index.ts"
-      ],
-      "@beauty/authentication/*": [
-        "libs/authentication/src/*"
-      ],
-      "@beauty/tenancy": [
-        "libs/tenancy/src/index.ts"
-      ],
-      "@beauty/tenancy/*": [
-        "libs/tenancy/src/*"
-      ],
-      "@beauty/database": [
-        "libs/database/src/index.ts"
-      ],
-      "@beauty/database/*": [
-        "libs/database/src/*"
-      ],
-      "@beauty/reliability": [
-        "libs/reliability/src/index.ts"
-      ],
-      "@beauty/reliability/*": [
-        "libs/reliability/src/*"
-      ]
-    },
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2023",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "incremental": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "strictPropertyInitialization": false,
-    "types": [
-      "vitest/globals",
-      "node"
-    ]
-  },
   "files": [],
   "references": [
     {
-      "path": "./apps/beauty-management-api/tsconfig.app.json"
+      "path": "./apps/beauty-management-api"
     },
     {
-      "path": "./apps/operations-worker/tsconfig.app.json"
+      "path": "./apps/billing-worker"
     },
     {
-      "path": "./apps/billing-worker/tsconfig.app.json"
+      "path": "./apps/clinical-worker"
     },
     {
-      "path": "./apps/clinical-worker/tsconfig.app.json"
+      "path": "./apps/operations-worker"
+    },
+    {
+      "path": "./domains/billing"
+    },
+    {
+      "path": "./domains/clinical"
+    },
+    {
+      "path": "./domains/operations"
+    },
+    {
+      "path": "./packages/authentication"
+    },
+    {
+      "path": "./packages/cloudflare-runtime"
+    },
+    {
+      "path": "./packages/config"
+    },
+    {
+      "path": "./packages/contracts"
+    },
+    {
+      "path": "./packages/database"
+    },
+    {
+      "path": "./packages/execution-context"
+    },
+    {
+      "path": "./packages/kernel"
+    },
+    {
+      "path": "./packages/observability"
+    },
+    {
+      "path": "./packages/reliability"
+    },
+    {
+      "path": "./packages/tenancy"
+    },
+    {
+      "path": "./packages/testing"
     }
   ]
 }

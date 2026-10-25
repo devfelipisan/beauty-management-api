@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
-import { D1UnitOfWork } from '../../libs/reliability/src/d1/d1-unit-of-work.js';
-import { D1IdempotencyStore } from '../../libs/reliability/src/d1/d1-reliability-store.js';
+import { D1UnitOfWork } from '@beauty/reliability/d1/d1-unit-of-work';
+import { D1IdempotencyStore } from '@beauty/reliability/d1/d1-reliability-store';
 
 const now = '2026-09-10T00:00:00.000Z';
 

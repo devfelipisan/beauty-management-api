@@ -1,0 +1,59 @@
+{
+  "name": "@beauty/config",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./application-config": {
+      "beauty": "./src/application-config.ts",
+      "types": "./dist/application-config.d.ts",
+      "workerd": "./src/application-config.ts",
+      "default": "./dist/application-config.js"
+    },
+    "./config.module": {
+      "beauty": "./src/config.module.ts",
+      "types": "./dist/config.module.d.ts",
+      "workerd": "./src/config.module.ts",
+      "default": "./dist/config.module.js"
+    },
+    "./configuration": {
+      "beauty": "./src/configuration.ts",
+      "types": "./dist/configuration.d.ts",
+      "workerd": "./src/configuration.ts",
+      "default": "./dist/configuration.js"
+    },
+    "./environment.schema": {
+      "beauty": "./src/environment.schema.ts",
+      "types": "./dist/environment.schema.d.ts",
+      "workerd": "./src/environment.schema.ts",
+      "default": "./dist/environment.schema.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./runtime-config.service": {
+      "beauty": "./src/runtime-config.service.ts",
+      "types": "./dist/runtime-config.service.d.ts",
+      "workerd": "./src/runtime-config.service.ts",
+      "default": "./dist/runtime-config.service.js"
+    },
+    "./worker-identity": {
+      "beauty": "./src/worker-identity.ts",
+      "types": "./dist/worker-identity.d.ts",
+      "workerd": "./src/worker-identity.ts",
+      "default": "./dist/worker-identity.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@nestjs/common": "12.2.0",
+    "@nestjs/config": "12.0.1",
+    "joi": "^18.2.5"
+  }
+}

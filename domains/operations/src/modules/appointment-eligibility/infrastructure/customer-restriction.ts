@@ -1,0 +1,3 @@
+import type { CustomerRepository } from '../../customers/ports/customer-repository.js';import { D1ClinicalRestrictionRepository } from '../../customers/infrastructure/d1-clinical-restriction-repository.js';
+import type { CustomerRestrictionPort } from '../ports/customer-restriction.port.js';
+export class CustomerRestrictionAdapter implements CustomerRestrictionPort { constructor(private readonly repo:CustomerRepository,private readonly clinical?:D1ClinicalRestrictionRepository){} async check(input:{tenantId:string;customerId:string}){const c=await this.repo.findById(input.tenantId,input.customerId);return {restricted:Boolean(c?.data.blockedForNewAppointments)||Boolean(this.clinical&&await this.clinical.isBlocked(input.tenantId,input.customerId))};} }

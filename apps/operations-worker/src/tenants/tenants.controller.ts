@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { CreateTenantUseCase, GetTenantUseCase, UpdateTenantUseCase } from './application/use-cases.js';
-import type { CreateTenantDto } from './adapters/http/dto/create-tenant.dto.js';
-import type { UpdateTenantDto } from './adapters/http/dto/update-tenant.dto.js';
+import { CreateTenantUseCase, GetTenantUseCase, UpdateTenantUseCase } from '@beauty/operations/modules/tenants/application/use-cases';
+import type { CreateTenantDto } from './http/dto/create-tenant.dto.js';
+import type { UpdateTenantDto } from './http/dto/update-tenant.dto.js';
 
 @Controller('tenants')
 export class TenantsController {

@@ -1,0 +1,3 @@
+import { DomainError } from '@beauty/kernel';
+import type { EquipmentInput, EquipmentStatus } from '@beauty/contracts';
+export class Equipment { constructor(readonly id:string,readonly tenantId:string,readonly data:EquipmentInput,readonly status:EquipmentStatus,readonly createdAt:string,readonly updatedAt:string){if(!id||!tenantId||!data.name?.trim())throw new DomainError('EQUIPMENT_INVALID','Equipment name is required');} static create(id:string,tenantId:string,input:EquipmentInput,now=new Date().toISOString()){return new Equipment(id,tenantId,{...input,name:input.name.trim()},'AVAILABLE',now,now);} }

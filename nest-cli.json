@@ -3,7 +3,7 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "apps/beauty-management-api/src",
   "compilerOptions": {
-    "deleteOutDir": true,
+    "deleteOutDir": false,
     "tsConfigPath": "apps/beauty-management-api/tsconfig.app.json"
   },
   "monorepo": true,
@@ -15,7 +15,8 @@
       "entryFile": "main",
       "sourceRoot": "apps/beauty-management-api/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/beauty-management-api/tsconfig.app.json"
+        "tsConfigPath": "apps/beauty-management-api/tsconfig.app.json",
+        "deleteOutDir": false
       }
     },
     "billing-worker": {
@@ -24,7 +25,8 @@
       "entryFile": "main",
       "sourceRoot": "apps/billing-worker/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/billing-worker/tsconfig.app.json"
+        "tsConfigPath": "apps/billing-worker/tsconfig.app.json",
+        "deleteOutDir": false
       }
     },
     "clinical-worker": {
@@ -33,7 +35,8 @@
       "entryFile": "main",
       "sourceRoot": "apps/clinical-worker/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/clinical-worker/tsconfig.app.json"
+        "tsConfigPath": "apps/clinical-worker/tsconfig.app.json",
+        "deleteOutDir": false
       }
     },
     "operations-worker": {
@@ -42,7 +45,8 @@
       "entryFile": "main",
       "sourceRoot": "apps/operations-worker/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/operations-worker/tsconfig.app.json"
+        "tsConfigPath": "apps/operations-worker/tsconfig.app.json",
+        "deleteOutDir": false
       }
     }
   }

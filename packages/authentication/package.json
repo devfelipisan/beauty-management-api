@@ -1,0 +1,79 @@
+{
+  "name": "@beauty/authentication",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./adapters/mock-identity-provider": {
+      "beauty": "./src/adapters/mock-identity-provider.ts",
+      "types": "./dist/adapters/mock-identity-provider.d.ts",
+      "workerd": "./src/adapters/mock-identity-provider.ts",
+      "default": "./dist/adapters/mock-identity-provider.js"
+    },
+    "./authenticated-identity": {
+      "beauty": "./src/authenticated-identity.ts",
+      "types": "./dist/authenticated-identity.d.ts",
+      "workerd": "./src/authenticated-identity.ts",
+      "default": "./dist/authenticated-identity.js"
+    },
+    "./authentication.module": {
+      "beauty": "./src/authentication.module.ts",
+      "types": "./dist/authentication.module.d.ts",
+      "workerd": "./src/authentication.module.ts",
+      "default": "./dist/authentication.module.js"
+    },
+    "./decorators/current-actor.decorator": {
+      "beauty": "./src/decorators/current-actor.decorator.ts",
+      "types": "./dist/decorators/current-actor.decorator.d.ts",
+      "workerd": "./src/decorators/current-actor.decorator.ts",
+      "default": "./dist/decorators/current-actor.decorator.js"
+    },
+    "./decorators/require-permission.decorator": {
+      "beauty": "./src/decorators/require-permission.decorator.ts",
+      "types": "./dist/decorators/require-permission.decorator.d.ts",
+      "workerd": "./src/decorators/require-permission.decorator.ts",
+      "default": "./dist/decorators/require-permission.decorator.js"
+    },
+    "./guards/authentication.guard": {
+      "beauty": "./src/guards/authentication.guard.ts",
+      "types": "./dist/guards/authentication.guard.d.ts",
+      "workerd": "./src/guards/authentication.guard.ts",
+      "default": "./dist/guards/authentication.guard.js"
+    },
+    "./guards/permission.guard": {
+      "beauty": "./src/guards/permission.guard.ts",
+      "types": "./dist/guards/permission.guard.d.ts",
+      "workerd": "./src/guards/permission.guard.ts",
+      "default": "./dist/guards/permission.guard.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./permission": {
+      "beauty": "./src/permission.ts",
+      "types": "./dist/permission.d.ts",
+      "workerd": "./src/permission.ts",
+      "default": "./dist/permission.js"
+    },
+    "./ports/identity-provider": {
+      "beauty": "./src/ports/identity-provider.ts",
+      "types": "./dist/ports/identity-provider.d.ts",
+      "workerd": "./src/ports/identity-provider.ts",
+      "default": "./dist/ports/identity-provider.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@beauty/execution-context": "0.0.1",
+    "@nestjs/common": "12.2.0",
+    "@nestjs/config": "12.0.1",
+    "@nestjs/core": "12.2.0",
+    "express": "5.2.1"
+  }
+}

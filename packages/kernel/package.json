@@ -1,0 +1,55 @@
+{
+  "name": "@beauty/kernel",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./application/clock": {
+      "beauty": "./src/application/clock.ts",
+      "types": "./dist/application/clock.d.ts",
+      "workerd": "./src/application/clock.ts",
+      "default": "./dist/application/clock.js"
+    },
+    "./application/use-case": {
+      "beauty": "./src/application/use-case.ts",
+      "types": "./dist/application/use-case.d.ts",
+      "workerd": "./src/application/use-case.ts",
+      "default": "./dist/application/use-case.js"
+    },
+    "./domain/domain-error": {
+      "beauty": "./src/domain/domain-error.ts",
+      "types": "./dist/domain/domain-error.d.ts",
+      "workerd": "./src/domain/domain-error.ts",
+      "default": "./dist/domain/domain-error.js"
+    },
+    "./domain/entity-id": {
+      "beauty": "./src/domain/entity-id.ts",
+      "types": "./dist/domain/entity-id.d.ts",
+      "workerd": "./src/domain/entity-id.ts",
+      "default": "./dist/domain/entity-id.js"
+    },
+    "./domain/entity": {
+      "beauty": "./src/domain/entity.ts",
+      "types": "./dist/domain/entity.d.ts",
+      "workerd": "./src/domain/entity.ts",
+      "default": "./dist/domain/entity.js"
+    },
+    "./domain/value-object": {
+      "beauty": "./src/domain/value-object.ts",
+      "types": "./dist/domain/value-object.d.ts",
+      "workerd": "./src/domain/value-object.ts",
+      "default": "./dist/domain/value-object.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {}
+}

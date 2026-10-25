@@ -1,0 +1,29 @@
+{
+  "name": "@beauty/operations-worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs",
+    "build": "tsc --build tsconfig.json",
+    "dev": "wrangler dev",
+    "dry-run": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "@beauty/authentication": "0.0.1",
+    "@beauty/cloudflare-runtime": "0.0.1",
+    "@beauty/config": "0.0.1",
+    "@beauty/contracts": "0.0.1",
+    "@beauty/database": "0.0.1",
+    "@beauty/observability": "0.0.1",
+    "@beauty/operations": "0.0.1",
+    "@beauty/reliability": "0.0.1",
+    "@beauty/tenancy": "0.0.1",
+    "@nestjs/common": "12.2.0",
+    "@nestjs/core": "12.2.0",
+    "@nestjs/platform-express": "12.2.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  }
+}

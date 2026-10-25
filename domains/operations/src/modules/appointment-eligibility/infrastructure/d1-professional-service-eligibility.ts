@@ -1,0 +1,3 @@
+import type { D1DatabaseLike } from '@beauty/database/d1/d1.types';
+import type { ProfessionalServiceEligibilityPort } from '../ports/professional-service-eligibility.port.js';
+export class D1ProfessionalServiceEligibility implements ProfessionalServiceEligibilityPort { constructor(private readonly db:D1DatabaseLike) {} async isEnabled(tenantId:string,professionalId:string,serviceId:string) { const row=await this.db.prepare('SELECT 1 AS enabled FROM professional_services WHERE tenant_id = ? AND professional_id = ? AND service_id = ?').bind(tenantId,professionalId,serviceId).first<{enabled:number}>(); return Boolean(row); } }

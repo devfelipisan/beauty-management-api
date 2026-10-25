@@ -1,0 +1,306 @@
+{
+  "name": "@beauty/billing",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./infrastructure/outbox/operations-deposit-delivery": {
+      "beauty": "./src/infrastructure/outbox/operations-deposit-delivery.ts",
+      "types": "./dist/infrastructure/outbox/operations-deposit-delivery.d.ts",
+      "workerd": "./src/infrastructure/outbox/operations-deposit-delivery.ts",
+      "default": "./dist/infrastructure/outbox/operations-deposit-delivery.js"
+    },
+    "./infrastructure/outbox/operations-package-delivery": {
+      "beauty": "./src/infrastructure/outbox/operations-package-delivery.ts",
+      "types": "./dist/infrastructure/outbox/operations-package-delivery.d.ts",
+      "workerd": "./src/infrastructure/outbox/operations-package-delivery.ts",
+      "default": "./dist/infrastructure/outbox/operations-package-delivery.js"
+    },
+    "./infrastructure/outbox/operations-payment-delivery": {
+      "beauty": "./src/infrastructure/outbox/operations-payment-delivery.ts",
+      "types": "./dist/infrastructure/outbox/operations-payment-delivery.d.ts",
+      "workerd": "./src/infrastructure/outbox/operations-payment-delivery.ts",
+      "default": "./dist/infrastructure/outbox/operations-payment-delivery.js"
+    },
+    "./infrastructure/outbox/operations-refund-delivery": {
+      "beauty": "./src/infrastructure/outbox/operations-refund-delivery.ts",
+      "types": "./dist/infrastructure/outbox/operations-refund-delivery.d.ts",
+      "workerd": "./src/infrastructure/outbox/operations-refund-delivery.ts",
+      "default": "./dist/infrastructure/outbox/operations-refund-delivery.js"
+    },
+    "./modules/appointment-change-policies/application/build-financial-decision-snapshot": {
+      "beauty": "./src/modules/appointment-change-policies/application/build-financial-decision-snapshot.ts",
+      "types": "./dist/modules/appointment-change-policies/application/build-financial-decision-snapshot.d.ts",
+      "workerd": "./src/modules/appointment-change-policies/application/build-financial-decision-snapshot.ts",
+      "default": "./dist/modules/appointment-change-policies/application/build-financial-decision-snapshot.js"
+    },
+    "./modules/appointment-change-policies/application/evaluate-appointment-change-financials": {
+      "beauty": "./src/modules/appointment-change-policies/application/evaluate-appointment-change-financials.ts",
+      "types": "./dist/modules/appointment-change-policies/application/evaluate-appointment-change-financials.d.ts",
+      "workerd": "./src/modules/appointment-change-policies/application/evaluate-appointment-change-financials.ts",
+      "default": "./dist/modules/appointment-change-policies/application/evaluate-appointment-change-financials.js"
+    },
+    "./modules/appointment-change-policies/application/financial-effect-executor": {
+      "beauty": "./src/modules/appointment-change-policies/application/financial-effect-executor.ts",
+      "types": "./dist/modules/appointment-change-policies/application/financial-effect-executor.d.ts",
+      "workerd": "./src/modules/appointment-change-policies/application/financial-effect-executor.ts",
+      "default": "./dist/modules/appointment-change-policies/application/financial-effect-executor.js"
+    },
+    "./modules/appointment-change-policies/application/validate-financial-decision-snapshot": {
+      "beauty": "./src/modules/appointment-change-policies/application/validate-financial-decision-snapshot.ts",
+      "types": "./dist/modules/appointment-change-policies/application/validate-financial-decision-snapshot.d.ts",
+      "workerd": "./src/modules/appointment-change-policies/application/validate-financial-decision-snapshot.ts",
+      "default": "./dist/modules/appointment-change-policies/application/validate-financial-decision-snapshot.js"
+    },
+    "./modules/commercial-terms/application/calculate-commercial-terms": {
+      "beauty": "./src/modules/commercial-terms/application/calculate-commercial-terms.ts",
+      "types": "./dist/modules/commercial-terms/application/calculate-commercial-terms.d.ts",
+      "workerd": "./src/modules/commercial-terms/application/calculate-commercial-terms.ts",
+      "default": "./dist/modules/commercial-terms/application/calculate-commercial-terms.js"
+    },
+    "./modules/commercial-terms/domain/commercial-terms-policy": {
+      "beauty": "./src/modules/commercial-terms/domain/commercial-terms-policy.ts",
+      "types": "./dist/modules/commercial-terms/domain/commercial-terms-policy.d.ts",
+      "workerd": "./src/modules/commercial-terms/domain/commercial-terms-policy.ts",
+      "default": "./dist/modules/commercial-terms/domain/commercial-terms-policy.js"
+    },
+    "./modules/commercial-terms/domain/commercial-terms": {
+      "beauty": "./src/modules/commercial-terms/domain/commercial-terms.ts",
+      "types": "./dist/modules/commercial-terms/domain/commercial-terms.d.ts",
+      "workerd": "./src/modules/commercial-terms/domain/commercial-terms.ts",
+      "default": "./dist/modules/commercial-terms/domain/commercial-terms.js"
+    },
+    "./modules/credits/application/grant-internal-credit": {
+      "beauty": "./src/modules/credits/application/grant-internal-credit.ts",
+      "types": "./dist/modules/credits/application/grant-internal-credit.d.ts",
+      "workerd": "./src/modules/credits/application/grant-internal-credit.ts",
+      "default": "./dist/modules/credits/application/grant-internal-credit.js"
+    },
+    "./modules/deposits/application/deposit-lifecycle": {
+      "beauty": "./src/modules/deposits/application/deposit-lifecycle.ts",
+      "types": "./dist/modules/deposits/application/deposit-lifecycle.d.ts",
+      "workerd": "./src/modules/deposits/application/deposit-lifecycle.ts",
+      "default": "./dist/modules/deposits/application/deposit-lifecycle.js"
+    },
+    "./modules/deposits/domain/deposit-state-machine": {
+      "beauty": "./src/modules/deposits/domain/deposit-state-machine.ts",
+      "types": "./dist/modules/deposits/domain/deposit-state-machine.d.ts",
+      "workerd": "./src/modules/deposits/domain/deposit-state-machine.ts",
+      "default": "./dist/modules/deposits/domain/deposit-state-machine.js"
+    },
+    "./modules/deposits/domain/deposit": {
+      "beauty": "./src/modules/deposits/domain/deposit.ts",
+      "types": "./dist/modules/deposits/domain/deposit.d.ts",
+      "workerd": "./src/modules/deposits/domain/deposit.ts",
+      "default": "./dist/modules/deposits/domain/deposit.js"
+    },
+    "./modules/deposits/infrastructure/configured-deposit-policy": {
+      "beauty": "./src/modules/deposits/infrastructure/configured-deposit-policy.ts",
+      "types": "./dist/modules/deposits/infrastructure/configured-deposit-policy.d.ts",
+      "workerd": "./src/modules/deposits/infrastructure/configured-deposit-policy.ts",
+      "default": "./dist/modules/deposits/infrastructure/configured-deposit-policy.js"
+    },
+    "./modules/deposits/infrastructure/d1-deposit-repository": {
+      "beauty": "./src/modules/deposits/infrastructure/d1-deposit-repository.ts",
+      "types": "./dist/modules/deposits/infrastructure/d1-deposit-repository.d.ts",
+      "workerd": "./src/modules/deposits/infrastructure/d1-deposit-repository.ts",
+      "default": "./dist/modules/deposits/infrastructure/d1-deposit-repository.js"
+    },
+    "./modules/deposits/infrastructure/unavailable-deposit-policy": {
+      "beauty": "./src/modules/deposits/infrastructure/unavailable-deposit-policy.ts",
+      "types": "./dist/modules/deposits/infrastructure/unavailable-deposit-policy.d.ts",
+      "workerd": "./src/modules/deposits/infrastructure/unavailable-deposit-policy.ts",
+      "default": "./dist/modules/deposits/infrastructure/unavailable-deposit-policy.js"
+    },
+    "./modules/deposits/ports/appointment-deposit-transition.port": {
+      "beauty": "./src/modules/deposits/ports/appointment-deposit-transition.port.ts",
+      "types": "./dist/modules/deposits/ports/appointment-deposit-transition.port.d.ts",
+      "workerd": "./src/modules/deposits/ports/appointment-deposit-transition.port.ts",
+      "default": "./dist/modules/deposits/ports/appointment-deposit-transition.port.js"
+    },
+    "./modules/deposits/ports/deposit-policy.port": {
+      "beauty": "./src/modules/deposits/ports/deposit-policy.port.ts",
+      "types": "./dist/modules/deposits/ports/deposit-policy.port.d.ts",
+      "workerd": "./src/modules/deposits/ports/deposit-policy.port.ts",
+      "default": "./dist/modules/deposits/ports/deposit-policy.port.js"
+    },
+    "./modules/deposits/ports/deposit-repository": {
+      "beauty": "./src/modules/deposits/ports/deposit-repository.ts",
+      "types": "./dist/modules/deposits/ports/deposit-repository.d.ts",
+      "workerd": "./src/modules/deposits/ports/deposit-repository.ts",
+      "default": "./dist/modules/deposits/ports/deposit-repository.js"
+    },
+    "./modules/discounts/domain/discount-policy": {
+      "beauty": "./src/modules/discounts/domain/discount-policy.ts",
+      "types": "./dist/modules/discounts/domain/discount-policy.d.ts",
+      "workerd": "./src/modules/discounts/domain/discount-policy.ts",
+      "default": "./dist/modules/discounts/domain/discount-policy.js"
+    },
+    "./modules/discounts/infrastructure/configured-discount-policy": {
+      "beauty": "./src/modules/discounts/infrastructure/configured-discount-policy.ts",
+      "types": "./dist/modules/discounts/infrastructure/configured-discount-policy.d.ts",
+      "workerd": "./src/modules/discounts/infrastructure/configured-discount-policy.ts",
+      "default": "./dist/modules/discounts/infrastructure/configured-discount-policy.js"
+    },
+    "./modules/discounts/infrastructure/d1-discount-policy-repository": {
+      "beauty": "./src/modules/discounts/infrastructure/d1-discount-policy-repository.ts",
+      "types": "./dist/modules/discounts/infrastructure/d1-discount-policy-repository.d.ts",
+      "workerd": "./src/modules/discounts/infrastructure/d1-discount-policy-repository.ts",
+      "default": "./dist/modules/discounts/infrastructure/d1-discount-policy-repository.js"
+    },
+    "./modules/discounts/infrastructure/unavailable-discount-policy": {
+      "beauty": "./src/modules/discounts/infrastructure/unavailable-discount-policy.ts",
+      "types": "./dist/modules/discounts/infrastructure/unavailable-discount-policy.d.ts",
+      "workerd": "./src/modules/discounts/infrastructure/unavailable-discount-policy.ts",
+      "default": "./dist/modules/discounts/infrastructure/unavailable-discount-policy.js"
+    },
+    "./modules/discounts/ports/discount-policy-repository": {
+      "beauty": "./src/modules/discounts/ports/discount-policy-repository.ts",
+      "types": "./dist/modules/discounts/ports/discount-policy-repository.d.ts",
+      "workerd": "./src/modules/discounts/ports/discount-policy-repository.ts",
+      "default": "./dist/modules/discounts/ports/discount-policy-repository.js"
+    },
+    "./modules/discounts/ports/discount-policy.port": {
+      "beauty": "./src/modules/discounts/ports/discount-policy.port.ts",
+      "types": "./dist/modules/discounts/ports/discount-policy.port.d.ts",
+      "workerd": "./src/modules/discounts/ports/discount-policy.port.ts",
+      "default": "./dist/modules/discounts/ports/discount-policy.port.js"
+    },
+    "./modules/ledger/domain/ledger-movement": {
+      "beauty": "./src/modules/ledger/domain/ledger-movement.ts",
+      "types": "./dist/modules/ledger/domain/ledger-movement.d.ts",
+      "workerd": "./src/modules/ledger/domain/ledger-movement.ts",
+      "default": "./dist/modules/ledger/domain/ledger-movement.js"
+    },
+    "./modules/packages/application/apply-session-package-consumption": {
+      "beauty": "./src/modules/packages/application/apply-session-package-consumption.ts",
+      "types": "./dist/modules/packages/application/apply-session-package-consumption.d.ts",
+      "workerd": "./src/modules/packages/application/apply-session-package-consumption.ts",
+      "default": "./dist/modules/packages/application/apply-session-package-consumption.js"
+    },
+    "./modules/packages/application/check-package-usage-eligibility": {
+      "beauty": "./src/modules/packages/application/check-package-usage-eligibility.ts",
+      "types": "./dist/modules/packages/application/check-package-usage-eligibility.d.ts",
+      "workerd": "./src/modules/packages/application/check-package-usage-eligibility.ts",
+      "default": "./dist/modules/packages/application/check-package-usage-eligibility.js"
+    },
+    "./modules/packages/application/materialize-customer-package": {
+      "beauty": "./src/modules/packages/application/materialize-customer-package.ts",
+      "types": "./dist/modules/packages/application/materialize-customer-package.d.ts",
+      "workerd": "./src/modules/packages/application/materialize-customer-package.ts",
+      "default": "./dist/modules/packages/application/materialize-customer-package.js"
+    },
+    "./modules/packages/domain/customer-package": {
+      "beauty": "./src/modules/packages/domain/customer-package.ts",
+      "types": "./dist/modules/packages/domain/customer-package.d.ts",
+      "workerd": "./src/modules/packages/domain/customer-package.ts",
+      "default": "./dist/modules/packages/domain/customer-package.js"
+    },
+    "./modules/packages/domain/package-definition": {
+      "beauty": "./src/modules/packages/domain/package-definition.ts",
+      "types": "./dist/modules/packages/domain/package-definition.d.ts",
+      "workerd": "./src/modules/packages/domain/package-definition.ts",
+      "default": "./dist/modules/packages/domain/package-definition.js"
+    },
+    "./modules/packages/infrastructure/d1-customer-package-repository": {
+      "beauty": "./src/modules/packages/infrastructure/d1-customer-package-repository.ts",
+      "types": "./dist/modules/packages/infrastructure/d1-customer-package-repository.d.ts",
+      "workerd": "./src/modules/packages/infrastructure/d1-customer-package-repository.ts",
+      "default": "./dist/modules/packages/infrastructure/d1-customer-package-repository.js"
+    },
+    "./modules/packages/ports/customer-package-repository": {
+      "beauty": "./src/modules/packages/ports/customer-package-repository.ts",
+      "types": "./dist/modules/packages/ports/customer-package-repository.d.ts",
+      "workerd": "./src/modules/packages/ports/customer-package-repository.ts",
+      "default": "./dist/modules/packages/ports/customer-package-repository.js"
+    },
+    "./modules/payments/application/register-payment": {
+      "beauty": "./src/modules/payments/application/register-payment.ts",
+      "types": "./dist/modules/payments/application/register-payment.d.ts",
+      "workerd": "./src/modules/payments/application/register-payment.ts",
+      "default": "./dist/modules/payments/application/register-payment.js"
+    },
+    "./modules/payments/domain/payment": {
+      "beauty": "./src/modules/payments/domain/payment.ts",
+      "types": "./dist/modules/payments/domain/payment.d.ts",
+      "workerd": "./src/modules/payments/domain/payment.ts",
+      "default": "./dist/modules/payments/domain/payment.js"
+    },
+    "./modules/receivables/application/apply-financial-settlement-requested": {
+      "beauty": "./src/modules/receivables/application/apply-financial-settlement-requested.ts",
+      "types": "./dist/modules/receivables/application/apply-financial-settlement-requested.d.ts",
+      "workerd": "./src/modules/receivables/application/apply-financial-settlement-requested.ts",
+      "default": "./dist/modules/receivables/application/apply-financial-settlement-requested.js"
+    },
+    "./modules/receivables/domain/receivable": {
+      "beauty": "./src/modules/receivables/domain/receivable.ts",
+      "types": "./dist/modules/receivables/domain/receivable.d.ts",
+      "workerd": "./src/modules/receivables/domain/receivable.ts",
+      "default": "./dist/modules/receivables/domain/receivable.js"
+    },
+    "./modules/receivables/infrastructure/d1-receivable-repository": {
+      "beauty": "./src/modules/receivables/infrastructure/d1-receivable-repository.ts",
+      "types": "./dist/modules/receivables/infrastructure/d1-receivable-repository.d.ts",
+      "workerd": "./src/modules/receivables/infrastructure/d1-receivable-repository.ts",
+      "default": "./dist/modules/receivables/infrastructure/d1-receivable-repository.js"
+    },
+    "./modules/receivables/ports/receivable-repository": {
+      "beauty": "./src/modules/receivables/ports/receivable-repository.ts",
+      "types": "./dist/modules/receivables/ports/receivable-repository.d.ts",
+      "workerd": "./src/modules/receivables/ports/receivable-repository.ts",
+      "default": "./dist/modules/receivables/ports/receivable-repository.js"
+    },
+    "./modules/refunds/application/issue-refund": {
+      "beauty": "./src/modules/refunds/application/issue-refund.ts",
+      "types": "./dist/modules/refunds/application/issue-refund.d.ts",
+      "workerd": "./src/modules/refunds/application/issue-refund.ts",
+      "default": "./dist/modules/refunds/application/issue-refund.js"
+    },
+    "./modules/appointment-change-policies/infrastructure/d1-persistence": {
+      "beauty": "./src/modules/appointment-change-policies/infrastructure/d1-persistence.ts",
+      "types": "./dist/modules/appointment-change-policies/infrastructure/d1-persistence.d.ts",
+      "workerd": "./src/modules/appointment-change-policies/infrastructure/d1-persistence.ts",
+      "default": "./dist/modules/appointment-change-policies/infrastructure/d1-persistence.js"
+    },
+    "./modules/appointment-change-policies/ports/persistence": {
+      "beauty": "./src/modules/appointment-change-policies/ports/persistence.ts",
+      "types": "./dist/modules/appointment-change-policies/ports/persistence.d.ts",
+      "workerd": "./src/modules/appointment-change-policies/ports/persistence.ts",
+      "default": "./dist/modules/appointment-change-policies/ports/persistence.js"
+    },
+    "./modules/credits/infrastructure/d1-persistence": {
+      "beauty": "./src/modules/credits/infrastructure/d1-persistence.ts",
+      "types": "./dist/modules/credits/infrastructure/d1-persistence.d.ts",
+      "workerd": "./src/modules/credits/infrastructure/d1-persistence.ts",
+      "default": "./dist/modules/credits/infrastructure/d1-persistence.js"
+    },
+    "./modules/credits/ports/persistence": {
+      "beauty": "./src/modules/credits/ports/persistence.ts",
+      "types": "./dist/modules/credits/ports/persistence.d.ts",
+      "workerd": "./src/modules/credits/ports/persistence.ts",
+      "default": "./dist/modules/credits/ports/persistence.js"
+    },
+    "./modules/refunds/infrastructure/d1-persistence": {
+      "beauty": "./src/modules/refunds/infrastructure/d1-persistence.ts",
+      "types": "./dist/modules/refunds/infrastructure/d1-persistence.d.ts",
+      "workerd": "./src/modules/refunds/infrastructure/d1-persistence.ts",
+      "default": "./dist/modules/refunds/infrastructure/d1-persistence.js"
+    },
+    "./modules/refunds/ports/persistence": {
+      "beauty": "./src/modules/refunds/ports/persistence.ts",
+      "types": "./dist/modules/refunds/ports/persistence.d.ts",
+      "workerd": "./src/modules/refunds/ports/persistence.ts",
+      "default": "./dist/modules/refunds/ports/persistence.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@beauty/contracts": "0.0.1",
+    "@beauty/database": "0.0.1",
+    "@beauty/kernel": "0.0.1",
+    "@beauty/reliability": "0.0.1"
+  }
+}

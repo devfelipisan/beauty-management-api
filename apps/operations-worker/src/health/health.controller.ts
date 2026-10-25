@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { RuntimeConfigService } from '../../../../libs/config/src/index.js';
+import { RuntimeConfigService } from '@beauty/config';
 
 @Controller('health')
 export class HealthController {

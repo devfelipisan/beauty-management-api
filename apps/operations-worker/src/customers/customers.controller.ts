@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { CurrentTenant, TenantGuard, type TenantContext } from '../../../../libs/tenancy/src/index.js';
-import { AuthenticationGuard, PermissionGuard, RequirePermission } from '../../../../libs/authentication/src/index.js';
-import { CreateCustomerUseCase, DeactivateCustomerUseCase, GetCustomerUseCase, ListCustomersUseCase, UpdateCustomerUseCase } from './application/use-cases.js';
-import type { CreateCustomerDto } from './adapters/http/dto/create-customer.dto.js';
+import { CurrentTenant, TenantGuard, type TenantContext } from '@beauty/tenancy';
+import { AuthenticationGuard, PermissionGuard, RequirePermission } from '@beauty/authentication';
+import { CreateCustomerUseCase, DeactivateCustomerUseCase, GetCustomerUseCase, ListCustomersUseCase, UpdateCustomerUseCase } from '@beauty/operations/modules/customers/application/use-cases';
+import type { CreateCustomerDto } from './http/dto/create-customer.dto.js';
 
 @UseGuards(AuthenticationGuard, TenantGuard, PermissionGuard)
 @Controller('tenants/:tenantId/customers')

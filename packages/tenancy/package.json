@@ -1,0 +1,66 @@
+{
+  "name": "@beauty/tenancy",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./adapters/mock-tenant-membership-provider": {
+      "beauty": "./src/adapters/mock-tenant-membership-provider.ts",
+      "types": "./dist/adapters/mock-tenant-membership-provider.d.ts",
+      "workerd": "./src/adapters/mock-tenant-membership-provider.ts",
+      "default": "./dist/adapters/mock-tenant-membership-provider.js"
+    },
+    "./decorators/current-tenant.decorator": {
+      "beauty": "./src/decorators/current-tenant.decorator.ts",
+      "types": "./dist/decorators/current-tenant.decorator.d.ts",
+      "workerd": "./src/decorators/current-tenant.decorator.ts",
+      "default": "./dist/decorators/current-tenant.decorator.js"
+    },
+    "./guards/tenant.guard": {
+      "beauty": "./src/guards/tenant.guard.ts",
+      "types": "./dist/guards/tenant.guard.d.ts",
+      "workerd": "./src/guards/tenant.guard.ts",
+      "default": "./dist/guards/tenant.guard.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./ports/tenant-membership-provider": {
+      "beauty": "./src/ports/tenant-membership-provider.ts",
+      "types": "./dist/ports/tenant-membership-provider.d.ts",
+      "workerd": "./src/ports/tenant-membership-provider.ts",
+      "default": "./dist/ports/tenant-membership-provider.js"
+    },
+    "./tenancy.module": {
+      "beauty": "./src/tenancy.module.ts",
+      "types": "./dist/tenancy.module.d.ts",
+      "workerd": "./src/tenancy.module.ts",
+      "default": "./dist/tenancy.module.js"
+    },
+    "./tenant-context": {
+      "beauty": "./src/tenant-context.ts",
+      "types": "./dist/tenant-context.d.ts",
+      "workerd": "./src/tenant-context.ts",
+      "default": "./dist/tenant-context.js"
+    },
+    "./tenant-membership": {
+      "beauty": "./src/tenant-membership.ts",
+      "types": "./dist/tenant-membership.d.ts",
+      "workerd": "./src/tenant-membership.ts",
+      "default": "./dist/tenant-membership.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@beauty/authentication": "0.0.1",
+    "@beauty/execution-context": "0.0.1",
+    "@nestjs/common": "12.2.0",
+    "express": "5.2.1"
+  }
+}

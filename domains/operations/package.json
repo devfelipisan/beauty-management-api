@@ -1,0 +1,469 @@
+{
+  "name": "@beauty/operations",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./infrastructure/outbox/billing-financial-settlement-delivery": {
+      "beauty": "./src/infrastructure/outbox/billing-financial-settlement-delivery.ts",
+      "types": "./dist/infrastructure/outbox/billing-financial-settlement-delivery.d.ts",
+      "workerd": "./src/infrastructure/outbox/billing-financial-settlement-delivery.ts",
+      "default": "./dist/infrastructure/outbox/billing-financial-settlement-delivery.js"
+    },
+    "./modules/appointment-eligibility/application/check-appointment-eligibility": {
+      "beauty": "./src/modules/appointment-eligibility/application/check-appointment-eligibility.ts",
+      "types": "./dist/modules/appointment-eligibility/application/check-appointment-eligibility.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/application/check-appointment-eligibility.ts",
+      "default": "./dist/modules/appointment-eligibility/application/check-appointment-eligibility.js"
+    },
+    "./modules/appointment-eligibility/domain/appointment-eligibility-policy": {
+      "beauty": "./src/modules/appointment-eligibility/domain/appointment-eligibility-policy.ts",
+      "types": "./dist/modules/appointment-eligibility/domain/appointment-eligibility-policy.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/domain/appointment-eligibility-policy.ts",
+      "default": "./dist/modules/appointment-eligibility/domain/appointment-eligibility-policy.js"
+    },
+    "./modules/appointment-eligibility/domain/appointment-eligibility-result": {
+      "beauty": "./src/modules/appointment-eligibility/domain/appointment-eligibility-result.ts",
+      "types": "./dist/modules/appointment-eligibility/domain/appointment-eligibility-result.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/domain/appointment-eligibility-result.ts",
+      "default": "./dist/modules/appointment-eligibility/domain/appointment-eligibility-result.js"
+    },
+    "./modules/appointment-eligibility/infrastructure/clinical-assessment-eligibility": {
+      "beauty": "./src/modules/appointment-eligibility/infrastructure/clinical-assessment-eligibility.ts",
+      "types": "./dist/modules/appointment-eligibility/infrastructure/clinical-assessment-eligibility.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/infrastructure/clinical-assessment-eligibility.ts",
+      "default": "./dist/modules/appointment-eligibility/infrastructure/clinical-assessment-eligibility.js"
+    },
+    "./modules/appointment-eligibility/infrastructure/clinical-service-binding-assessment-eligibility": {
+      "beauty": "./src/modules/appointment-eligibility/infrastructure/clinical-service-binding-assessment-eligibility.ts",
+      "types": "./dist/modules/appointment-eligibility/infrastructure/clinical-service-binding-assessment-eligibility.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/infrastructure/clinical-service-binding-assessment-eligibility.ts",
+      "default": "./dist/modules/appointment-eligibility/infrastructure/clinical-service-binding-assessment-eligibility.js"
+    },
+    "./modules/appointment-eligibility/infrastructure/customer-restriction": {
+      "beauty": "./src/modules/appointment-eligibility/infrastructure/customer-restriction.ts",
+      "types": "./dist/modules/appointment-eligibility/infrastructure/customer-restriction.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/infrastructure/customer-restriction.ts",
+      "default": "./dist/modules/appointment-eligibility/infrastructure/customer-restriction.js"
+    },
+    "./modules/appointment-eligibility/infrastructure/d1-professional-service-eligibility": {
+      "beauty": "./src/modules/appointment-eligibility/infrastructure/d1-professional-service-eligibility.ts",
+      "types": "./dist/modules/appointment-eligibility/infrastructure/d1-professional-service-eligibility.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/infrastructure/d1-professional-service-eligibility.ts",
+      "default": "./dist/modules/appointment-eligibility/infrastructure/d1-professional-service-eligibility.js"
+    },
+    "./modules/appointment-eligibility/infrastructure/unavailable-capabilities": {
+      "beauty": "./src/modules/appointment-eligibility/infrastructure/unavailable-capabilities.ts",
+      "types": "./dist/modules/appointment-eligibility/infrastructure/unavailable-capabilities.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/infrastructure/unavailable-capabilities.ts",
+      "default": "./dist/modules/appointment-eligibility/infrastructure/unavailable-capabilities.js"
+    },
+    "./modules/appointment-eligibility/ports/assessment-eligibility.port": {
+      "beauty": "./src/modules/appointment-eligibility/ports/assessment-eligibility.port.ts",
+      "types": "./dist/modules/appointment-eligibility/ports/assessment-eligibility.port.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/ports/assessment-eligibility.port.ts",
+      "default": "./dist/modules/appointment-eligibility/ports/assessment-eligibility.port.js"
+    },
+    "./modules/appointment-eligibility/ports/customer-restriction.port": {
+      "beauty": "./src/modules/appointment-eligibility/ports/customer-restriction.port.ts",
+      "types": "./dist/modules/appointment-eligibility/ports/customer-restriction.port.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/ports/customer-restriction.port.ts",
+      "default": "./dist/modules/appointment-eligibility/ports/customer-restriction.port.js"
+    },
+    "./modules/appointment-eligibility/ports/license-eligibility.port": {
+      "beauty": "./src/modules/appointment-eligibility/ports/license-eligibility.port.ts",
+      "types": "./dist/modules/appointment-eligibility/ports/license-eligibility.port.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/ports/license-eligibility.port.ts",
+      "default": "./dist/modules/appointment-eligibility/ports/license-eligibility.port.js"
+    },
+    "./modules/appointment-eligibility/ports/plan-limit.port": {
+      "beauty": "./src/modules/appointment-eligibility/ports/plan-limit.port.ts",
+      "types": "./dist/modules/appointment-eligibility/ports/plan-limit.port.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/ports/plan-limit.port.ts",
+      "default": "./dist/modules/appointment-eligibility/ports/plan-limit.port.js"
+    },
+    "./modules/appointment-eligibility/ports/professional-service-eligibility.port": {
+      "beauty": "./src/modules/appointment-eligibility/ports/professional-service-eligibility.port.ts",
+      "types": "./dist/modules/appointment-eligibility/ports/professional-service-eligibility.port.d.ts",
+      "workerd": "./src/modules/appointment-eligibility/ports/professional-service-eligibility.port.ts",
+      "default": "./dist/modules/appointment-eligibility/ports/professional-service-eligibility.port.js"
+    },
+    "./modules/appointments/application/apply-deposit-transition": {
+      "beauty": "./src/modules/appointments/application/apply-deposit-transition.ts",
+      "types": "./dist/modules/appointments/application/apply-deposit-transition.d.ts",
+      "workerd": "./src/modules/appointments/application/apply-deposit-transition.ts",
+      "default": "./dist/modules/appointments/application/apply-deposit-transition.js"
+    },
+    "./modules/appointments/application/apply-session-completed": {
+      "beauty": "./src/modules/appointments/application/apply-session-completed.ts",
+      "types": "./dist/modules/appointments/application/apply-session-completed.d.ts",
+      "workerd": "./src/modules/appointments/application/apply-session-completed.ts",
+      "default": "./dist/modules/appointments/application/apply-session-completed.js"
+    },
+    "./modules/appointments/application/appointment-lifecycle": {
+      "beauty": "./src/modules/appointments/application/appointment-lifecycle.ts",
+      "types": "./dist/modules/appointments/application/appointment-lifecycle.d.ts",
+      "workerd": "./src/modules/appointments/application/appointment-lifecycle.ts",
+      "default": "./dist/modules/appointments/application/appointment-lifecycle.js"
+    },
+    "./modules/appointments/application/assign-package-to-appointment": {
+      "beauty": "./src/modules/appointments/application/assign-package-to-appointment.ts",
+      "types": "./dist/modules/appointments/application/assign-package-to-appointment.d.ts",
+      "workerd": "./src/modules/appointments/application/assign-package-to-appointment.ts",
+      "default": "./dist/modules/appointments/application/assign-package-to-appointment.js"
+    },
+    "./modules/appointments/application/cancel-and-no-show": {
+      "beauty": "./src/modules/appointments/application/cancel-and-no-show.ts",
+      "types": "./dist/modules/appointments/application/cancel-and-no-show.d.ts",
+      "workerd": "./src/modules/appointments/application/cancel-and-no-show.ts",
+      "default": "./dist/modules/appointments/application/cancel-and-no-show.js"
+    },
+    "./modules/appointments/application/check-professional-availability.use-case": {
+      "beauty": "./src/modules/appointments/application/check-professional-availability.use-case.ts",
+      "types": "./dist/modules/appointments/application/check-professional-availability.use-case.d.ts",
+      "workerd": "./src/modules/appointments/application/check-professional-availability.use-case.ts",
+      "default": "./dist/modules/appointments/application/check-professional-availability.use-case.js"
+    },
+    "./modules/appointments/application/create-appointment": {
+      "beauty": "./src/modules/appointments/application/create-appointment.ts",
+      "types": "./dist/modules/appointments/application/create-appointment.d.ts",
+      "workerd": "./src/modules/appointments/application/create-appointment.ts",
+      "default": "./dist/modules/appointments/application/create-appointment.js"
+    },
+    "./modules/appointments/application/reschedule-appointment": {
+      "beauty": "./src/modules/appointments/application/reschedule-appointment.ts",
+      "types": "./dist/modules/appointments/application/reschedule-appointment.d.ts",
+      "workerd": "./src/modules/appointments/application/reschedule-appointment.ts",
+      "default": "./dist/modules/appointments/application/reschedule-appointment.js"
+    },
+    "./modules/appointments/application/session-start": {
+      "beauty": "./src/modules/appointments/application/session-start.ts",
+      "types": "./dist/modules/appointments/application/session-start.d.ts",
+      "workerd": "./src/modules/appointments/application/session-start.ts",
+      "default": "./dist/modules/appointments/application/session-start.js"
+    },
+    "./modules/appointments/domain/appointment-state-machine": {
+      "beauty": "./src/modules/appointments/domain/appointment-state-machine.ts",
+      "types": "./dist/modules/appointments/domain/appointment-state-machine.d.ts",
+      "workerd": "./src/modules/appointments/domain/appointment-state-machine.ts",
+      "default": "./dist/modules/appointments/domain/appointment-state-machine.js"
+    },
+    "./modules/appointments/domain/appointment": {
+      "beauty": "./src/modules/appointments/domain/appointment.ts",
+      "types": "./dist/modules/appointments/domain/appointment.d.ts",
+      "workerd": "./src/modules/appointments/domain/appointment.ts",
+      "default": "./dist/modules/appointments/domain/appointment.js"
+    },
+    "./modules/appointments/domain/policies/appointment-occupancy-policy": {
+      "beauty": "./src/modules/appointments/domain/policies/appointment-occupancy-policy.ts",
+      "types": "./dist/modules/appointments/domain/policies/appointment-occupancy-policy.d.ts",
+      "workerd": "./src/modules/appointments/domain/policies/appointment-occupancy-policy.ts",
+      "default": "./dist/modules/appointments/domain/policies/appointment-occupancy-policy.js"
+    },
+    "./modules/appointments/domain/policies/availability-policy": {
+      "beauty": "./src/modules/appointments/domain/policies/availability-policy.ts",
+      "types": "./dist/modules/appointments/domain/policies/availability-policy.d.ts",
+      "workerd": "./src/modules/appointments/domain/policies/availability-policy.ts",
+      "default": "./dist/modules/appointments/domain/policies/availability-policy.js"
+    },
+    "./modules/appointments/domain/time-interval": {
+      "beauty": "./src/modules/appointments/domain/time-interval.ts",
+      "types": "./dist/modules/appointments/domain/time-interval.d.ts",
+      "workerd": "./src/modules/appointments/domain/time-interval.ts",
+      "default": "./dist/modules/appointments/domain/time-interval.js"
+    },
+    "./modules/appointments/infrastructure/billing-service-binding-commercial-terms": {
+      "beauty": "./src/modules/appointments/infrastructure/billing-service-binding-commercial-terms.ts",
+      "types": "./dist/modules/appointments/infrastructure/billing-service-binding-commercial-terms.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/billing-service-binding-commercial-terms.ts",
+      "default": "./dist/modules/appointments/infrastructure/billing-service-binding-commercial-terms.js"
+    },
+    "./modules/appointments/infrastructure/d1-appointment-cancellation-repository": {
+      "beauty": "./src/modules/appointments/infrastructure/d1-appointment-cancellation-repository.ts",
+      "types": "./dist/modules/appointments/infrastructure/d1-appointment-cancellation-repository.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/d1-appointment-cancellation-repository.ts",
+      "default": "./dist/modules/appointments/infrastructure/d1-appointment-cancellation-repository.js"
+    },
+    "./modules/appointments/infrastructure/d1-appointment-change-repository": {
+      "beauty": "./src/modules/appointments/infrastructure/d1-appointment-change-repository.ts",
+      "types": "./dist/modules/appointments/infrastructure/d1-appointment-change-repository.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/d1-appointment-change-repository.ts",
+      "default": "./dist/modules/appointments/infrastructure/d1-appointment-change-repository.js"
+    },
+    "./modules/appointments/infrastructure/d1-appointment-repository": {
+      "beauty": "./src/modules/appointments/infrastructure/d1-appointment-repository.ts",
+      "types": "./dist/modules/appointments/infrastructure/d1-appointment-repository.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/d1-appointment-repository.ts",
+      "default": "./dist/modules/appointments/infrastructure/d1-appointment-repository.js"
+    },
+    "./modules/appointments/infrastructure/d1-availability-repository": {
+      "beauty": "./src/modules/appointments/infrastructure/d1-availability-repository.ts",
+      "types": "./dist/modules/appointments/infrastructure/d1-availability-repository.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/d1-availability-repository.ts",
+      "default": "./dist/modules/appointments/infrastructure/d1-availability-repository.js"
+    },
+    "./modules/appointments/infrastructure/d1-package-assignment-repository": {
+      "beauty": "./src/modules/appointments/infrastructure/d1-package-assignment-repository.ts",
+      "types": "./dist/modules/appointments/infrastructure/d1-package-assignment-repository.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/d1-package-assignment-repository.ts",
+      "default": "./dist/modules/appointments/infrastructure/d1-package-assignment-repository.js"
+    },
+    "./modules/appointments/infrastructure/unavailable-commercial-terms": {
+      "beauty": "./src/modules/appointments/infrastructure/unavailable-commercial-terms.ts",
+      "types": "./dist/modules/appointments/infrastructure/unavailable-commercial-terms.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/unavailable-commercial-terms.ts",
+      "default": "./dist/modules/appointments/infrastructure/unavailable-commercial-terms.js"
+    },
+    "./modules/appointments/ports/appointment-repository": {
+      "beauty": "./src/modules/appointments/ports/appointment-repository.ts",
+      "types": "./dist/modules/appointments/ports/appointment-repository.d.ts",
+      "workerd": "./src/modules/appointments/ports/appointment-repository.ts",
+      "default": "./dist/modules/appointments/ports/appointment-repository.js"
+    },
+    "./modules/appointments/ports/availability-repository": {
+      "beauty": "./src/modules/appointments/ports/availability-repository.ts",
+      "types": "./dist/modules/appointments/ports/availability-repository.d.ts",
+      "workerd": "./src/modules/appointments/ports/availability-repository.ts",
+      "default": "./dist/modules/appointments/ports/availability-repository.js"
+    },
+    "./modules/appointments/ports/commercial-terms-port": {
+      "beauty": "./src/modules/appointments/ports/commercial-terms-port.ts",
+      "types": "./dist/modules/appointments/ports/commercial-terms-port.d.ts",
+      "workerd": "./src/modules/appointments/ports/commercial-terms-port.ts",
+      "default": "./dist/modules/appointments/ports/commercial-terms-port.js"
+    },
+    "./modules/appointments/ports/schedule-reservation.port": {
+      "beauty": "./src/modules/appointments/ports/schedule-reservation.port.ts",
+      "types": "./dist/modules/appointments/ports/schedule-reservation.port.d.ts",
+      "workerd": "./src/modules/appointments/ports/schedule-reservation.port.ts",
+      "default": "./dist/modules/appointments/ports/schedule-reservation.port.js"
+    },
+    "./modules/customer-history/application/apply-package-unit-consumed": {
+      "beauty": "./src/modules/customer-history/application/apply-package-unit-consumed.ts",
+      "types": "./dist/modules/customer-history/application/apply-package-unit-consumed.d.ts",
+      "workerd": "./src/modules/customer-history/application/apply-package-unit-consumed.ts",
+      "default": "./dist/modules/customer-history/application/apply-package-unit-consumed.js"
+    },
+    "./modules/customer-history/application/apply-payment-received": {
+      "beauty": "./src/modules/customer-history/application/apply-payment-received.ts",
+      "types": "./dist/modules/customer-history/application/apply-payment-received.d.ts",
+      "workerd": "./src/modules/customer-history/application/apply-payment-received.ts",
+      "default": "./dist/modules/customer-history/application/apply-payment-received.js"
+    },
+    "./modules/customer-history/application/apply-refund-issued": {
+      "beauty": "./src/modules/customer-history/application/apply-refund-issued.ts",
+      "types": "./dist/modules/customer-history/application/apply-refund-issued.d.ts",
+      "workerd": "./src/modules/customer-history/application/apply-refund-issued.ts",
+      "default": "./dist/modules/customer-history/application/apply-refund-issued.js"
+    },
+    "./modules/customer-history/infrastructure/d1-customer-history-repository": {
+      "beauty": "./src/modules/customer-history/infrastructure/d1-customer-history-repository.ts",
+      "types": "./dist/modules/customer-history/infrastructure/d1-customer-history-repository.d.ts",
+      "workerd": "./src/modules/customer-history/infrastructure/d1-customer-history-repository.ts",
+      "default": "./dist/modules/customer-history/infrastructure/d1-customer-history-repository.js"
+    },
+    "./modules/customers/application/apply-clinical-restriction": {
+      "beauty": "./src/modules/customers/application/apply-clinical-restriction.ts",
+      "types": "./dist/modules/customers/application/apply-clinical-restriction.d.ts",
+      "workerd": "./src/modules/customers/application/apply-clinical-restriction.ts",
+      "default": "./dist/modules/customers/application/apply-clinical-restriction.js"
+    },
+    "./modules/customers/application/use-cases": {
+      "beauty": "./src/modules/customers/application/use-cases.ts",
+      "types": "./dist/modules/customers/application/use-cases.d.ts",
+      "workerd": "./src/modules/customers/application/use-cases.ts",
+      "default": "./dist/modules/customers/application/use-cases.js"
+    },
+    "./modules/customers/domain/customer": {
+      "beauty": "./src/modules/customers/domain/customer.ts",
+      "types": "./dist/modules/customers/domain/customer.d.ts",
+      "workerd": "./src/modules/customers/domain/customer.ts",
+      "default": "./dist/modules/customers/domain/customer.js"
+    },
+    "./modules/customers/infrastructure/d1-clinical-restriction-repository": {
+      "beauty": "./src/modules/customers/infrastructure/d1-clinical-restriction-repository.ts",
+      "types": "./dist/modules/customers/infrastructure/d1-clinical-restriction-repository.d.ts",
+      "workerd": "./src/modules/customers/infrastructure/d1-clinical-restriction-repository.ts",
+      "default": "./dist/modules/customers/infrastructure/d1-clinical-restriction-repository.js"
+    },
+    "./modules/customers/infrastructure/d1-customer-repository": {
+      "beauty": "./src/modules/customers/infrastructure/d1-customer-repository.ts",
+      "types": "./dist/modules/customers/infrastructure/d1-customer-repository.d.ts",
+      "workerd": "./src/modules/customers/infrastructure/d1-customer-repository.ts",
+      "default": "./dist/modules/customers/infrastructure/d1-customer-repository.js"
+    },
+    "./modules/customers/ports/customer-repository": {
+      "beauty": "./src/modules/customers/ports/customer-repository.ts",
+      "types": "./dist/modules/customers/ports/customer-repository.d.ts",
+      "workerd": "./src/modules/customers/ports/customer-repository.ts",
+      "default": "./dist/modules/customers/ports/customer-repository.js"
+    },
+    "./modules/licensing/domain/license-operational-policy": {
+      "beauty": "./src/modules/licensing/domain/license-operational-policy.ts",
+      "types": "./dist/modules/licensing/domain/license-operational-policy.d.ts",
+      "workerd": "./src/modules/licensing/domain/license-operational-policy.ts",
+      "default": "./dist/modules/licensing/domain/license-operational-policy.js"
+    },
+    "./modules/licensing/domain/license": {
+      "beauty": "./src/modules/licensing/domain/license.ts",
+      "types": "./dist/modules/licensing/domain/license.d.ts",
+      "workerd": "./src/modules/licensing/domain/license.ts",
+      "default": "./dist/modules/licensing/domain/license.js"
+    },
+    "./modules/licensing/infrastructure/appointment-admission-adapters": {
+      "beauty": "./src/modules/licensing/infrastructure/appointment-admission-adapters.ts",
+      "types": "./dist/modules/licensing/infrastructure/appointment-admission-adapters.d.ts",
+      "workerd": "./src/modules/licensing/infrastructure/appointment-admission-adapters.ts",
+      "default": "./dist/modules/licensing/infrastructure/appointment-admission-adapters.js"
+    },
+    "./modules/licensing/infrastructure/d1-license-repository": {
+      "beauty": "./src/modules/licensing/infrastructure/d1-license-repository.ts",
+      "types": "./dist/modules/licensing/infrastructure/d1-license-repository.d.ts",
+      "workerd": "./src/modules/licensing/infrastructure/d1-license-repository.ts",
+      "default": "./dist/modules/licensing/infrastructure/d1-license-repository.js"
+    },
+    "./modules/licensing/ports/license-repository": {
+      "beauty": "./src/modules/licensing/ports/license-repository.ts",
+      "types": "./dist/modules/licensing/ports/license-repository.d.ts",
+      "workerd": "./src/modules/licensing/ports/license-repository.ts",
+      "default": "./dist/modules/licensing/ports/license-repository.js"
+    },
+    "./modules/professionals/application/use-cases": {
+      "beauty": "./src/modules/professionals/application/use-cases.ts",
+      "types": "./dist/modules/professionals/application/use-cases.d.ts",
+      "workerd": "./src/modules/professionals/application/use-cases.ts",
+      "default": "./dist/modules/professionals/application/use-cases.js"
+    },
+    "./modules/professionals/domain/professional": {
+      "beauty": "./src/modules/professionals/domain/professional.ts",
+      "types": "./dist/modules/professionals/domain/professional.d.ts",
+      "workerd": "./src/modules/professionals/domain/professional.ts",
+      "default": "./dist/modules/professionals/domain/professional.js"
+    },
+    "./modules/professionals/infrastructure/d1-professional-repository": {
+      "beauty": "./src/modules/professionals/infrastructure/d1-professional-repository.ts",
+      "types": "./dist/modules/professionals/infrastructure/d1-professional-repository.d.ts",
+      "workerd": "./src/modules/professionals/infrastructure/d1-professional-repository.ts",
+      "default": "./dist/modules/professionals/infrastructure/d1-professional-repository.js"
+    },
+    "./modules/professionals/infrastructure/d1-professional-service-repository": {
+      "beauty": "./src/modules/professionals/infrastructure/d1-professional-service-repository.ts",
+      "types": "./dist/modules/professionals/infrastructure/d1-professional-service-repository.d.ts",
+      "workerd": "./src/modules/professionals/infrastructure/d1-professional-service-repository.ts",
+      "default": "./dist/modules/professionals/infrastructure/d1-professional-service-repository.js"
+    },
+    "./modules/professionals/ports/professional-repository": {
+      "beauty": "./src/modules/professionals/ports/professional-repository.ts",
+      "types": "./dist/modules/professionals/ports/professional-repository.d.ts",
+      "workerd": "./src/modules/professionals/ports/professional-repository.ts",
+      "default": "./dist/modules/professionals/ports/professional-repository.js"
+    },
+    "./modules/professionals/ports/professional-service-repository": {
+      "beauty": "./src/modules/professionals/ports/professional-service-repository.ts",
+      "types": "./dist/modules/professionals/ports/professional-service-repository.d.ts",
+      "workerd": "./src/modules/professionals/ports/professional-service-repository.ts",
+      "default": "./dist/modules/professionals/ports/professional-service-repository.js"
+    },
+    "./modules/returns/application/apply-return-recommended": {
+      "beauty": "./src/modules/returns/application/apply-return-recommended.ts",
+      "types": "./dist/modules/returns/application/apply-return-recommended.d.ts",
+      "workerd": "./src/modules/returns/application/apply-return-recommended.ts",
+      "default": "./dist/modules/returns/application/apply-return-recommended.js"
+    },
+    "./modules/services/application/use-cases": {
+      "beauty": "./src/modules/services/application/use-cases.ts",
+      "types": "./dist/modules/services/application/use-cases.d.ts",
+      "workerd": "./src/modules/services/application/use-cases.ts",
+      "default": "./dist/modules/services/application/use-cases.js"
+    },
+    "./modules/services/domain/service": {
+      "beauty": "./src/modules/services/domain/service.ts",
+      "types": "./dist/modules/services/domain/service.d.ts",
+      "workerd": "./src/modules/services/domain/service.ts",
+      "default": "./dist/modules/services/domain/service.js"
+    },
+    "./modules/services/infrastructure/d1-service-repository": {
+      "beauty": "./src/modules/services/infrastructure/d1-service-repository.ts",
+      "types": "./dist/modules/services/infrastructure/d1-service-repository.d.ts",
+      "workerd": "./src/modules/services/infrastructure/d1-service-repository.ts",
+      "default": "./dist/modules/services/infrastructure/d1-service-repository.js"
+    },
+    "./modules/services/ports/service-repository": {
+      "beauty": "./src/modules/services/ports/service-repository.ts",
+      "types": "./dist/modules/services/ports/service-repository.d.ts",
+      "workerd": "./src/modules/services/ports/service-repository.ts",
+      "default": "./dist/modules/services/ports/service-repository.js"
+    },
+    "./modules/tenants/application/use-cases": {
+      "beauty": "./src/modules/tenants/application/use-cases.ts",
+      "types": "./dist/modules/tenants/application/use-cases.d.ts",
+      "workerd": "./src/modules/tenants/application/use-cases.ts",
+      "default": "./dist/modules/tenants/application/use-cases.js"
+    },
+    "./modules/tenants/domain/tenant": {
+      "beauty": "./src/modules/tenants/domain/tenant.ts",
+      "types": "./dist/modules/tenants/domain/tenant.d.ts",
+      "workerd": "./src/modules/tenants/domain/tenant.ts",
+      "default": "./dist/modules/tenants/domain/tenant.js"
+    },
+    "./modules/tenants/infrastructure/d1-tenant-repository": {
+      "beauty": "./src/modules/tenants/infrastructure/d1-tenant-repository.ts",
+      "types": "./dist/modules/tenants/infrastructure/d1-tenant-repository.d.ts",
+      "workerd": "./src/modules/tenants/infrastructure/d1-tenant-repository.ts",
+      "default": "./dist/modules/tenants/infrastructure/d1-tenant-repository.js"
+    },
+    "./modules/tenants/ports/tenant-repository": {
+      "beauty": "./src/modules/tenants/ports/tenant-repository.ts",
+      "types": "./dist/modules/tenants/ports/tenant-repository.d.ts",
+      "workerd": "./src/modules/tenants/ports/tenant-repository.ts",
+      "default": "./dist/modules/tenants/ports/tenant-repository.js"
+    },
+    "./modules/customers/infrastructure/d1-persistence": {
+      "beauty": "./src/modules/customers/infrastructure/d1-persistence.ts",
+      "types": "./dist/modules/customers/infrastructure/d1-persistence.d.ts",
+      "workerd": "./src/modules/customers/infrastructure/d1-persistence.ts",
+      "default": "./dist/modules/customers/infrastructure/d1-persistence.js"
+    },
+    "./modules/customers/ports/persistence": {
+      "beauty": "./src/modules/customers/ports/persistence.ts",
+      "types": "./dist/modules/customers/ports/persistence.d.ts",
+      "workerd": "./src/modules/customers/ports/persistence.ts",
+      "default": "./dist/modules/customers/ports/persistence.js"
+    },
+    "./modules/appointments/ports/appointment-cancellation-repository": {
+      "beauty": "./src/modules/appointments/ports/appointment-cancellation-repository.ts",
+      "types": "./dist/modules/appointments/ports/appointment-cancellation-repository.d.ts",
+      "workerd": "./src/modules/appointments/ports/appointment-cancellation-repository.ts",
+      "default": "./dist/modules/appointments/ports/appointment-cancellation-repository.js"
+    },
+    "./modules/appointments/ports/appointment-change-repository": {
+      "beauty": "./src/modules/appointments/ports/appointment-change-repository.ts",
+      "types": "./dist/modules/appointments/ports/appointment-change-repository.d.ts",
+      "workerd": "./src/modules/appointments/ports/appointment-change-repository.ts",
+      "default": "./dist/modules/appointments/ports/appointment-change-repository.js"
+    },
+    "./modules/appointments/ports/package-assignment-repository": {
+      "beauty": "./src/modules/appointments/ports/package-assignment-repository.ts",
+      "types": "./dist/modules/appointments/ports/package-assignment-repository.d.ts",
+      "workerd": "./src/modules/appointments/ports/package-assignment-repository.ts",
+      "default": "./dist/modules/appointments/ports/package-assignment-repository.js"
+    },
+    "./modules/customer-history/ports/customer-history-repository": {
+      "beauty": "./src/modules/customer-history/ports/customer-history-repository.ts",
+      "types": "./dist/modules/customer-history/ports/customer-history-repository.d.ts",
+      "workerd": "./src/modules/customer-history/ports/customer-history-repository.ts",
+      "default": "./dist/modules/customer-history/ports/customer-history-repository.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@beauty/contracts": "0.0.1",
+    "@beauty/database": "0.0.1",
+    "@beauty/kernel": "0.0.1",
+    "@beauty/reliability": "0.0.1",
+    "@nestjs/common": "12.2.0"
+  }
+}

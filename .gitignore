@@ -2,8 +2,14 @@
 # Compiled output
 # =========================
 /dist/
+**/dist/
+*.tsbuildinfo
 /build/
 /node_modules/
+**/node_modules/
+**/.wrangler/
+/.playwright-mcp/
+/packages/cloudflare-runtime/src/generated/swagger-assets.ts
 
 # =========================
 # Codex local/private files

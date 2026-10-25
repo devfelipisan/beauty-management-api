@@ -1,8 +1,9 @@
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { ClinicalWorkerModule } from './../src/clinical-worker.module.js';
+import { ClinicalWorkerModule } from '../dist/clinical-worker.module.js';
 
 describe('Clinical health (e2e)', () => {
   let app: INestApplication<App>;
@@ -12,7 +13,7 @@ describe('Clinical health (e2e)', () => {
       imports: [ClinicalWorkerModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication(new ExpressAdapter());
     await app.init();
   });
 

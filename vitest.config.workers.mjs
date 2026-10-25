@@ -15,6 +15,7 @@ async function auxiliaryWorker(entryPoint, name, serviceBindings = {}, r2Buckets
     target: 'es2022',
     external: ['cloudflare:workers'],
     write: false,
+    conditions: ['beauty'],
   });
 
   const directory = await mkdtemp(join(tmpdir(), 'beauty-workers-'));
@@ -23,6 +24,7 @@ async function auxiliaryWorker(entryPoint, name, serviceBindings = {}, r2Buckets
 
   return {
     name,
+    modulesRoot: directory,
     compatibilityDate: '2026-08-30',
     d1Databases: ['D1_DATABASE'],
     r2Buckets,
@@ -34,6 +36,7 @@ async function auxiliaryWorker(entryPoint, name, serviceBindings = {}, r2Buckets
 const migrations = await readD1Migrations('./database/d1/migrations');
 
 export default defineConfig({
+  resolve: { conditions: ['beauty'] },
   plugins: [
     cloudflareTest(async () => ({
       wrangler: {

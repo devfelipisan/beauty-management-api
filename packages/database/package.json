@@ -1,0 +1,63 @@
+{
+  "name": "@beauty/database",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./d1/d1-database.provider": {
+      "beauty": "./src/d1/d1-database.provider.ts",
+      "types": "./dist/d1/d1-database.provider.d.ts",
+      "workerd": "./src/d1/d1-database.provider.ts",
+      "default": "./dist/d1/d1-database.provider.js"
+    },
+    "./d1/d1-transaction-manager": {
+      "beauty": "./src/d1/d1-transaction-manager.ts",
+      "types": "./dist/d1/d1-transaction-manager.d.ts",
+      "workerd": "./src/d1/d1-transaction-manager.ts",
+      "default": "./dist/d1/d1-transaction-manager.js"
+    },
+    "./d1/d1.types": {
+      "beauty": "./src/d1/d1.types.ts",
+      "types": "./dist/d1/d1.types.d.ts",
+      "workerd": "./src/d1/d1.types.ts",
+      "default": "./dist/d1/d1.types.js"
+    },
+    "./database.module": {
+      "beauty": "./src/database.module.ts",
+      "types": "./dist/database.module.d.ts",
+      "workerd": "./src/database.module.ts",
+      "default": "./dist/database.module.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./ports/database-session": {
+      "beauty": "./src/ports/database-session.ts",
+      "types": "./dist/ports/database-session.d.ts",
+      "workerd": "./src/ports/database-session.ts",
+      "default": "./dist/ports/database-session.js"
+    },
+    "./ports/transaction-manager": {
+      "beauty": "./src/ports/transaction-manager.ts",
+      "types": "./dist/ports/transaction-manager.d.ts",
+      "workerd": "./src/ports/transaction-manager.ts",
+      "default": "./dist/ports/transaction-manager.js"
+    },
+    "./tokens": {
+      "beauty": "./src/tokens.ts",
+      "types": "./dist/tokens.d.ts",
+      "workerd": "./src/tokens.ts",
+      "default": "./dist/tokens.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@nestjs/common": "12.2.0"
+  }
+}

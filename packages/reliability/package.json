@@ -1,0 +1,130 @@
+{
+  "name": "@beauty/reliability",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./audit/audit-event": {
+      "beauty": "./src/audit/audit-event.ts",
+      "types": "./dist/audit/audit-event.d.ts",
+      "workerd": "./src/audit/audit-event.ts",
+      "default": "./dist/audit/audit-event.js"
+    },
+    "./audit/audit-writer": {
+      "beauty": "./src/audit/audit-writer.ts",
+      "types": "./dist/audit/audit-writer.d.ts",
+      "workerd": "./src/audit/audit-writer.ts",
+      "default": "./dist/audit/audit-writer.js"
+    },
+    "./d1/d1-outbox-delivery-repository": {
+      "beauty": "./src/d1/d1-outbox-delivery-repository.ts",
+      "types": "./dist/d1/d1-outbox-delivery-repository.d.ts",
+      "workerd": "./src/d1/d1-outbox-delivery-repository.ts",
+      "default": "./dist/d1/d1-outbox-delivery-repository.js"
+    },
+    "./d1/d1-reliability-store": {
+      "beauty": "./src/d1/d1-reliability-store.ts",
+      "types": "./dist/d1/d1-reliability-store.d.ts",
+      "workerd": "./src/d1/d1-reliability-store.ts",
+      "default": "./dist/d1/d1-reliability-store.js"
+    },
+    "./d1/d1-unit-of-work": {
+      "beauty": "./src/d1/d1-unit-of-work.ts",
+      "types": "./dist/d1/d1-unit-of-work.d.ts",
+      "workerd": "./src/d1/d1-unit-of-work.ts",
+      "default": "./dist/d1/d1-unit-of-work.js"
+    },
+    "./idempotency/idempotency-record": {
+      "beauty": "./src/idempotency/idempotency-record.ts",
+      "types": "./dist/idempotency/idempotency-record.d.ts",
+      "workerd": "./src/idempotency/idempotency-record.ts",
+      "default": "./dist/idempotency/idempotency-record.js"
+    },
+    "./idempotency/idempotency-store": {
+      "beauty": "./src/idempotency/idempotency-store.ts",
+      "types": "./dist/idempotency/idempotency-store.d.ts",
+      "workerd": "./src/idempotency/idempotency-store.ts",
+      "default": "./dist/idempotency/idempotency-store.js"
+    },
+    "./idempotency/idempotency.service": {
+      "beauty": "./src/idempotency/idempotency.service.ts",
+      "types": "./dist/idempotency/idempotency.service.d.ts",
+      "workerd": "./src/idempotency/idempotency.service.ts",
+      "default": "./dist/idempotency/idempotency.service.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./outbox/dispatch-outbox-batch": {
+      "beauty": "./src/outbox/dispatch-outbox-batch.ts",
+      "types": "./dist/outbox/dispatch-outbox-batch.d.ts",
+      "workerd": "./src/outbox/dispatch-outbox-batch.ts",
+      "default": "./dist/outbox/dispatch-outbox-batch.js"
+    },
+    "./outbox/outbox-delivery": {
+      "beauty": "./src/outbox/outbox-delivery.ts",
+      "types": "./dist/outbox/outbox-delivery.d.ts",
+      "workerd": "./src/outbox/outbox-delivery.ts",
+      "default": "./dist/outbox/outbox-delivery.js"
+    },
+    "./outbox/outbox-event": {
+      "beauty": "./src/outbox/outbox-event.ts",
+      "types": "./dist/outbox/outbox-event.d.ts",
+      "workerd": "./src/outbox/outbox-event.ts",
+      "default": "./dist/outbox/outbox-event.js"
+    },
+    "./outbox/outbox-retry-policy": {
+      "beauty": "./src/outbox/outbox-retry-policy.ts",
+      "types": "./dist/outbox/outbox-retry-policy.d.ts",
+      "workerd": "./src/outbox/outbox-retry-policy.ts",
+      "default": "./dist/outbox/outbox-retry-policy.js"
+    },
+    "./outbox/outbox-writer": {
+      "beauty": "./src/outbox/outbox-writer.ts",
+      "types": "./dist/outbox/outbox-writer.d.ts",
+      "workerd": "./src/outbox/outbox-writer.ts",
+      "default": "./dist/outbox/outbox-writer.js"
+    },
+    "./reliability.module": {
+      "beauty": "./src/reliability.module.ts",
+      "types": "./dist/reliability.module.d.ts",
+      "workerd": "./src/reliability.module.ts",
+      "default": "./dist/reliability.module.js"
+    },
+    "./tokens": {
+      "beauty": "./src/tokens.ts",
+      "types": "./dist/tokens.d.ts",
+      "workerd": "./src/tokens.ts",
+      "default": "./dist/tokens.js"
+    },
+    "./unit-of-work/transaction-context": {
+      "beauty": "./src/unit-of-work/transaction-context.ts",
+      "types": "./dist/unit-of-work/transaction-context.d.ts",
+      "workerd": "./src/unit-of-work/transaction-context.ts",
+      "default": "./dist/unit-of-work/transaction-context.js"
+    },
+    "./unit-of-work/transactional-write-context": {
+      "beauty": "./src/unit-of-work/transactional-write-context.ts",
+      "types": "./dist/unit-of-work/transactional-write-context.d.ts",
+      "workerd": "./src/unit-of-work/transactional-write-context.ts",
+      "default": "./dist/unit-of-work/transactional-write-context.js"
+    },
+    "./unit-of-work/unit-of-work": {
+      "beauty": "./src/unit-of-work/unit-of-work.ts",
+      "types": "./dist/unit-of-work/unit-of-work.d.ts",
+      "workerd": "./src/unit-of-work/unit-of-work.ts",
+      "default": "./dist/unit-of-work/unit-of-work.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@beauty/database": "0.0.1",
+    "@nestjs/common": "12.2.0"
+  }
+}

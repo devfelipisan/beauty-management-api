@@ -1,0 +1,5 @@
+import type { D1DatabaseLike } from '@beauty/database/d1/d1.types';
+import { License, LicenseStatus } from '../domain/license.js';
+import type { LicenseRepository } from '../ports/license-repository.js';
+type Row={id:string;tenant_id:string;plan_id:string;subscription_reference?:string;starts_at:string;expires_at?:string;tolerance_until?:string;status:LicenseStatus;limits_json:string;enabled_resources_json:string};
+export class D1LicenseRepository implements LicenseRepository { constructor(private readonly db:D1DatabaseLike){} async findCurrentByTenant(tenantId:string){const r=await this.db.prepare('SELECT * FROM licenses WHERE tenant_id = ? ORDER BY starts_at DESC LIMIT 1').bind(tenantId).first<Row>(); if(!r)return null; const limits=JSON.parse(r.limits_json) as Record<string,number>; const enabledResources=JSON.parse(r.enabled_resources_json) as string[]; return License.create(r.id,{tenantId:r.tenant_id,planId:r.plan_id,subscriptionReference:r.subscription_reference,startsAt:r.starts_at,expiresAt:r.expires_at,toleranceUntil:r.tolerance_until,status:r.status,limits,enabledResources});} }

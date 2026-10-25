@@ -2,10 +2,18 @@
 
 Operations, Billing e Clinical possuem `src/worker.ts` como Module Worker e `src/main.ts` como entrypoint Node/dev separado. As configurações Wrangler apontam para os entrypoints Worker e usam a mesma `compatibility_date` (`2026-08-30`).
 
-O adapter atual roteia `GET /health` e retorna 404 para rotas não implementadas. Isso qualifica a fronteira `fetch` sem declarar que o pipeline HTTP Nest foi reproduzido. Controllers, guards, pipes e interceptors continuam válidos no runtime Node até existir um adapter HTTP Cloudflare completo.
+Os adapters atuais atendem health e as rotas de negócio implementadas, mantendo
+404 para rotas desconhecidas. Isso não declara equivalência com o pipeline
+HTTP Nest; controllers, guards, pipes e interceptors pertencem ao runtime Node.
 
-Operations declara D1 e os bindings `CLINICAL_SERVICE`/`BILLING_SERVICE`; Billing não recebe D1; Clinical declara D1. Contexto de tenant/actor não é armazenado em singleton global pelo adapter.
+Operations, Billing e Clinical declaram D1 e compartilham temporariamente
+`beauty-operations-local` e `database/d1/migrations`. Operations declara
+`CLINICAL_SERVICE`/`BILLING_SERVICE`; Billing e Clinical têm bindings para os
+Workers consumidos por seus adapters. Cada chamada preserva seu contexto
+de tenant/actor.
 
-Clinical e Billing usam `WorkerEntrypoint` para RPC interno. Os adapters de Operations aceitam somente contratos de transporte e mantêm falhas downstream como bloqueio. O binding local precisa ser conectado pelo mecanismo de descoberta do Wrangler antes da qualificação final de integração.
+Os três Workers usam `WorkerEntrypoint` para RPC interno. Os adapters de
+Operations aceitam contratos de transporte e mantêm falhas downstream como
+bloqueio. O harness Cloudflare qualifica os Service Bindings existentes.
 
 O harness oficial é `npm run dev:workers`, com Operations primeiro. A ordem futura de deploy é Clinical, Billing e Operations. O estado `not connected` do Wrangler local não é considerado prova de RPC.

@@ -1,0 +1,3 @@
+import type { FinancialSettlementRequestedEvent } from '@beauty/contracts';
+import type { TransactionalWriteContext } from '@beauty/reliability/unit-of-work/transactional-write-context';
+export interface ReceivableRepository { findById(tenantId:string,id:string):Promise<any|null>; findBySource(tenantId:string,sourceType:string,sourceId:string):Promise<any|null>; createFromSettlement(i:FinancialSettlementRequestedEvent,depositCents:number,tx:TransactionalWriteContext):string; applyPayment(i:{tenantId:string;receivableId:string;customerId?:string;paymentId:string;amountCents:number;method:string;receivedAt:string;receivedBy:string;externalReference?:string;notes?:string;correlationId:string},tx:TransactionalWriteContext):Promise<void>; }

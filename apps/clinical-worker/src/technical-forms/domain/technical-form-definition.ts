@@ -1,4 +1,0 @@
-import { DomainError } from '../../../../../libs/kernel/src/index.js';
-import type { TechnicalFieldInput, TechnicalFormStatus } from '../../../../../libs/contracts/src/index.js';
-import { validateField } from './technical-field-definition.js';
-export class TechnicalFormDefinition { constructor(readonly id:string,readonly tenantId:string,readonly serviceId:string,readonly version:number,readonly status:TechnicalFormStatus,readonly fields:readonly TechnicalFieldInput[],readonly createdAt:string,readonly createdBy:string){if(!id||!tenantId||!serviceId||!Number.isInteger(version)||version<1||!fields.length)throw new DomainError('TECHNICAL_FORM_INVALID','Technical form is invalid');const keys=new Set<string>();for(const field of fields){validateField(field);if(keys.has(field.key))throw new DomainError('TECHNICAL_FORM_INVALID','Field keys must be unique');keys.add(field.key);}}}

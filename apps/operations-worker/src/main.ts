@@ -1,10 +1,11 @@
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { NestFactory } from '@nestjs/core';
-import { RuntimeConfigService } from '../../../libs/config/src/index.js';
-import { ObserveInstrument } from '../../../libs/observability/src/index.js';
+import { RuntimeConfigService } from '@beauty/config';
+import { ObserveInstrument } from '@beauty/observability';
 import { OperationsWorkerModule } from './operations-worker.module.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(OperationsWorkerModule, {
+  const app = await NestFactory.create(OperationsWorkerModule, new ExpressAdapter(), {
     instrument: ObserveInstrument,
   });
   await app.listen(app.get(RuntimeConfigService).port);

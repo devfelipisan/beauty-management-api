@@ -1,0 +1,139 @@
+{
+  "name": "@beauty/contracts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./appointment-change-policies/index": {
+      "beauty": "./src/appointment-change-policies/index.ts",
+      "types": "./dist/appointment-change-policies/index.d.ts",
+      "workerd": "./src/appointment-change-policies/index.ts",
+      "default": "./dist/appointment-change-policies/index.js"
+    },
+    "./appointment-changes/index": {
+      "beauty": "./src/appointment-changes/index.ts",
+      "types": "./dist/appointment-changes/index.d.ts",
+      "workerd": "./src/appointment-changes/index.ts",
+      "default": "./dist/appointment-changes/index.js"
+    },
+    "./appointment-lifecycle/index": {
+      "beauty": "./src/appointment-lifecycle/index.ts",
+      "types": "./dist/appointment-lifecycle/index.d.ts",
+      "workerd": "./src/appointment-lifecycle/index.ts",
+      "default": "./dist/appointment-lifecycle/index.js"
+    },
+    "./assessment-eligibility/index": {
+      "beauty": "./src/assessment-eligibility/index.ts",
+      "types": "./dist/assessment-eligibility/index.d.ts",
+      "workerd": "./src/assessment-eligibility/index.ts",
+      "default": "./dist/assessment-eligibility/index.js"
+    },
+    "./commercial-terms/index": {
+      "beauty": "./src/commercial-terms/index.ts",
+      "types": "./dist/commercial-terms/index.d.ts",
+      "workerd": "./src/commercial-terms/index.ts",
+      "default": "./dist/commercial-terms/index.js"
+    },
+    "./common/index": {
+      "beauty": "./src/common/index.ts",
+      "types": "./dist/common/index.d.ts",
+      "workerd": "./src/common/index.ts",
+      "default": "./dist/common/index.js"
+    },
+    "./create-appointment/index": {
+      "beauty": "./src/create-appointment/index.ts",
+      "types": "./dist/create-appointment/index.d.ts",
+      "workerd": "./src/create-appointment/index.ts",
+      "default": "./dist/create-appointment/index.js"
+    },
+    "./credits/index": {
+      "beauty": "./src/credits/index.ts",
+      "types": "./dist/credits/index.d.ts",
+      "workerd": "./src/credits/index.ts",
+      "default": "./dist/credits/index.js"
+    },
+    "./customer-history/index": {
+      "beauty": "./src/customer-history/index.ts",
+      "types": "./dist/customer-history/index.d.ts",
+      "workerd": "./src/customer-history/index.ts",
+      "default": "./dist/customer-history/index.js"
+    },
+    "./deposit/index": {
+      "beauty": "./src/deposit/index.ts",
+      "types": "./dist/deposit/index.d.ts",
+      "workerd": "./src/deposit/index.ts",
+      "default": "./dist/deposit/index.js"
+    },
+    "./equipment/index": {
+      "beauty": "./src/equipment/index.ts",
+      "types": "./dist/equipment/index.d.ts",
+      "workerd": "./src/equipment/index.ts",
+      "default": "./dist/equipment/index.js"
+    },
+    "./financial/index": {
+      "beauty": "./src/financial/index.ts",
+      "types": "./dist/financial/index.d.ts",
+      "workerd": "./src/financial/index.ts",
+      "default": "./dist/financial/index.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./intercurrence/index": {
+      "beauty": "./src/intercurrence/index.ts",
+      "types": "./dist/intercurrence/index.d.ts",
+      "workerd": "./src/intercurrence/index.ts",
+      "default": "./dist/intercurrence/index.js"
+    },
+    "./media/index": {
+      "beauty": "./src/media/index.ts",
+      "types": "./dist/media/index.d.ts",
+      "workerd": "./src/media/index.ts",
+      "default": "./dist/media/index.js"
+    },
+    "./packages/index": {
+      "beauty": "./src/packages/index.ts",
+      "types": "./dist/packages/index.d.ts",
+      "workerd": "./src/packages/index.ts",
+      "default": "./dist/packages/index.js"
+    },
+    "./refunds/index": {
+      "beauty": "./src/refunds/index.ts",
+      "types": "./dist/refunds/index.d.ts",
+      "workerd": "./src/refunds/index.ts",
+      "default": "./dist/refunds/index.js"
+    },
+    "./returns/index": {
+      "beauty": "./src/returns/index.ts",
+      "types": "./dist/returns/index.d.ts",
+      "workerd": "./src/returns/index.ts",
+      "default": "./dist/returns/index.js"
+    },
+    "./session-completion/index": {
+      "beauty": "./src/session-completion/index.ts",
+      "types": "./dist/session-completion/index.d.ts",
+      "workerd": "./src/session-completion/index.ts",
+      "default": "./dist/session-completion/index.js"
+    },
+    "./session-start/index": {
+      "beauty": "./src/session-start/index.ts",
+      "types": "./dist/session-start/index.d.ts",
+      "workerd": "./src/session-start/index.ts",
+      "default": "./dist/session-start/index.js"
+    },
+    "./technical-forms/index": {
+      "beauty": "./src/technical-forms/index.ts",
+      "types": "./dist/technical-forms/index.d.ts",
+      "workerd": "./src/technical-forms/index.ts",
+      "default": "./dist/technical-forms/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {}
+}

@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
-import { D1AppointmentRepository } from '../../apps/operations-worker/src/appointments/adapters/d1-appointment-repository.js';
-import { Appointment, AppointmentOrigin, AppointmentStatus } from '../../apps/operations-worker/src/appointments/domain/appointment.js';
+import { D1AppointmentRepository } from '@beauty/operations/modules/appointments/infrastructure/d1-appointment-repository';
+import { Appointment, AppointmentOrigin, AppointmentStatus } from '@beauty/operations/modules/appointments/domain/appointment';
 
 const repository = new D1AppointmentRepository(env.D1_DATABASE);
 

@@ -1,5 +1,5 @@
 import { HealthController } from './health.controller.js';
-import { RuntimeConfigService } from '../../../../libs/config/src/index.js';
+import { RuntimeConfigService } from '@beauty/config';
 
 describe('HealthController', () => {
   let controller: HealthController;

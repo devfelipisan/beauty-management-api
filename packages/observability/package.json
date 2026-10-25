@@ -1,0 +1,75 @@
+{
+  "name": "@beauty/observability",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contracts/observability.port": {
+      "beauty": "./src/contracts/observability.port.ts",
+      "types": "./dist/contracts/observability.port.d.ts",
+      "workerd": "./src/contracts/observability.port.ts",
+      "default": "./dist/contracts/observability.port.js"
+    },
+    "./decorators/observable-operation.decorator": {
+      "beauty": "./src/decorators/observable-operation.decorator.ts",
+      "types": "./dist/decorators/observable-operation.decorator.d.ts",
+      "workerd": "./src/decorators/observable-operation.decorator.ts",
+      "default": "./dist/decorators/observable-operation.decorator.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./interceptors/http-observability.interceptor": {
+      "beauty": "./src/interceptors/http-observability.interceptor.ts",
+      "types": "./dist/interceptors/http-observability.interceptor.d.ts",
+      "workerd": "./src/interceptors/http-observability.interceptor.ts",
+      "default": "./dist/interceptors/http-observability.interceptor.js"
+    },
+    "./middleware/correlation-id.middleware": {
+      "beauty": "./src/middleware/correlation-id.middleware.ts",
+      "types": "./dist/middleware/correlation-id.middleware.d.ts",
+      "workerd": "./src/middleware/correlation-id.middleware.ts",
+      "default": "./dist/middleware/correlation-id.middleware.js"
+    },
+    "./middleware/request-id.middleware": {
+      "beauty": "./src/middleware/request-id.middleware.ts",
+      "types": "./dist/middleware/request-id.middleware.d.ts",
+      "workerd": "./src/middleware/request-id.middleware.ts",
+      "default": "./dist/middleware/request-id.middleware.js"
+    },
+    "./observability.module": {
+      "beauty": "./src/observability.module.ts",
+      "types": "./dist/observability.module.d.ts",
+      "workerd": "./src/observability.module.ts",
+      "default": "./dist/observability.module.js"
+    },
+    "./observe-observability.service": {
+      "beauty": "./src/observe-observability.service.ts",
+      "types": "./dist/observe-observability.service.d.ts",
+      "workerd": "./src/observe-observability.service.ts",
+      "default": "./dist/observe-observability.service.js"
+    },
+    "./sanitization/telemetry-sanitizer": {
+      "beauty": "./src/sanitization/telemetry-sanitizer.ts",
+      "types": "./dist/sanitization/telemetry-sanitizer.d.ts",
+      "workerd": "./src/sanitization/telemetry-sanitizer.ts",
+      "default": "./dist/sanitization/telemetry-sanitizer.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@beauty/execution-context": "0.0.1",
+    "@nestjs/common": "12.2.0",
+    "@nestjs/config": "12.0.1",
+    "@nestjs/core": "12.2.0",
+    "@nestjs/observe": "0.3.17",
+    "express": "5.2.1",
+    "rxjs": "^7.8.1"
+  }
+}

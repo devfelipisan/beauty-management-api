@@ -1,0 +1,282 @@
+{
+  "name": "@beauty/clinical",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./modules/assessments/application/check-assessment-eligibility": {
+      "beauty": "./src/modules/assessments/application/check-assessment-eligibility.ts",
+      "types": "./dist/modules/assessments/application/check-assessment-eligibility.d.ts",
+      "workerd": "./src/modules/assessments/application/check-assessment-eligibility.ts",
+      "default": "./dist/modules/assessments/application/check-assessment-eligibility.js"
+    },
+    "./modules/assessments/domain/assessment-eligibility-policy": {
+      "beauty": "./src/modules/assessments/domain/assessment-eligibility-policy.ts",
+      "types": "./dist/modules/assessments/domain/assessment-eligibility-policy.d.ts",
+      "workerd": "./src/modules/assessments/domain/assessment-eligibility-policy.ts",
+      "default": "./dist/modules/assessments/domain/assessment-eligibility-policy.js"
+    },
+    "./modules/assessments/domain/assessment": {
+      "beauty": "./src/modules/assessments/domain/assessment.ts",
+      "types": "./dist/modules/assessments/domain/assessment.d.ts",
+      "workerd": "./src/modules/assessments/domain/assessment.ts",
+      "default": "./dist/modules/assessments/domain/assessment.js"
+    },
+    "./modules/assessments/infrastructure/d1-assessment-repository": {
+      "beauty": "./src/modules/assessments/infrastructure/d1-assessment-repository.ts",
+      "types": "./dist/modules/assessments/infrastructure/d1-assessment-repository.d.ts",
+      "workerd": "./src/modules/assessments/infrastructure/d1-assessment-repository.ts",
+      "default": "./dist/modules/assessments/infrastructure/d1-assessment-repository.js"
+    },
+    "./modules/assessments/ports/assessment-repository": {
+      "beauty": "./src/modules/assessments/ports/assessment-repository.ts",
+      "types": "./dist/modules/assessments/ports/assessment-repository.d.ts",
+      "workerd": "./src/modules/assessments/ports/assessment-repository.ts",
+      "default": "./dist/modules/assessments/ports/assessment-repository.js"
+    },
+    "./modules/equipment/application/use-cases": {
+      "beauty": "./src/modules/equipment/application/use-cases.ts",
+      "types": "./dist/modules/equipment/application/use-cases.d.ts",
+      "workerd": "./src/modules/equipment/application/use-cases.ts",
+      "default": "./dist/modules/equipment/application/use-cases.js"
+    },
+    "./modules/equipment/domain/equipment": {
+      "beauty": "./src/modules/equipment/domain/equipment.ts",
+      "types": "./dist/modules/equipment/domain/equipment.d.ts",
+      "workerd": "./src/modules/equipment/domain/equipment.ts",
+      "default": "./dist/modules/equipment/domain/equipment.js"
+    },
+    "./modules/equipment/domain/variation": {
+      "beauty": "./src/modules/equipment/domain/variation.ts",
+      "types": "./dist/modules/equipment/domain/variation.d.ts",
+      "workerd": "./src/modules/equipment/domain/variation.ts",
+      "default": "./dist/modules/equipment/domain/variation.js"
+    },
+    "./modules/equipment/infrastructure/d1-equipment-repository": {
+      "beauty": "./src/modules/equipment/infrastructure/d1-equipment-repository.ts",
+      "types": "./dist/modules/equipment/infrastructure/d1-equipment-repository.d.ts",
+      "workerd": "./src/modules/equipment/infrastructure/d1-equipment-repository.ts",
+      "default": "./dist/modules/equipment/infrastructure/d1-equipment-repository.js"
+    },
+    "./modules/equipment/ports/equipment-repository": {
+      "beauty": "./src/modules/equipment/ports/equipment-repository.ts",
+      "types": "./dist/modules/equipment/ports/equipment-repository.d.ts",
+      "workerd": "./src/modules/equipment/ports/equipment-repository.ts",
+      "default": "./dist/modules/equipment/ports/equipment-repository.js"
+    },
+    "./modules/intercurrences/application/use-cases": {
+      "beauty": "./src/modules/intercurrences/application/use-cases.ts",
+      "types": "./dist/modules/intercurrences/application/use-cases.d.ts",
+      "workerd": "./src/modules/intercurrences/application/use-cases.ts",
+      "default": "./dist/modules/intercurrences/application/use-cases.js"
+    },
+    "./modules/intercurrences/domain/intercurrence": {
+      "beauty": "./src/modules/intercurrences/domain/intercurrence.ts",
+      "types": "./dist/modules/intercurrences/domain/intercurrence.d.ts",
+      "workerd": "./src/modules/intercurrences/domain/intercurrence.ts",
+      "default": "./dist/modules/intercurrences/domain/intercurrence.js"
+    },
+    "./modules/intercurrences/infrastructure/d1-intercurrence-repository": {
+      "beauty": "./src/modules/intercurrences/infrastructure/d1-intercurrence-repository.ts",
+      "types": "./dist/modules/intercurrences/infrastructure/d1-intercurrence-repository.d.ts",
+      "workerd": "./src/modules/intercurrences/infrastructure/d1-intercurrence-repository.ts",
+      "default": "./dist/modules/intercurrences/infrastructure/d1-intercurrence-repository.js"
+    },
+    "./modules/intercurrences/infrastructure/operations-restriction-delivery": {
+      "beauty": "./src/modules/intercurrences/infrastructure/operations-restriction-delivery.ts",
+      "types": "./dist/modules/intercurrences/infrastructure/operations-restriction-delivery.d.ts",
+      "workerd": "./src/modules/intercurrences/infrastructure/operations-restriction-delivery.ts",
+      "default": "./dist/modules/intercurrences/infrastructure/operations-restriction-delivery.js"
+    },
+    "./modules/intercurrences/ports/intercurrence-repository": {
+      "beauty": "./src/modules/intercurrences/ports/intercurrence-repository.ts",
+      "types": "./dist/modules/intercurrences/ports/intercurrence-repository.d.ts",
+      "workerd": "./src/modules/intercurrences/ports/intercurrence-repository.ts",
+      "default": "./dist/modules/intercurrences/ports/intercurrence-repository.js"
+    },
+    "./modules/media/application/use-cases": {
+      "beauty": "./src/modules/media/application/use-cases.ts",
+      "types": "./dist/modules/media/application/use-cases.d.ts",
+      "workerd": "./src/modules/media/application/use-cases.ts",
+      "default": "./dist/modules/media/application/use-cases.js"
+    },
+    "./modules/media/domain/photo-attachment": {
+      "beauty": "./src/modules/media/domain/photo-attachment.ts",
+      "types": "./dist/modules/media/domain/photo-attachment.d.ts",
+      "workerd": "./src/modules/media/domain/photo-attachment.ts",
+      "default": "./dist/modules/media/domain/photo-attachment.js"
+    },
+    "./modules/media/domain/photo-policy": {
+      "beauty": "./src/modules/media/domain/photo-policy.ts",
+      "types": "./dist/modules/media/domain/photo-policy.d.ts",
+      "workerd": "./src/modules/media/domain/photo-policy.ts",
+      "default": "./dist/modules/media/domain/photo-policy.js"
+    },
+    "./modules/media/infrastructure/d1-photo-attachment-repository": {
+      "beauty": "./src/modules/media/infrastructure/d1-photo-attachment-repository.ts",
+      "types": "./dist/modules/media/infrastructure/d1-photo-attachment-repository.d.ts",
+      "workerd": "./src/modules/media/infrastructure/d1-photo-attachment-repository.ts",
+      "default": "./dist/modules/media/infrastructure/d1-photo-attachment-repository.js"
+    },
+    "./modules/media/infrastructure/r2-clinical-media-storage": {
+      "beauty": "./src/modules/media/infrastructure/r2-clinical-media-storage.ts",
+      "types": "./dist/modules/media/infrastructure/r2-clinical-media-storage.d.ts",
+      "workerd": "./src/modules/media/infrastructure/r2-clinical-media-storage.ts",
+      "default": "./dist/modules/media/infrastructure/r2-clinical-media-storage.js"
+    },
+    "./modules/media/ports/clinical-media-storage.port": {
+      "beauty": "./src/modules/media/ports/clinical-media-storage.port.ts",
+      "types": "./dist/modules/media/ports/clinical-media-storage.port.d.ts",
+      "workerd": "./src/modules/media/ports/clinical-media-storage.port.ts",
+      "default": "./dist/modules/media/ports/clinical-media-storage.port.js"
+    },
+    "./modules/media/ports/photo-attachment-repository": {
+      "beauty": "./src/modules/media/ports/photo-attachment-repository.ts",
+      "types": "./dist/modules/media/ports/photo-attachment-repository.d.ts",
+      "workerd": "./src/modules/media/ports/photo-attachment-repository.ts",
+      "default": "./dist/modules/media/ports/photo-attachment-repository.js"
+    },
+    "./modules/sessions/application/complete-session": {
+      "beauty": "./src/modules/sessions/application/complete-session.ts",
+      "types": "./dist/modules/sessions/application/complete-session.d.ts",
+      "workerd": "./src/modules/sessions/application/complete-session.ts",
+      "default": "./dist/modules/sessions/application/complete-session.js"
+    },
+    "./modules/sessions/application/recommend-return": {
+      "beauty": "./src/modules/sessions/application/recommend-return.ts",
+      "types": "./dist/modules/sessions/application/recommend-return.d.ts",
+      "workerd": "./src/modules/sessions/application/recommend-return.ts",
+      "default": "./dist/modules/sessions/application/recommend-return.js"
+    },
+    "./modules/sessions/application/start-session": {
+      "beauty": "./src/modules/sessions/application/start-session.ts",
+      "types": "./dist/modules/sessions/application/start-session.d.ts",
+      "workerd": "./src/modules/sessions/application/start-session.ts",
+      "default": "./dist/modules/sessions/application/start-session.js"
+    },
+    "./modules/sessions/domain/session-completion-eligibility-policy": {
+      "beauty": "./src/modules/sessions/domain/session-completion-eligibility-policy.ts",
+      "types": "./dist/modules/sessions/domain/session-completion-eligibility-policy.d.ts",
+      "workerd": "./src/modules/sessions/domain/session-completion-eligibility-policy.ts",
+      "default": "./dist/modules/sessions/domain/session-completion-eligibility-policy.js"
+    },
+    "./modules/sessions/domain/session-state-machine": {
+      "beauty": "./src/modules/sessions/domain/session-state-machine.ts",
+      "types": "./dist/modules/sessions/domain/session-state-machine.d.ts",
+      "workerd": "./src/modules/sessions/domain/session-state-machine.ts",
+      "default": "./dist/modules/sessions/domain/session-state-machine.js"
+    },
+    "./modules/sessions/domain/session": {
+      "beauty": "./src/modules/sessions/domain/session.ts",
+      "types": "./dist/modules/sessions/domain/session.d.ts",
+      "workerd": "./src/modules/sessions/domain/session.ts",
+      "default": "./dist/modules/sessions/domain/session.js"
+    },
+    "./modules/sessions/infrastructure/billing-package-delivery": {
+      "beauty": "./src/modules/sessions/infrastructure/billing-package-delivery.ts",
+      "types": "./dist/modules/sessions/infrastructure/billing-package-delivery.d.ts",
+      "workerd": "./src/modules/sessions/infrastructure/billing-package-delivery.ts",
+      "default": "./dist/modules/sessions/infrastructure/billing-package-delivery.js"
+    },
+    "./modules/sessions/infrastructure/d1-session-completion-read-model": {
+      "beauty": "./src/modules/sessions/infrastructure/d1-session-completion-read-model.ts",
+      "types": "./dist/modules/sessions/infrastructure/d1-session-completion-read-model.d.ts",
+      "workerd": "./src/modules/sessions/infrastructure/d1-session-completion-read-model.ts",
+      "default": "./dist/modules/sessions/infrastructure/d1-session-completion-read-model.js"
+    },
+    "./modules/sessions/infrastructure/d1-session-repository": {
+      "beauty": "./src/modules/sessions/infrastructure/d1-session-repository.ts",
+      "types": "./dist/modules/sessions/infrastructure/d1-session-repository.d.ts",
+      "workerd": "./src/modules/sessions/infrastructure/d1-session-repository.ts",
+      "default": "./dist/modules/sessions/infrastructure/d1-session-repository.js"
+    },
+    "./modules/sessions/infrastructure/operations-return-delivery": {
+      "beauty": "./src/modules/sessions/infrastructure/operations-return-delivery.ts",
+      "types": "./dist/modules/sessions/infrastructure/operations-return-delivery.d.ts",
+      "workerd": "./src/modules/sessions/infrastructure/operations-return-delivery.ts",
+      "default": "./dist/modules/sessions/infrastructure/operations-return-delivery.js"
+    },
+    "./modules/sessions/infrastructure/operations-session-delivery": {
+      "beauty": "./src/modules/sessions/infrastructure/operations-session-delivery.ts",
+      "types": "./dist/modules/sessions/infrastructure/operations-session-delivery.d.ts",
+      "workerd": "./src/modules/sessions/infrastructure/operations-session-delivery.ts",
+      "default": "./dist/modules/sessions/infrastructure/operations-session-delivery.js"
+    },
+    "./modules/sessions/ports/session-completion-read-model.port": {
+      "beauty": "./src/modules/sessions/ports/session-completion-read-model.port.ts",
+      "types": "./dist/modules/sessions/ports/session-completion-read-model.port.d.ts",
+      "workerd": "./src/modules/sessions/ports/session-completion-read-model.port.ts",
+      "default": "./dist/modules/sessions/ports/session-completion-read-model.port.js"
+    },
+    "./modules/sessions/ports/session-repository": {
+      "beauty": "./src/modules/sessions/ports/session-repository.ts",
+      "types": "./dist/modules/sessions/ports/session-repository.d.ts",
+      "workerd": "./src/modules/sessions/ports/session-repository.ts",
+      "default": "./dist/modules/sessions/ports/session-repository.js"
+    },
+    "./modules/sessions/ports/session-start-context.port": {
+      "beauty": "./src/modules/sessions/ports/session-start-context.port.ts",
+      "types": "./dist/modules/sessions/ports/session-start-context.port.d.ts",
+      "workerd": "./src/modules/sessions/ports/session-start-context.port.ts",
+      "default": "./dist/modules/sessions/ports/session-start-context.port.js"
+    },
+    "./modules/technical-forms/application/use-cases": {
+      "beauty": "./src/modules/technical-forms/application/use-cases.ts",
+      "types": "./dist/modules/technical-forms/application/use-cases.d.ts",
+      "workerd": "./src/modules/technical-forms/application/use-cases.ts",
+      "default": "./dist/modules/technical-forms/application/use-cases.js"
+    },
+    "./modules/technical-forms/domain/technical-field-definition": {
+      "beauty": "./src/modules/technical-forms/domain/technical-field-definition.ts",
+      "types": "./dist/modules/technical-forms/domain/technical-field-definition.d.ts",
+      "workerd": "./src/modules/technical-forms/domain/technical-field-definition.ts",
+      "default": "./dist/modules/technical-forms/domain/technical-field-definition.js"
+    },
+    "./modules/technical-forms/domain/technical-form-definition": {
+      "beauty": "./src/modules/technical-forms/domain/technical-form-definition.ts",
+      "types": "./dist/modules/technical-forms/domain/technical-form-definition.d.ts",
+      "workerd": "./src/modules/technical-forms/domain/technical-form-definition.ts",
+      "default": "./dist/modules/technical-forms/domain/technical-form-definition.js"
+    },
+    "./modules/technical-forms/domain/technical-value": {
+      "beauty": "./src/modules/technical-forms/domain/technical-value.ts",
+      "types": "./dist/modules/technical-forms/domain/technical-value.d.ts",
+      "workerd": "./src/modules/technical-forms/domain/technical-value.ts",
+      "default": "./dist/modules/technical-forms/domain/technical-value.js"
+    },
+    "./modules/technical-forms/infrastructure/d1-technical-form-repository": {
+      "beauty": "./src/modules/technical-forms/infrastructure/d1-technical-form-repository.ts",
+      "types": "./dist/modules/technical-forms/infrastructure/d1-technical-form-repository.d.ts",
+      "workerd": "./src/modules/technical-forms/infrastructure/d1-technical-form-repository.ts",
+      "default": "./dist/modules/technical-forms/infrastructure/d1-technical-form-repository.js"
+    },
+    "./modules/technical-forms/ports/service-technical-context.port": {
+      "beauty": "./src/modules/technical-forms/ports/service-technical-context.port.ts",
+      "types": "./dist/modules/technical-forms/ports/service-technical-context.port.d.ts",
+      "workerd": "./src/modules/technical-forms/ports/service-technical-context.port.ts",
+      "default": "./dist/modules/technical-forms/ports/service-technical-context.port.js"
+    },
+    "./modules/technical-forms/ports/technical-form-repository": {
+      "beauty": "./src/modules/technical-forms/ports/technical-form-repository.ts",
+      "types": "./dist/modules/technical-forms/ports/technical-form-repository.d.ts",
+      "workerd": "./src/modules/technical-forms/ports/technical-form-repository.ts",
+      "default": "./dist/modules/technical-forms/ports/technical-form-repository.js"
+    },
+    "./modules/sessions/domain/session-completion-facts": {
+      "beauty": "./src/modules/sessions/domain/session-completion-facts.ts",
+      "types": "./dist/modules/sessions/domain/session-completion-facts.d.ts",
+      "workerd": "./src/modules/sessions/domain/session-completion-facts.ts",
+      "default": "./dist/modules/sessions/domain/session-completion-facts.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {
+    "@beauty/contracts": "0.0.1",
+    "@beauty/database": "0.0.1",
+    "@beauty/kernel": "0.0.1",
+    "@beauty/reliability": "0.0.1"
+  }
+}

@@ -1,16 +1,16 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
-import { CheckAppointmentEligibility } from '../../apps/operations-worker/src/appointment-eligibility/application/check-appointment-eligibility.js';
-import { ClinicalServiceBindingAssessmentEligibilityAdapter } from '../../apps/operations-worker/src/appointment-eligibility/adapters/clinical-service-binding-assessment-eligibility.js';
-import { CustomerRestrictionAdapter } from '../../apps/operations-worker/src/appointment-eligibility/adapters/customer-restriction.js';
-import { D1ProfessionalServiceEligibility } from '../../apps/operations-worker/src/appointment-eligibility/adapters/d1-professional-service-eligibility.js';
-import { D1AvailabilityRepository } from '../../apps/operations-worker/src/appointments/adapters/d1-availability-repository.js';
-import { D1CustomerRepository } from '../../apps/operations-worker/src/customers/adapters/d1-customer-repository.js';
-import { D1ProfessionalRepository } from '../../apps/operations-worker/src/professionals/adapters/d1-professional-repository.js';
-import { D1ServiceRepository } from '../../apps/operations-worker/src/services/adapters/d1-service-repository.js';
-import { D1TenantRepository } from '../../apps/operations-worker/src/tenants/adapters/d1-tenant-repository.js';
-import { D1LicenseRepository } from '../../apps/operations-worker/src/licensing/adapters/d1-license-repository.js';
-import { D1LicenseEligibilityAdapter, D1PlanLimitAdapter } from '../../apps/operations-worker/src/licensing/adapters/appointment-admission-adapters.js';
+import { CheckAppointmentEligibility } from '@beauty/operations/modules/appointment-eligibility/application/check-appointment-eligibility';
+import { ClinicalServiceBindingAssessmentEligibilityAdapter } from '@beauty/operations/modules/appointment-eligibility/infrastructure/clinical-service-binding-assessment-eligibility';
+import { CustomerRestrictionAdapter } from '@beauty/operations/modules/appointment-eligibility/infrastructure/customer-restriction';
+import { D1ProfessionalServiceEligibility } from '@beauty/operations/modules/appointment-eligibility/infrastructure/d1-professional-service-eligibility';
+import { D1AvailabilityRepository } from '@beauty/operations/modules/appointments/infrastructure/d1-availability-repository';
+import { D1CustomerRepository } from '@beauty/operations/modules/customers/infrastructure/d1-customer-repository';
+import { D1ProfessionalRepository } from '@beauty/operations/modules/professionals/infrastructure/d1-professional-repository';
+import { D1ServiceRepository } from '@beauty/operations/modules/services/infrastructure/d1-service-repository';
+import { D1TenantRepository } from '@beauty/operations/modules/tenants/infrastructure/d1-tenant-repository';
+import { D1LicenseRepository } from '@beauty/operations/modules/licensing/infrastructure/d1-license-repository';
+import { D1LicenseEligibilityAdapter, D1PlanLimitAdapter } from '@beauty/operations/modules/licensing/infrastructure/appointment-admission-adapters';
 import { invokeClinicalAssessment } from '../../apps/operations-worker/src/worker.js';
 
 const db = env.D1_DATABASE;

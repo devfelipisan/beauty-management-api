@@ -1,0 +1,37 @@
+{
+  "name": "@beauty/execution-context",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./execution-context.factory": {
+      "beauty": "./src/execution-context.factory.ts",
+      "types": "./dist/execution-context.factory.d.ts",
+      "workerd": "./src/execution-context.factory.ts",
+      "default": "./dist/execution-context.factory.js"
+    },
+    "./execution-context": {
+      "beauty": "./src/execution-context.ts",
+      "types": "./dist/execution-context.d.ts",
+      "workerd": "./src/execution-context.ts",
+      "default": "./dist/execution-context.js"
+    },
+    "./execution-source": {
+      "beauty": "./src/execution-source.ts",
+      "types": "./dist/execution-source.d.ts",
+      "workerd": "./src/execution-source.ts",
+      "default": "./dist/execution-source.js"
+    },
+    ".": {
+      "beauty": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "workerd": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json",
+    "test": "node ../../scripts/workspace-test.mjs"
+  },
+  "dependencies": {}
+}
