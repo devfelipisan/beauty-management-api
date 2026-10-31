@@ -14,6 +14,16 @@ export const requiredJwtSecretNames = Object.freeze([
   'AUTH_JWKS_URL',
   'AUTH_ALGORITHM',
 ]);
+export function requiredProductionText(name) {
+  return {
+    APP_ENV: 'production',
+    AUTH_PROVIDER: 'jwt',
+    OBSERVE_ENABLED: 'true',
+    OUTBOX_BATCH_SIZE: '5',
+    OUTBOX_LEASE_SECONDS: '60',
+    ...(name === 'clinical' ? { MAX_CLINICAL_PHOTO_BYTES: '5242880' } : {}),
+  };
+}
 export function selectedWorkers(target) {
   if (target === 'all') return ['billing', 'clinical', 'operations'];
   if (!Object.hasOwn(workerConfigurations, target))
@@ -74,7 +84,24 @@ export function validateWorkerConfigurations(
       config.route
     )
       throw new Error(`Public access is not disabled: ${name}`);
-    if (config.r2_buckets?.length) throw new Error(`R2 configured: ${name}`);
+    const buckets = config.r2_buckets ?? [];
+    const expectedBinding =
+      name === 'operations' ? 'PROFILE_MEDIA' : 'SESSION_MEDIA';
+    if (
+      name === 'billing'
+        ? buckets.length !== 0
+        : buckets.length !== 1 ||
+          buckets[0].binding !== expectedBinding ||
+          buckets[0].bucket_name !== 'beauty-r2'
+    )
+      throw new Error(`Invalid R2 configuration: ${name}`);
+    const crons = config.triggers?.crons ?? [];
+    if (
+      name === 'operations'
+        ? crons.length !== 1 || crons[0] !== '*/1 * * * *'
+        : crons.length !== 0
+    )
+      throw new Error(`Invalid Cron configuration: ${name}`);
     if (config.d1_databases?.length !== 1)
       throw new Error(`Expected one D1 binding: ${name}`);
     const db = config.d1_databases[0];
@@ -125,11 +152,15 @@ export function validateWorkerConfigurations(
           `Real D1 UUID required: ${name}. Set d1_databases[0].database_id in ${workerConfigurations[name]} to the existing beauty_db UUID; all three Workers must use the same UUID. database_name alone is insufficient.`,
         );
       if (
-        config.vars?.APP_ENV !== 'production' ||
-        config.vars?.AUTH_PROVIDER !== 'jwt'
+        config.keep_vars !== true ||
+        !config.compatibility_flags?.includes('nodejs_compat') ||
+        config.define?.__BEAUTY_LOCAL__ !== 'false' ||
+        Object.keys(requiredProductionText(name)).some((key) =>
+          Object.hasOwn(config.vars ?? {}, key),
+        )
       )
         throw new Error(
-          `Production JWT configuration required: ${name}. Check APP_ENV=production and AUTH_PROVIDER=jwt in ${workerConfigurations[name]}.`,
+          `Production configuration must be Dashboard-managed: ${name}`,
         );
       const required = config.secrets?.required;
       if (

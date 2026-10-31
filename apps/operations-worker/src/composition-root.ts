@@ -1,4 +1,11 @@
 import {
+  ProfileImages,
+  PROFILE_DELETE_EVENT,
+  PROFILE_RECONCILE_EVENT,
+} from '@beauty/operations/modules/profile-media/application/profile-images';
+import { D1ProfileImageRepository } from '@beauty/operations/modules/profile-media/infrastructure/d1-profile-image-repository';
+import { R2ProfileImageStorage } from '@beauty/operations/modules/profile-media/infrastructure/r2-profile-image-storage';
+import {
   CreateServiceUseCase,
   GetServiceUseCase,
   ListServicesUseCase,
@@ -133,7 +140,7 @@ export async function invokeCreateAppointment(
     new D1UnitOfWork(env.D1_DATABASE),
     new D1IdempotencyStore(env.D1_DATABASE),
     undefined,
-    false, // Photography is suspended in the approved no-R2 release.
+    true, // Clinical enforces storage readiness and the frozen photography requirement.
   ).execute(input);
 }
 function appointmentLifecycle(env: OperationsEnv) {
@@ -190,8 +197,9 @@ type Runtime = {
   list: ListCustomersUseCase;
   update: UpdateCustomerUseCase;
 };
-let runtime: Runtime | undefined;
+const runtimes = new WeakMap<OperationsEnv, Runtime>();
 export function getRuntime(env: OperationsEnv): Runtime {
+  let runtime = runtimes.get(env);
   if (!runtime) {
     const repository = new D1CustomerRepository(env.D1_DATABASE);
     runtime = {
@@ -203,10 +211,21 @@ export function getRuntime(env: OperationsEnv): Runtime {
       ),
     };
   }
+  runtimes.set(env, runtime);
   return runtime;
 }
 
 export class OperationsComposition {
+  profileImages() {
+    return new ProfileImages(
+      new D1ProfileImageRepository(this.env.D1_DATABASE),
+      new R2ProfileImageStorage(this.env.PROFILE_MEDIA),
+      new D1UnitOfWork(this.env.D1_DATABASE),
+      new D1IdempotencyStore(this.env.D1_DATABASE),
+      Number(this.env.OUTBOX_LEASE_SECONDS),
+    );
+  }
+
   async resourceProfessional(
     input: Record<string, unknown>,
     professionalId: string,
@@ -236,14 +255,14 @@ export class OperationsComposition {
     return {
       create: new CreateServiceUseCase(
         repository,
-        false,
+        true,
         new D1UnitOfWork(this.env.D1_DATABASE),
       ),
       get: new GetServiceUseCase(repository),
       list: new ListServicesUseCase(repository),
       update: new UpdateServiceUseCase(
         repository,
-        false,
+        true,
         new D1UnitOfWork(this.env.D1_DATABASE),
       ),
       deactivate: new DeactivateServiceUseCase(
@@ -502,20 +521,24 @@ export class OperationsComposition {
   }) {
     return new DispatchOutboxBatch(
       new D1OutboxDeliveryRepository(this.env.D1_DATABASE, [
+        PROFILE_DELETE_EVENT,
+        PROFILE_RECONCILE_EVENT,
         'FinancialSettlementRequested',
         'AppointmentCanceled',
         'AppointmentNoShowRecorded',
       ]),
       {
         deliver: (e) =>
-          (e.type === 'FinancialSettlementRequested'
-            ? new BillingFinancialSettlementDelivery(
-                this.env.BILLING_SERVICE as never,
-              )
-            : new BillingAppointmentChangeDelivery(
-                this.env.BILLING_SERVICE as never,
-              )
-          ).deliver(e),
+          [PROFILE_DELETE_EVENT, PROFILE_RECONCILE_EVENT].includes(e.type)
+            ? this.profileImages().deliver(e)
+            : (e.type === 'FinancialSettlementRequested'
+                ? new BillingFinancialSettlementDelivery(
+                    this.env.BILLING_SERVICE as never,
+                  )
+                : new BillingAppointmentChangeDelivery(
+                    this.env.BILLING_SERVICE as never,
+                  )
+              ).deliver(e),
       },
     ).execute(input);
   }

@@ -22,7 +22,8 @@ async function auxiliaryWorker(
     format: 'esm',
     platform: 'neutral',
     target: 'es2022',
-    external: ['cloudflare:workers'],
+    external: ['cloudflare:workers', 'node:async_hooks'],
+    define: { __BEAUTY_LOCAL__: 'true' },
     write: false,
     conditions: ['beauty'],
   });
@@ -35,14 +36,17 @@ async function auxiliaryWorker(
     name,
     modulesRoot: directory,
     compatibilityDate: '2026-08-30',
+    compatibilityFlags: ['nodejs_compat'],
     d1Databases: { ...testD1Databases },
     r2Buckets,
     serviceBindings,
     bindings: {
       APP_ENV: 'test',
       AUTH_PROVIDER: 'mock',
+      OUTBOX_BATCH_SIZE: '5',
+      OUTBOX_LEASE_SECONDS: '60',
       OBSERVE_ENABLED: 'false',
-      MAX_CLINICAL_PHOTO_BYTES: '10485760',
+      MAX_CLINICAL_PHOTO_BYTES: '5242880',
     },
     modules: [{ type: 'ESModule', path }],
   };
@@ -64,14 +68,18 @@ export default defineConfig({
         bindings: {
           APP_ENV: 'test',
           AUTH_PROVIDER: 'mock',
+          OUTBOX_BATCH_SIZE: '5',
+          OUTBOX_LEASE_SECONDS: '60',
           OBSERVE_ENABLED: 'false',
           TEST_MIGRATIONS: migrations,
-          MAX_CLINICAL_PHOTO_BYTES: '10485760',
+          MAX_CLINICAL_PHOTO_BYTES: '5242880',
         },
         workers: [
           await auxiliaryWorker(
             './apps/operations-worker/src/worker.ts',
             'beauty-operations-runtime',
+            {},
+            ['PROFILE_MEDIA'],
           ),
           await auxiliaryWorker(
             './apps/clinical-worker/src/worker.ts',

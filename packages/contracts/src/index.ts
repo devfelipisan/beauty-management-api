@@ -10,6 +10,7 @@ export * from './technical-forms/index.js';
 export * from './equipment/index.js';
 export * from './intercurrence/index.js';
 export * from './media/index.js';
+export * from './profile-media/index.js';
 export * from './session-completion/index.js';
 export * from './customer-history/index.js';
 export * from './returns/index.js';

@@ -10,6 +10,7 @@ import {
   readConfiguration,
   requiredJwtSecretNames,
   workerConfigurations,
+  requiredProductionText,
 } from './worker-deployment-config.mjs';
 
 const configurations = () =>
@@ -27,47 +28,150 @@ const response = (result) => ({
   json: async () => ({ success: true, result }),
 });
 
-test('checks only secret metadata for the selected Worker and never returns secret data', async () => {
+function remoteFixture(overrides = {}) {
+  return async (url) => {
+    if (overrides[url.split('/').at(-1)])
+      return response(overrides[url.split('/').at(-1)]);
+    if (url.endsWith('/query'))
+      return response([
+        {
+          success: true,
+          results: [
+            {
+              inventory_approved: 1,
+              policy_approved: 1,
+              writers_coordinated: 1,
+              approval_reference: 'approved-fixture',
+            },
+          ],
+        },
+      ]);
+    if (url.endsWith('/secrets')) return response(secrets());
+    if (url.endsWith('/subdomain'))
+      return response({ enabled: false, previews_enabled: false });
+    if (url.endsWith('/schedules')) return response({ schedules: [] });
+    if (url.endsWith('/settings')) {
+      const name = url.match(/beauty-(operations|billing|clinical)-worker/)[1];
+      return response({
+        bindings: Object.entries(requiredProductionText(name)).map(
+          ([name, text]) => ({ name, type: 'plain_text', text }),
+        ),
+      });
+    }
+    if (url.includes('/d1/database/')) return response({ name: 'beauty_db' });
+    if (url.endsWith('/managed')) return response({ enabled: false });
+    if (url.endsWith('/custom')) return response({ domains: [] });
+    if (url.endsWith('/beauty-r2')) return response({ name: 'beauty-r2' });
+    throw new Error('Unexpected endpoint');
+  };
+}
+test('checks secret names and Text configuration without returning remote values', async () => {
   const calls = [];
-  const result = await requireRemoteSecrets(configurations(), 'billing', {
-    ...options,
-    fetchImpl: async (...args) => {
-      calls.push(args);
-      return response(secrets());
-    },
-  });
-  assert.equal(result, undefined);
-  assert.equal(calls.length, 1);
+  const fixture = remoteFixture();
   assert.equal(
-    calls[0][0],
-    'https://api.cloudflare.com/client/v4/accounts/test-account/workers/scripts/beauty-billing-worker/secrets',
+    await requireRemoteSecrets(configurations(), 'billing', {
+      ...options,
+      fetchImpl: async (...args) => {
+        calls.push(args);
+        return fixture(...args);
+      },
+    }),
+    undefined,
   );
+  assert.equal(calls.length, 3);
+  assert.ok(calls[0][0].endsWith('/beauty-billing-worker/secrets'));
   assert.deepEqual(calls[0][1], {
     method: 'GET',
     redirect: 'error',
     headers: { authorization: 'Bearer fixture-token' },
   });
 });
-
-test('preflights all destinations in publication order before reporting success', async () => {
+test('preflights receivers and storage before publishing Operations', async () => {
   const calls = [];
-  await requireRemoteSecrets(configurations(), 'all', {
+  const fixture = remoteFixture();
+  await requireRemoteSecrets(configurations(), 'operations', {
     ...options,
-    fetchImpl: async (url) => {
+    fetchImpl: async (url, ...rest) => {
       calls.push(url);
-      return response(secrets());
+      return fixture(url, ...rest);
     },
   });
   assert.deepEqual(
-    calls.map((url) => url.split('/').at(-2)),
+    calls
+      .filter((url) => url.endsWith('/secrets'))
+      .map((url) => url.split('/').at(-2)),
     [
       'beauty-billing-worker',
       'beauty-clinical-worker',
       'beauty-operations-worker',
     ],
   );
+  assert.ok(calls.some((url) => url.endsWith('/domains/managed')));
 });
-
+test('verifies the published SHA, applied bindings, triggers and private exposure', async () => {
+  const configs = configurations(),
+    sha = 'a'.repeat(40);
+  const settings = {
+    bindings: [
+      ...Object.entries(requiredProductionText('billing')).map(
+        ([name, text]) => ({ name, type: 'plain_text', text }),
+      ),
+      { name: 'SERVICE_VERSION', type: 'plain_text', text: sha },
+      {
+        name: 'D1_DATABASE',
+        type: 'd1',
+        id: configs.billing.d1_databases[0].database_id,
+      },
+      {
+        name: 'OPERATIONS_SERVICE',
+        type: 'service',
+        service: 'beauty-operations-worker',
+      },
+    ],
+  };
+  await requireRemoteSecrets(configs, 'billing', {
+    ...options,
+    publishedSha: sha,
+    fetchImpl: remoteFixture({ settings }),
+  });
+  for (const overrides of [
+    { subdomain: { enabled: true, previews_enabled: false } },
+    { schedules: { schedules: [{ cron: '* * * * *' }] } },
+    {
+      settings: {
+        bindings: settings.bindings.filter(
+          (binding) => binding.name !== 'D1_DATABASE',
+        ),
+      },
+    },
+  ]) {
+    await assert.rejects(
+      requireRemoteSecrets(configs, 'billing', {
+        ...options,
+        publishedSha: sha,
+        fetchImpl: remoteFixture({ settings, ...overrides }),
+      }),
+      { message: requiredBindingsFailure },
+    );
+  }
+});
+test('fails closed for invalid Text configuration, missing resources and public buckets', async () => {
+  for (const overrides of [
+    { settings: { bindings: [] } },
+    { managed: { enabled: true } },
+    { custom: { domains: [{ enabled: true }] } },
+    { 'beauty-r2': { name: 'wrong' } },
+    { query: [{ success: true, results: [{ inventory_approved: 0 }] }] },
+  ]) {
+    await assert.rejects(
+      requireRemoteSecrets(configurations(), 'all', {
+        ...options,
+        fetchImpl: remoteFixture(overrides),
+      }),
+      { message: requiredBindingsFailure },
+    );
+  }
+});
 test('rejects every missing or plaintext auth binding and does not leak upstream errors', async () => {
   for (const name of requiredJwtSecretNames) {
     for (const result of [

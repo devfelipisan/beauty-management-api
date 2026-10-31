@@ -1,65 +1,91 @@
 # ADR-0015 — Autoridade, agenda e publicação privada
 
-Status: decisões aprovadas nesta entrega; liberação remota pendente de qualificação.
+Status: decisões aprovadas; liberação remota condicionada à qualificação e às
+aprovações documentais descritas no runbook.
 
 ## Identidade e autorização
 
-Supabase Auth autentica por JWT assimétrico. A API valida assinatura, algoritmo,
-emissor, audiência e validade; a identidade interna é a combinação issuer/subject.
-D1 é a autoridade de memberships, permissões atuais, tenant ativo e vínculo
-profissional. Nenhum papel é concedido por inferência do token.
+Supabase Auth fornece JWT assimétrico. A API verifica assinatura, algoritmo,
+issuer, audience e expiração e resolve a identidade interna por issuer/subject.
+D1 é a autoridade de memberships atuais, tenant ativo, permissões e escopo
+profissional. Nenhum papel é inferido do token.
 
-Os parâmetros do emissor são fornecidos exclusivamente por bindings remotos
-AUTH_ISSUER, AUTH_AUDIENCE, AUTH_JWKS_URL e AUTH_ALGORITHM. Os Wranglers declaram
-os nomes em secrets.required; o repositório não define seus valores. O deploy
-verifica somente metadados de presença/tipo dos secrets e falha fechado, sem
-imprimir respostas remotas. A declaração arquitetural não determina as URLs ou
-o algoritmo efetivamente configurados no ambiente.
+AUTH_ISSUER, AUTH_AUDIENCE, AUTH_JWKS_URL e AUTH_ALGORITHM são secrets remotos.
+Wrangler declara somente seus nomes; o preflight consulta presença/tipo, sem
+recuperar valores ou imprimir respostas remotas. A arquitetura não determina
+URLs reais nem o algoritmo efetivamente configurado.
 
-Foram aprovadas customer.update, service.update e service.deactivate como
-permissões separadas, sem concessão automática. Operações legadas sem catálogo
-aprovado ficam negadas pelo PermissionGuard, inclusive administração de tenants,
-desativação de clientes e alteração/desativação de profissionais.
+customer.update, service.update e service.deactivate foram aprovadas como
+permissões separadas sem concessão automática. Operações legadas sem catálogo
+continuam negadas, inclusive administração de tenants, desativação de clientes
+e alteração/desativação de profissionais.
 
-RPC de usuário revalida JWT e membership no destinatário. Actor, tenant e escopo
-não são aceitos como autoridade do payload. Membership profissional restringe
-recursos ao profissional vinculado. Efeitos de sistema exigem evento persistido
-da Outbox e payload conferido no D1 compartilhado. Manutenção de dispatchers usa
-propriedade de Service Binding definida pelo Worker chamador, nunca um header.
+RPC de usuário revalida JWT e membership no receiver. Actor, tenant e escopo do
+payload não constituem autoridade. Membership profissional restringe recursos
+ao profissional vinculado. Efeitos de sistema exigem Outbox persistida e payload
+conferido no D1. Dispatchers usam propriedade do Service Binding chamador.
 
-## Discrepância normativa de reagendamento
+## Agenda
 
 A exclusão de RESCHEDULED nas consultas de disponibilidade contrariava a
-persistência do compromisso remarcado nesse estado. O requisito atual aprovou
-que RESCHEDULED ocupa o novo horário. Nenhum estado ou transição foi adicionado.
-A atualização valida snapshot anterior e conflito no próprio statement D1.
+persistência do compromisso remarcado nesse estado. O requisito aprovado mantém
+RESCHEDULED ocupando o novo horário, sem adicionar estados ou transições.
+A gravação revalida snapshot anterior e conflito no próprio statement D1.
 
-## Suspensão de mídia
+## Mídia privada — revisão da suspensão anterior
 
-R2 fica ausente da configuração de produção. O adapter indisponível falha antes
-de persistir anexos. Metadados históricos e REQUIRED_PHOTO_MISSING permanecem.
-Novos agendamentos e configurações que exigem fotografia são bloqueados quando
-a composição informa indisponibilidade. Os testes mantêm variante com R2.
+A decisão anterior sem R2 foi substituída pela autorização explícita para
+implementar e testar fotografia clínica e perfil de cliente em beauty-r2.
+Operations declara PROFILE_MEDIA, Clinical declara SESSION_MEDIA e Billing não
+recebe R2. As entidades e tabelas de perfil permanecem separadas das clínicas.
+
+Produção exige inventário aprovado, política documental, quotas explícitas e
+coordenação de todos os escritores. Migrations mantêm os gates fechados por
+padrão. O orçamento é 8.000.000.000 bytes, incluindo reservas e exclusões pendentes.
+
+Fotografia clínica obrigatória exige BEFORE AVAILABLE, conforme snapshot da
+sessão e fallback legado. Não revalidar sessões concluídas. Reconciliação usa
+clinical.photo.upload, tenant e profissional atuais. O receiver impõe 5 MiB.
+Não criar exclusão automática de evidências clínicas.
+
+Perfil inicial atende somente clientes: customer.read/customer.update, sem
+grants automáticos, máximo de 2.000.000 bytes. A imagem anterior só é excluída
+após confirmação da substituta; remoção explícita gera exclusão recuperável.
+Imagem ativa não recebe prazo de descarte presumido.
 
 ## Outbox e efeitos financeiros
 
-Operations coordena o disparo; cada domínio executa seu dispatcher. Leases têm
-identificação por execução e recuperação limitada aos tipos pertencentes ao
-dispatcher. Parâmetros de batch, lease e frequência exigem decisão operacional;
-nenhum cron foi criado.
+Operations coordena dispatchers por domínio. Leases têm identificação por
+execução, fencing e recuperação limitada aos tipos do dispatcher. Foram
+aprovados lote 5, lease 60 segundos e Cron */1 * * * * somente em Operations,
+condicionados à qualificação dos consumidores.
 
-Cancellation/NoShow usam a decisão financeira congelada no evento. Efeitos ainda
-não suportados geram reconciliação durável e auditada, em vez de confirmar uma
-movimentação inexistente. Fingerprint ausente em snapshot inválido é registrado
-como string vazia; isso representa ausência de evidência, não igualdade de estado.
+Cancellation/NoShow preservam a decisão financeira congelada no evento. Efeitos
+não suportados geram reconciliação durável e auditada. Fingerprint ausente em
+snapshot inválido representa ausência de evidência, não igualdade de estado.
 
-## Web e implantação
+## Configuração, execução e implantação
 
-O login aprovado é e-mail/senha Supabase. Foram autorizados GET /v1/me/tenants e
-GET /v1/me/context. BFF usa Service Bindings; API continua autoridade definitiva.
-Contratos de outras jornadas ainda incompatíveis ficam indisponíveis.
+Text pertence ao Dashboard; SERVICE_VERSION pertence ao pipeline. Wrangler
+preserva Text e define bindings, secrets obrigatórios e perfil estático de build.
+Mudar Text não habilita mocks no artefato de produção.
 
-request.json continua sendo a solicitação versionada. O workflow seleciona o
-Wrangler explícito e publica all em Billing → Clinical → Operations. Aprovação
-production é obrigatória, migrations são independentes e não há staging remoto.
-O Wrangler raiz foi removido para evitar publicação acidental de Operations.
+Cinco operações D1 simultâneas por invocação abrangem segurança, repositories e
+UoW. JWKS pode ser reutilizado; memberships não são armazenadas em cache.
+O pool PostgreSQL legado limita cinco conexões por processo sem ativar seu módulo
+nos Workers. Não se trata de limite distribuído global de concorrência.
+
+request.json permanece como solicitação versionada. Publicação all segue Billing
+→ Clinical → Operations, com aprovação production, SHA fixo e migrations
+independentes. Bootstrap cria apenas Workers privados ausentes e interrompe a
+publicação até configuração manual e nova solicitação. Sem staging remoto ou
+Wrangler raiz no caminho de deploy.
+
+## Web
+
+Login aprovado: e-mail/senha Supabase. GET /v1/me/tenants e GET /v1/me/context são
+contratos autenticados aprovados. BFF usa Service Bindings e não acessa banco.
+A API mantém a autoridade definitiva. A integração visual de perfil depende do
+repositório frontend, ausente neste checkout.
+
+Procedimentos e recuperação: [runbook de mídia](../04-infrastructure/media-release-runbook.md).

@@ -1,3 +1,4 @@
+import { ImageWriteNotStartedError } from '@beauty/reliability/media/image-write-error';
 import { assertProfessionalAuthorization } from '@beauty/kernel/application/actor-authorization';
 import type {
   ClinicalPhotoMetadata,
@@ -37,8 +38,6 @@ export class UploadSessionPhoto {
       throw new Error('CLINICAL_MEDIA_UNAVAILABLE');
     const session = await this.sessions.findById(i.tenantId, i.sessionId);
     if (!session) throw new Error('SESSION_NOT_FOUND');
-    if (session.data.status !== 'IN_PROGRESS')
-      throw new Error('PHOTO_UPLOAD_NOT_ALLOWED');
     assertProfessionalAuthorization(i, session.data.professionalId);
     validatePhotoInput(i.contentType, i.contentLength, i.maxBytes);
     if (i.purpose === 'INTERCURRENCE') {
@@ -49,13 +48,33 @@ export class UploadSessionPhoto {
       if (!x || x.sessionId !== i.sessionId)
         throw new Error('INTERCURRENCE_NOT_FOUND');
     }
+    /* Replay is validated by request hash below, including after session evolution. */
     const existing = await this.idempotency.find(
       i.tenantId,
       'UPLOAD_SESSION_PHOTO',
       i.idempotencyKey,
     );
-    if (existing?.status === 'COMPLETED')
-      return existing.response as ClinicalPhotoMetadata;
+    if (existing) {
+      const replay = await new IdempotencyService().reserveOrReplay(
+        this.idempotency,
+        i.tenantId,
+        'UPLOAD_SESSION_PHOTO',
+        i.idempotencyKey,
+        {
+          tenantId: i.tenantId,
+          sessionId: i.sessionId,
+          intercurrenceId: i.intercurrenceId,
+          purpose: i.purpose,
+          contentType: i.contentType,
+          contentLength: i.contentLength,
+          clientChecksum: i.clientChecksum,
+        },
+      );
+      await i.body.cancel().catch(() => undefined);
+      return replay.record.response as ClinicalPhotoMetadata;
+    }
+    if (session.data.status !== 'IN_PROGRESS')
+      throw new Error('PHOTO_UPLOAD_NOT_ALLOWED');
     const pending = await this.uow.execute(async (t) => {
       const r = await new IdempotencyService().reserveOrReplay(
         txStore(this.idempotency, t),
@@ -76,6 +95,7 @@ export class UploadSessionPhoto {
         return { replay: r.record.response as ClinicalPhotoMetadata };
       const id = crypto.randomUUID();
       const photo = PhotoAttachment.pending(id, {
+        idempotencyKey: i.idempotencyKey,
         tenantId: i.tenantId,
         sessionId: i.sessionId,
         intercurrenceId: i.intercurrenceId,
@@ -105,8 +125,12 @@ export class UploadSessionPhoto {
         },
       };
     });
-    if ('replay' in pending) return pending.replay!;
+    if ('replay' in pending) {
+      await i.body.cancel().catch(() => undefined);
+      return pending.replay!;
+    }
     const current = pending.pending;
+    // Only a certified pre-write rejection can release capacity without R2 reconciliation.
     try {
       const stored = await this.storage.put(
         current.photo.data.objectKey,
@@ -161,29 +185,30 @@ export class UploadSessionPhoto {
             actorId: i.actorId,
           },
         });
+        await t.idempotency.complete(
+          i.tenantId,
+          'UPLOAD_SESSION_PHOTO',
+          i.idempotencyKey,
+          out,
+        );
         return out;
       });
-      await this.idempotency.complete(
-        i.tenantId,
-        'UPLOAD_SESSION_PHOTO',
-        i.idempotencyKey,
-        result,
-      );
       return result;
     } catch (error) {
-      await this.uow.execute(async (t) => {
-        this.photos.markFailed(
-          i.tenantId,
-          current.photo.id,
-          error instanceof Error ? error.message : 'PHOTO_UPLOAD_FAILED',
-          t.persistence,
-        );
-      });
-      await this.idempotency.fail(
-        i.tenantId,
-        'UPLOAD_SESSION_PHOTO',
-        i.idempotencyKey,
-      );
+      if (error instanceof ImageWriteNotStartedError)
+        await this.uow.execute(async (t) => {
+          this.photos.markFailed(
+            i.tenantId,
+            current.photo.id,
+            error.message,
+            t.persistence,
+          );
+          await t.idempotency.fail(
+            i.tenantId,
+            'UPLOAD_SESSION_PHOTO',
+            i.idempotencyKey,
+          );
+        });
       throw error;
     }
   }
@@ -228,6 +253,7 @@ export class ReconcilePhotoAttachment {
     private readonly photos: PhotoAttachmentRepository,
     private readonly storage: ClinicalMediaStoragePort,
     private readonly uow: UnitOfWork,
+    private readonly sessions?: SessionRepository,
   ) {}
   async execute(i: {
     tenantId: string;
@@ -238,20 +264,22 @@ export class ReconcilePhotoAttachment {
   }) {
     const p = await this.photos.findById(i.tenantId, i.photoId);
     if (!p) throw new Error('PHOTO_NOT_FOUND');
+    if (!this.sessions) throw new Error('PERMISSION_DENIED');
+    const session = await this.sessions.findById(i.tenantId, p.data.sessionId);
+    if (!session) throw new Error('SESSION_NOT_FOUND');
+    assertProfessionalAuthorization(i, session.data.professionalId);
+    if (p.data.status !== 'PENDING_UPLOAD') return { status: p.data.status };
     const object = await this.storage.head(p.data.objectKey);
-    if (!object) {
-      if (p.data.status === 'AVAILABLE')
-        throw new Error('PHOTO_OBJECT_MISSING');
-      await this.uow.execute(async (t) =>
-        this.photos.markFailed(
-          i.tenantId,
-          i.photoId,
-          'PHOTO_OBJECT_MISSING',
-          t.persistence,
-        ),
-      );
-      return { status: 'FAILED' };
-    }
+    if (!object) throw new Error('PHOTO_OBJECT_MISSING');
+    if (
+      !p.data.idempotencyKey ||
+      object.size !== p.data.sizeBytes ||
+      object.contentType !== p.data.contentType ||
+      object.metadata?.tenantId !== i.tenantId ||
+      object.metadata?.sessionId !== p.data.sessionId ||
+      object.metadata?.photoId !== i.photoId
+    )
+      throw new Error('PHOTO_CONTENT_INVALID');
     if (p.data.status === 'PENDING_UPLOAD') {
       const now = new Date().toISOString();
       return this.uow.execute(async (t) => {
@@ -272,6 +300,23 @@ export class ReconcilePhotoAttachment {
           correlationId: i.correlationId,
           occurredAt: now,
         });
+        await t.idempotency.complete(
+          i.tenantId,
+          'UPLOAD_SESSION_PHOTO',
+          p.data.idempotencyKey!,
+          {
+            id: p.id,
+            tenantId: i.tenantId,
+            sessionId: p.data.sessionId,
+            intercurrenceId: p.data.intercurrenceId,
+            purpose: p.data.purpose,
+            contentType: p.data.contentType,
+            sizeBytes: object.size,
+            capturedAt: p.data.capturedAt,
+            status: 'AVAILABLE',
+            uploadedAt: now,
+          },
+        );
         return { status: 'AVAILABLE' };
       });
     }
@@ -297,12 +342,13 @@ export class EvaluateSessionPhotoRequirement {
     const s = await this.sessions.findById(i.tenantId, i.sessionId);
     if (!s) throw new Error('SESSION_NOT_FOUND');
     assertProfessionalAuthorization(i, s.data.professionalId);
-    if (
-      !(await this.serviceContext.getSessionPhotoRequirement(
+    if (!(
+      s.data.completionRequirements?.requiresPhotography ??
+      (await this.serviceContext.getSessionPhotoRequirement(
         i.tenantId,
         s.data.serviceId,
       ))
-    )
+    ))
       return { status: 'NOT_REQUIRED', missingPurposes: [] };
     const count = await this.photos.countAvailableByPurpose(
       i.tenantId,

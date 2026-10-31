@@ -15,9 +15,10 @@ export async function observedHttpRequest(
   const started = Date.now();
   let response: Response;
   try {
-    const binaryPhoto = /\/sessions\/[^/]+\/photos$/.test(
-      new URL(request.url).pathname,
-    );
+    const binaryPhoto =
+      /(?:\/sessions\/[^/]+\/photos|\/profile-images\/customer\/[^/]+)$/.test(
+        new URL(request.url).pathname,
+      );
     if (
       request.body &&
       !['GET', 'HEAD'].includes(request.method) &&

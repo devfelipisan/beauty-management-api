@@ -19,6 +19,30 @@ test('selects only approved configs and orders all sequentially', () => {
   for (const target of ['../other', '__proto__', 'constructor', '', undefined])
     assert.throws(() => selectedWorkers(target));
 });
+test('limits R2 and Cron to their owning Workers and requires an immutable production build profile', () => {
+  const configs = Object.fromEntries(
+    Object.entries(workerConfigurations).map(([name, path]) => [
+      name,
+      readConfiguration(path),
+    ]),
+  );
+  for (const mutate of [
+    (value) =>
+      (value.billing.r2_buckets = [
+        { binding: 'PROFILE_MEDIA', bucket_name: 'beauty-r2' },
+      ]),
+    (value) => (value.operations.r2_buckets[0].binding = 'SESSION_MEDIA'),
+    (value) => (value.clinical.r2_buckets[0].bucket_name = 'other-bucket'),
+    (value) => (value.billing.triggers = { crons: ['*/1 * * * *'] }),
+    (value) => (value.operations.triggers.crons = []),
+    (value) => (value.operations.keep_vars = false),
+    (value) => (value.clinical.define.__BEAUTY_LOCAL__ = 'true'),
+  ]) {
+    const candidate = structuredClone(configs);
+    mutate(candidate);
+    assert.throws(() => validateWorkerConfigurations(candidate, true));
+  }
+});
 test('rejects unknown request fields and output injection', () => {
   assert.equal(
     deploymentRequest({
@@ -162,7 +186,7 @@ test('requires all four secret names on every production Worker and rejects chec
     mock[name].vars.AUTH_PROVIDER = 'mock';
     assert.throws(
       () => validateWorkerConfigurations(mock, true),
-      /Production JWT configuration required/,
+      /Production configuration must be Dashboard-managed/,
     );
   }
 });

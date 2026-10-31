@@ -7,17 +7,17 @@
       "binding": "D1_DATABASE",
       "database_name": "beauty_db",
       "database_id": "18b04b90-845a-400e-a0f4-eeb3a04b8188",
-      "migrations_dir": "../../database/d1/migrations"
-    }
+      "migrations_dir": "../../database/d1/migrations",
+    },
   ],
   "services": [
     {
       "binding": "OPERATIONS_SERVICE",
       "service": "beauty-operations-worker",
       "props": {
-        "caller": "beauty-billing-worker"
-      }
-    }
+        "caller": "beauty-billing-worker",
+      },
+    },
   ],
   "workers_dev": false,
   "preview_urls": false,
@@ -26,42 +26,48 @@
       "AUTH_ISSUER",
       "AUTH_AUDIENCE",
       "AUTH_JWKS_URL",
-      "AUTH_ALGORITHM"
-    ]
+      "AUTH_ALGORITHM",
+    ],
   },
-  "vars": {
-    "APP_ENV": "production",
-    "AUTH_PROVIDER": "jwt",
-    "OBSERVE_ENABLED": "true"
-  },
+  "vars": {},
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   "env": {
     "local": {
       "name": "beauty-billing-worker",
-      "secrets": { "required": [] },
+      "secrets": {
+        "required": [],
+      },
       "vars": {
         "APP_ENV": "local",
         "AUTH_PROVIDER": "mock",
-        "OBSERVE_ENABLED": "false"
+        "OBSERVE_ENABLED": "false",
       },
       "d1_databases": [
         {
           "binding": "D1_DATABASE",
           "database_name": "beauty_db",
-          "migrations_dir": "../../database/d1/migrations"
-        }
+          "migrations_dir": "../../database/d1/migrations",
+        },
       ],
       "services": [
         {
           "binding": "OPERATIONS_SERVICE",
           "service": "beauty-operations-worker",
           "props": {
-            "caller": "beauty-billing-worker"
-          }
-        }
-      ]
-    }
-  }
+            "caller": "beauty-billing-worker",
+          },
+        },
+      ],
+      "define": {
+        "__BEAUTY_LOCAL__": "true",
+      },
+    },
+  },
+  "keep_vars": true,
+  "compatibility_flags": ["nodejs_compat"],
+  "define": {
+    "__BEAUTY_LOCAL__": "false",
+  },
 }

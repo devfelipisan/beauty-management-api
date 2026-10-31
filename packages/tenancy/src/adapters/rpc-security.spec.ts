@@ -182,14 +182,22 @@ describe('RPC authority', () => {
     const { env } = environment();
     const configured = {
       ...env,
-      OUTBOX_BATCH_SIZE: '2',
+      OUTBOX_BATCH_SIZE: '5',
       OUTBOX_LEASE_SECONDS: '60',
     };
     expect(dispatchConfiguration(configured)).toEqual({
-      batchSize: 2,
+      batchSize: 5,
       leaseSeconds: 60,
     });
-    for (const invalid of [undefined, '0', '-1', '1.5', 'NaN', 'Infinity']) {
+    for (const invalid of [
+      undefined,
+      '0',
+      '-1',
+      '1.5',
+      'NaN',
+      'Infinity',
+      '999',
+    ]) {
       expect(() =>
         dispatchConfiguration({ ...configured, OUTBOX_BATCH_SIZE: invalid }),
       ).toThrow('VALIDATION_ERROR');
@@ -209,7 +217,7 @@ describe('RPC authority', () => {
       input,
     );
     expect(result).toMatchObject({
-      batchSize: 2,
+      batchSize: 5,
       leaseSeconds: 60,
       now: undefined,
     });

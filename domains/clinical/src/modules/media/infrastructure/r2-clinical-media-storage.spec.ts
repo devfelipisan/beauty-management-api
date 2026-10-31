@@ -13,6 +13,46 @@ const stream = (...chunks: number[][]) =>
   });
 
 describe('clinical media storage adapters (unit)', () => {
+  it('accepts fragmented signatures and rejects bytes beyond the declared length', async () => {
+    vi.stubGlobal(
+      'FixedLengthStream',
+      class extends TransformStream {
+        constructor() {
+          super();
+        }
+      },
+    );
+    const put = vi.fn(
+      async (_key: string, body: ReadableStream<Uint8Array>) => {
+        for await (const _chunk of body) {
+          /* consume the complete stream */
+        }
+        return { etag: 'etag' };
+      },
+    );
+    const storage = new R2ClinicalMediaStorage({ put } as never);
+    await expect(
+      storage.put(
+        'fragmented',
+        stream([255], [216], [255], [0]),
+        'image/jpeg',
+        {},
+        4,
+        4,
+      ),
+    ).resolves.toEqual({ size: 4, etag: 'etag' });
+    await expect(
+      storage.put(
+        'extra',
+        stream([255, 216, 255], [0]),
+        'image/jpeg',
+        {},
+        4,
+        3,
+      ),
+    ).rejects.toThrow('PHOTO_SIZE_EXCEEDED');
+    expect(put).toHaveBeenCalledTimes(2);
+  });
   it('forwards destination cancellation to the original body reader', async () => {
     vi.stubGlobal(
       'FixedLengthStream',
@@ -61,14 +101,16 @@ describe('clinical media storage adapters (unit)', () => {
       },
     );
     const storage = new R2ClinicalMediaStorage({ put } as never);
-    await storage.put(
-      'key',
-      stream([255, 216, 255], [1], [2]),
-      'image/jpeg',
-      {},
-      8,
-      8,
-    );
+    await expect(
+      storage.put(
+        'key',
+        stream([255, 216, 255], [1], [2]),
+        'image/jpeg',
+        {},
+        8,
+        8,
+      ),
+    ).rejects.toThrow('PHOTO_CONTENT_LENGTH_MISMATCH');
     expect(bytes).toEqual([255, 216, 255, 1, 2]);
   });
   afterEach(() => vi.unstubAllGlobals());

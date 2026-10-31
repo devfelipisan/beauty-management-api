@@ -15,6 +15,7 @@ export interface IdentityDirectory {
     subject: string,
   ): Promise<AuthenticatedIdentity | null>;
 }
+const keySets = new Map<string, JWTVerifyGetKey>();
 
 /** Verifies credentials before looking up the internal actor; never provisions users. */
 export class JwtIdentityProvider implements IdentityProvider {
@@ -50,7 +51,12 @@ export class JwtIdentityProvider implements IdentityProvider {
       throw new Error('INVALID_AUTHENTICATION_CONFIGURATION');
     }
     this.config = { ...config, algorithms: [...config.algorithms] };
-    this.keys = keys ?? createRemoteJWKSet(jwks);
+    let cached = keySets.get(jwks.href);
+    if (!cached && !keys) {
+      cached = createRemoteJWKSet(jwks);
+      keySets.set(jwks.href, cached);
+    }
+    this.keys = keys ?? cached!;
   }
 
   async authenticate(token: string): Promise<AuthenticatedIdentity | null> {

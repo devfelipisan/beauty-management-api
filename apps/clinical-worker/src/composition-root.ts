@@ -1,3 +1,4 @@
+import { observeMediaCapacity } from '@beauty/reliability/media/observe-media-capacity';
 import type {
   AssessmentEligibilityRequest,
   AssessmentEligibilityResponse,
@@ -68,6 +69,19 @@ export class ClinicalComposition {
     professionalId: string,
   ): Promise<string | null> {
     if (typeof input.tenantId !== 'string') return null;
+    if (typeof input.photoId === 'string') {
+      const photo = await new D1PhotoAttachmentRepository(
+        this.env.D1_DATABASE,
+      ).findById(input.tenantId, input.photoId);
+      return photo
+        ? ((
+            await new D1SessionRepository(this.env.D1_DATABASE).findById(
+              input.tenantId,
+              photo.data.sessionId,
+            )
+          )?.data.professionalId ?? null)
+        : null;
+    }
     if (typeof input.sessionId === 'string')
       return (
         (
@@ -318,7 +332,9 @@ export class ClinicalComposition {
   async uploadSessionPhoto(
     input: import('@beauty/contracts').UploadClinicalPhotoRequest,
   ) {
-    return new UploadSessionPhoto(
+    if (this.env.MAX_CLINICAL_PHOTO_BYTES !== '5242880')
+      throw new Error('INVALID_AUTHENTICATION_CONFIGURATION');
+    const result = await new UploadSessionPhoto(
       new D1SessionRepository(this.env.D1_DATABASE),
       new D1IntercurrenceRepository(this.env.D1_DATABASE),
       new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
@@ -328,9 +344,14 @@ export class ClinicalComposition {
     ).execute(
       inheritActorAuthorization(input, {
         ...input,
-        maxBytes: input.maxBytes || Number(this.env.MAX_CLINICAL_PHOTO_BYTES),
+        maxBytes: Number(this.env.MAX_CLINICAL_PHOTO_BYTES),
       }),
     );
+    await observeMediaCapacity(
+      this.env.D1_DATABASE,
+      this.env.OBSERVE_ENABLED === 'true',
+    );
+    return result;
   }
   async listSessionPhotos(input: {
     tenantId: string;
@@ -365,6 +386,7 @@ export class ClinicalComposition {
       new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
       clinicalMediaStorage(this.env.SESSION_MEDIA),
       new D1UnitOfWork(this.env.D1_DATABASE),
+      new D1SessionRepository(this.env.D1_DATABASE),
     ).execute(input);
   }
   async evaluateSessionPhotoRequirement(input: {
@@ -376,17 +398,10 @@ export class ClinicalComposition {
       new D1SessionRepository(this.env.D1_DATABASE),
       new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
       {
-        getSessionPhotoRequirement: async (t, s) => {
-          const c = await (
-            this.env.OPERATIONS_SERVICE as {
-              getServiceTechnicalContext(i: {
-                tenantId: string;
-                serviceId: string;
-              }): Promise<any>;
-            }
-          ).getServiceTechnicalContext({ tenantId: t, serviceId: s });
-          return Boolean(c?.technicalRequirements?.requiresPhotography);
-        },
+        getSessionPhotoRequirement: (t, s) =>
+          new D1PhotoAttachmentRepository(
+            this.env.D1_DATABASE,
+          ).requiresPhotography(t, s),
       },
     ).execute(input);
   }

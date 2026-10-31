@@ -1,4 +1,8 @@
-import { workerSecurity, type WorkerSecurityEnv } from './worker-security.js';
+import {
+  workerSecurity,
+  fixtureSecurity,
+  type WorkerSecurityEnv,
+} from './worker-security.js';
 import { authorizeActor } from '@beauty/kernel/application/actor-authorization';
 
 export interface UserRpcAuthorityV1 {
@@ -24,6 +28,8 @@ export function dispatchConfiguration(env: WorkerSecurityEnv): {
     leaseSeconds < 1
   )
     throw new Error('VALIDATION_ERROR');
+  if (!fixtureSecurity(env) && (batchSize !== 5 || leaseSeconds !== 60))
+    throw new Error('VALIDATION_ERROR');
   return { batchSize, leaseSeconds };
 }
 
@@ -35,11 +41,7 @@ export function authorizeSystemDispatch<
     now?: string;
   },
 >(env: WorkerSecurityEnv, caller: unknown, input: T): T {
-  if (
-    env.AUTH_PROVIDER === 'mock' &&
-    ['local', 'test'].includes(env.APP_ENV ?? '')
-  )
-    return input;
+  if (fixtureSecurity(env)) return input;
   workerSecurity(env);
   if (caller !== 'beauty-operations-worker')
     throw new Error('PERMISSION_DENIED');
@@ -107,10 +109,7 @@ export async function authorizeWorkerRpc(
     throw new Error('VALIDATION_ERROR');
   const input = { ...value } as Record<string, unknown>;
   // Explicit fixture composition is the only exception. Production never takes this path.
-  if (
-    env.AUTH_PROVIDER === 'mock' &&
-    ['local', 'test'].includes(env.APP_ENV ?? '')
-  ) {
+  if (fixtureSecurity(env)) {
     const authority = input.rpcAuthority as UserRpcAuthorityV1 | undefined;
     delete input.rpcAuthority;
     if (typeof input.actorId === 'string' && typeof input.tenantId === 'string')

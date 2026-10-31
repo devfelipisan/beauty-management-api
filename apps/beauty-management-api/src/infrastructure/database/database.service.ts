@@ -6,7 +6,7 @@ const { Pool } = pg;
 export class DatabaseService implements OnModuleDestroy {
   readonly pool: pg.Pool;
   constructor(config: RuntimeConfigService) {
-    this.pool = new Pool({ connectionString: config.databaseUrl, max: 10 });
+    this.pool = new Pool({ connectionString: config.databaseUrl, max: 5 });
   }
   async isReachable(): Promise<boolean> {
     const client = await this.pool.connect();

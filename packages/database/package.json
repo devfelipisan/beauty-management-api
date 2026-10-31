@@ -51,6 +51,18 @@
       "types": "./dist/tokens.d.ts",
       "workerd": "./src/tokens.ts",
       "default": "./dist/tokens.js"
+    },
+    "./d1/limited-d1": {
+      "beauty": "./src/d1/limited-d1.ts",
+      "types": "./dist/d1/limited-d1.d.ts",
+      "workerd": "./src/d1/limited-d1.ts",
+      "default": "./dist/d1/limited-d1.js"
+    },
+    "./d1/invocation": {
+      "beauty": "./src/d1/invocation.ts",
+      "types": "./dist/d1/invocation.d.ts",
+      "workerd": "./src/d1/invocation.ts",
+      "default": "./dist/d1/invocation.js"
     }
   },
   "scripts": {

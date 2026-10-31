@@ -79,6 +79,7 @@ function fixture() {
   );
   const photo = (status = 'AVAILABLE', sessionId = 'session') =>
     PhotoAttachment.restore('photo', {
+      idempotencyKey: 'key',
       tenantId: 'tenant',
       sessionId,
       purpose: 'BEFORE',
@@ -181,7 +182,7 @@ describe('clinical media application orchestration', () => {
         resourceId: result.id,
       }),
     );
-    expect(f.store.complete).toHaveBeenCalledWith(
+    expect(f.transaction.idempotency.complete).toHaveBeenCalledWith(
       'tenant',
       'UPLOAD_SESSION_PHOTO',
       'key',
@@ -254,29 +255,32 @@ describe('clinical media application orchestration', () => {
             clientChecksum: f.input.clientChecksum,
           }),
         });
-      } else f.store.find.mockResolvedValue(record);
+      } else
+        f.store.find.mockResolvedValue({
+          ...record,
+          requestHash: new IdempotencyService().hash({
+            tenantId: f.input.tenantId,
+            sessionId: f.input.sessionId,
+            intercurrenceId: f.input.intercurrenceId,
+            purpose: f.input.purpose,
+            contentType: f.input.contentType,
+            contentLength: f.input.contentLength,
+            clientChecksum: f.input.clientChecksum,
+          }),
+        });
       expect(await f.upload.execute(f.input)).toBe(response);
       expect(f.storage.put).not.toHaveBeenCalled();
       expect(f.photos.createPending).not.toHaveBeenCalled();
     },
   );
   it.each([new Error('STORAGE_FAILURE'), 'transport-failure'])(
-    'marks failed metadata and idempotency when storage fails: %s',
+    'preserves recoverable metadata and reservation when storage result is uncertain: %s',
     async (failure) => {
       const f = fixture();
       f.storage.put.mockRejectedValue(failure);
       await expect(f.upload.execute(f.input)).rejects.toBe(failure);
-      expect(f.photos.markFailed).toHaveBeenCalledWith(
-        'tenant',
-        expect.any(String),
-        failure instanceof Error ? 'STORAGE_FAILURE' : 'PHOTO_UPLOAD_FAILED',
-        f.transaction.persistence,
-      );
-      expect(f.store.fail).toHaveBeenCalledWith(
-        'tenant',
-        'UPLOAD_SESSION_PHOTO',
-        'key',
-      );
+      expect(f.photos.markFailed).not.toHaveBeenCalled();
+      expect(f.store.fail).not.toHaveBeenCalled();
       expect(f.store.complete).not.toHaveBeenCalled();
     },
   );
@@ -328,10 +332,16 @@ describe('clinical media application orchestration', () => {
       f.photos as never,
       f.storage,
       f.uow as never,
+      f.sessions as never,
     );
-    const input = { ...f.input, photoId: 'photo' };
+    const input = Object.assign(f.input, { photoId: 'photo' });
     f.photos.findById.mockResolvedValue(f.photo('PENDING_UPLOAD'));
-    f.storage.head.mockResolvedValue({ size: 8, etag: 'etag' });
+    f.storage.head.mockResolvedValue({
+      size: 8,
+      etag: 'etag',
+      contentType: 'image/jpeg',
+      metadata: { tenantId: 'tenant', sessionId: 'session', photoId: 'photo' },
+    });
     expect(await reconcile.execute(input)).toEqual({ status: 'AVAILABLE' });
     expect(f.photos.markAvailable).toHaveBeenCalledWith(
       'tenant',
@@ -357,24 +367,20 @@ describe('clinical media application orchestration', () => {
       f.photos as never,
       f.storage,
       f.uow as never,
+      f.sessions as never,
     );
-    const input = { ...f.input, photoId: 'photo' };
+    const input = Object.assign(f.input, { photoId: 'photo' });
     f.photos.findById.mockResolvedValue(null);
     await expect(reconcile.execute(input)).rejects.toThrow('PHOTO_NOT_FOUND');
     f.photos.findById.mockResolvedValue(f.photo('PENDING_UPLOAD'));
     f.storage.head.mockResolvedValue(null);
-    expect(await reconcile.execute(input)).toEqual({ status: 'FAILED' });
-    expect(f.photos.markFailed).toHaveBeenCalledWith(
-      'tenant',
-      'photo',
-      'PHOTO_OBJECT_MISSING',
-      f.transaction.persistence,
-    );
-    f.photos.findById.mockResolvedValue(f.photo());
     await expect(reconcile.execute(input)).rejects.toThrow(
       'PHOTO_OBJECT_MISSING',
     );
-    expect(f.photos.markFailed).toHaveBeenCalledTimes(1);
+    expect(f.photos.markFailed).not.toHaveBeenCalled();
+    f.photos.findById.mockResolvedValue(f.photo());
+    expect(await reconcile.execute(input)).toEqual({ status: 'AVAILABLE' });
+    expect(f.storage.head).toHaveBeenCalledTimes(1);
   });
   it('evaluates the existing photo requirement without counting photos when optional', async () => {
     const f = fixture();

@@ -64,6 +64,8 @@ try {
       [
         resolve('node_modules/wrangler/bin/wrangler.js'),
         'deploy',
+        '--experimental-provision=false',
+        '--experimental-auto-create=false',
         '--env',
         '',
         '--config',
@@ -89,6 +91,17 @@ try {
       );
       failed = true;
       break;
+    }
+    try {
+      await requireRemoteSecrets(configurations, name, {
+        accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+        apiToken: process.env.CLOUDFLARE_API_TOKEN,
+        publishedSha: process.env.GITHUB_SHA,
+      });
+      report.workers.at(-1).verification = 'passed';
+    } catch {
+      report.workers.at(-1).verification = 'failed';
+      throw new Error(requiredBindingsFailure);
     }
     console.log(`Published ${name}: ${outcome.version}`);
   }

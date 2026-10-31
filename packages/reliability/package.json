@@ -123,6 +123,30 @@
       "types": "./dist/audit/audited-mutation.d.ts",
       "workerd": "./src/audit/audited-mutation.ts",
       "default": "./dist/audit/audited-mutation.js"
+    },
+    "./media/media-capacity": {
+      "beauty": "./src/media/media-capacity.ts",
+      "types": "./dist/media/media-capacity.d.ts",
+      "workerd": "./src/media/media-capacity.ts",
+      "default": "./dist/media/media-capacity.js"
+    },
+    "./media/r2-image-storage": {
+      "beauty": "./src/media/r2-image-storage.ts",
+      "types": "./dist/media/r2-image-storage.d.ts",
+      "workerd": "./src/media/r2-image-storage.ts",
+      "default": "./dist/media/r2-image-storage.js"
+    },
+    "./media/image-write-error": {
+      "beauty": "./src/media/image-write-error.ts",
+      "types": "./dist/media/image-write-error.d.ts",
+      "workerd": "./src/media/image-write-error.ts",
+      "default": "./dist/media/image-write-error.js"
+    },
+    "./media/observe-media-capacity": {
+      "beauty": "./src/media/observe-media-capacity.ts",
+      "types": "./dist/media/observe-media-capacity.d.ts",
+      "workerd": "./src/media/observe-media-capacity.ts",
+      "default": "./dist/media/observe-media-capacity.js"
     }
   },
   "scripts": {

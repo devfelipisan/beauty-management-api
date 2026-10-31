@@ -5,6 +5,8 @@ export interface StoredObject {
 export interface HeadObject {
   size: number;
   etag?: string;
+  contentType?: string;
+  metadata?: Record<string, string>;
 }
 export interface ClinicalMediaStoragePort {
   readonly available?: boolean;

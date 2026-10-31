@@ -1,5 +1,45 @@
 import { D1UnitOfWork } from './d1-unit-of-work.js';
 describe('D1UnitOfWork', () => {
+  it('stages completion of a previously persisted reservation in the same native batch', async () => {
+    const f = fixture();
+    await f.uow.execute(async (t) => {
+      t.persistence.add({
+        kind: 'D1_SQL',
+        sql: 'UPDATE resource SET value=? WHERE tenant_id=?',
+        params: ['value', 'tenant'],
+        expectedChanges: 1,
+      });
+      await t.idempotency.complete('tenant', 'UPLOAD', 'existing', {
+        id: 'photo',
+      });
+    });
+    expect(f.batch).toHaveBeenCalledTimes(1);
+    const statements = f.batch.mock.calls[0][0] as Array<{
+      sql: string;
+      params: unknown[];
+    }>;
+    expect(
+      statements.filter((statement) =>
+        statement.sql.startsWith('UPDATE idempotency_records'),
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        sql: expect.stringContaining("AND status='PROCESSING'"),
+        params: [
+          '{"id":"photo"}',
+          expect.any(String),
+          'tenant',
+          'UPLOAD',
+          'existing',
+        ],
+      }),
+    ]);
+    expect(
+      statements.some((statement) =>
+        statement.sql.startsWith('INSERT INTO idempotency_records'),
+      ),
+    ).toBe(false);
+  });
   function fixture() {
     const batch = vi.fn(async (statements: unknown[]) =>
       statements.map(() => ({ success: true })),
@@ -31,7 +71,7 @@ describe('D1UnitOfWork', () => {
       expect(await idempotency.find('other', 'UPDATE', 'key')).toBeNull();
       expect(await idempotency.find('tenant', 'OTHER', 'key')).toBeNull();
       expect(await idempotency.find('tenant', 'UPDATE', 'other')).toBeNull();
-      await idempotency.complete('other', 'UPDATE', 'key', { ignored: true });
+
       await idempotency.complete('tenant', 'UPDATE', 'key', { result: 'done' });
       expect(await idempotency.find('tenant', 'UPDATE', 'key')).toMatchObject({
         status: 'COMPLETED',
@@ -69,9 +109,7 @@ describe('D1UnitOfWork', () => {
         createdAt: 'created',
         updatedAt: 'created',
       });
-      await idempotency.fail('other', 'UPDATE', 'key');
-      await idempotency.fail('tenant', 'OTHER', 'key');
-      await idempotency.fail('tenant', 'UPDATE', 'other');
+
       expect(await idempotency.find('tenant', 'UPDATE', 'key')).toMatchObject({
         status: 'PROCESSING',
       });

@@ -25,6 +25,16 @@ type Security = {
   membership: TenantMembershipProvider;
 };
 const cache = new WeakMap<object, Security>();
+declare const __BEAUTY_LOCAL__: boolean;
+export function fixtureSecurity(env: WorkerSecurityEnv): boolean {
+  return (
+    (typeof __BEAUTY_LOCAL__ === 'undefined'
+      ? process.env.NODE_ENV === 'test'
+      : __BEAUTY_LOCAL__) &&
+    env.AUTH_PROVIDER === 'mock' &&
+    ['local', 'test'].includes(env.APP_ENV ?? '')
+  );
+}
 
 export async function requireHttpAuthority(
   request: Request,
@@ -56,10 +66,7 @@ export function workerSecurity(env: WorkerSecurityEnv): Security {
   const existing = cache.get(env);
   if (existing) return existing;
   let security: Security;
-  if (
-    env.AUTH_PROVIDER === 'mock' &&
-    ['local', 'test'].includes(env.APP_ENV ?? '')
-  ) {
+  if (fixtureSecurity(env)) {
     security = {
       identity: new MockIdentityProvider(),
       membership: new MockTenantMembershipProvider(),

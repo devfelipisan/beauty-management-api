@@ -1,3 +1,6 @@
+import { D1ProfileImageRepository } from '@beauty/operations/modules/profile-media/infrastructure/d1-profile-image-repository';
+import { profileMediaRoute } from './profile-media-routes.js';
+import { executionEnv, scopeEntrypoint } from '@beauty/database/d1/invocation';
 import { assertRpcContract } from '@beauty/contracts';
 import { observedHttpRequest } from '@beauty/cloudflare-runtime';
 import { identityRoute } from './identity-routes.js';
@@ -354,13 +357,26 @@ async function handle(request: Request, env: OperationsEnv): Promise<Response> {
         },
         404,
       );
-    return json({
-      data: Array.isArray(result)
-        ? result.map((x) => ({ id: x.id, ...x.data }))
-        : {
+    const records = Array.isArray(result)
+      ? result.map((x) => ({ id: x.id, ...x.data }))
+      : [
+          {
             id: (result as { id: string }).id,
             ...(result as { data: Record<string, unknown> }).data,
           },
+        ];
+    const images = await new D1ProfileImageRepository(
+      env.D1_DATABASE,
+    ).metadataForOwners(
+      found.tenantId,
+      records.map((x) => x.id),
+    );
+    const enriched = records.map((record) => ({
+      ...record,
+      ...(images.has(record.id) ? { profileImage: images.get(record.id) } : {}),
+    }));
+    return json({
+      data: Array.isArray(result) ? enriched : enriched[0],
       requestId,
       correlationId,
     });
@@ -373,21 +389,27 @@ export default class OperationsWorker extends WorkerEntrypoint<
   { caller?: string }
 > {
   async scheduled(): Promise<void> {
-    workerSecurity(this.env);
-    const configuration = dispatchConfiguration(this.env);
+    workerSecurity(executionEnv(this.env));
+    const configuration = dispatchConfiguration(executionEnv(this.env));
     const input = { ...configuration, workerId: crypto.randomUUID() };
     type Dispatcher = {
       dispatchOutboxBatch(value: typeof input): Promise<unknown>;
     };
     const results = await Promise.allSettled([
-      new OperationsComposition(this.env).dispatchOutboxBatch(input),
-      (this.env.BILLING_SERVICE as Dispatcher).dispatchOutboxBatch(input),
-      (this.env.CLINICAL_SERVICE as Dispatcher).dispatchOutboxBatch(input),
+      new OperationsComposition(executionEnv(this.env)).dispatchOutboxBatch(
+        input,
+      ),
+      (
+        executionEnv(this.env).BILLING_SERVICE as Dispatcher
+      ).dispatchOutboxBatch(input),
+      (
+        executionEnv(this.env).CLINICAL_SERVICE as Dispatcher
+      ).dispatchOutboxBatch(input),
     ]);
     console.log(
       JSON.stringify({
         operation: 'outbox.dispatch',
-        version: this.env.SERVICE_VERSION ?? 'local',
+        version: executionEnv(this.env).SERVICE_VERSION ?? 'local',
         results: results.map((result) =>
           result.status === 'fulfilled'
             ? { status: result.status, summary: result.value }
@@ -408,7 +430,9 @@ export default class OperationsWorker extends WorkerEntrypoint<
       .get('authorization')
       ?.match(/^Bearer\s+([^\s]+)$/i)?.[1];
     const identity = token
-      ? await workerSecurity(this.env).identity.authenticate(token)
+      ? await workerSecurity(executionEnv(this.env)).identity.authenticate(
+          token,
+        )
       : null;
     if (!identity)
       return json(
@@ -421,7 +445,7 @@ export default class OperationsWorker extends WorkerEntrypoint<
         401,
       );
     const membership = await workerSecurity(
-      this.env,
+      executionEnv(this.env),
     ).membership.findActiveMembership(identity.actorId, match[1]);
     if (!membership)
       return json(
@@ -559,51 +583,59 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['packageAssignmentRoute']>
   ) {
     return new OperationsComposition(
-      bindRpcAuthority(this.env, userRpcMetadata(args[0]).rpcAuthority),
+      bindRpcAuthority(
+        executionEnv(this.env),
+        userRpcMetadata(args[0]).rpcAuthority,
+      ),
     ).packageAssignmentRoute(...args);
   }
   async fetch(request: any): Promise<any> {
     return observedHttpRequest(
       request,
       'beauty-operations-worker',
-      this.env.SERVICE_VERSION,
-      this.env.OBSERVE_ENABLED === 'true',
+      executionEnv(this.env).SERVICE_VERSION,
+      executionEnv(this.env).OBSERVE_ENABLED === 'true',
       async (request) => {
-        const identity = await identityRoute(request, this.env);
+        const profile = await profileMediaRoute(
+          request,
+          executionEnv(this.env),
+        );
+        if (profile) return profile;
+        const identity = await identityRoute(request, executionEnv(this.env));
         if (identity) return identity;
         const docs = serveSwagger(request, operationsOpenApi);
         if (docs) return docs;
         const services = await handleServices(
           request,
-          new OperationsComposition(this.env),
+          new OperationsComposition(executionEnv(this.env)),
         );
         if (services) return services;
         const change = await this.appointmentChangeRoute(request);
         if (change) return change;
         const assignment = await this.packageAssignmentRoute(request);
-        return assignment ?? handle(request, this.env);
+        return assignment ?? handle(request, executionEnv(this.env));
       },
-      (incoming) => requireHttpAuthority(incoming, this.env),
+      (incoming) => requireHttpAuthority(incoming, executionEnv(this.env)),
     );
   }
   async applyDepositConfirmed(
     ...args: Parameters<OperationsComposition['applyDepositConfirmed']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'DepositConfirmed' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applyDepositConfirmed', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyDepositConfirmed(
       authorized.input as unknown as Parameters<
         OperationsComposition['applyDepositConfirmed']
@@ -614,20 +646,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['applyDepositExpired']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'DepositExpired' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applyDepositExpired', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyDepositExpired(
       authorized.input as unknown as Parameters<
         OperationsComposition['applyDepositExpired']
@@ -638,20 +670,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['getSessionStartContext']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['session.start'] },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('getSessionStartContext', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).getSessionStartContext(
       authorized.input as unknown as Parameters<
         OperationsComposition['getSessionStartContext']
@@ -662,20 +694,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['applySessionStarted']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'SessionStarted' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applySessionStarted', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applySessionStarted(
       authorized.input as unknown as Parameters<
         OperationsComposition['applySessionStarted']
@@ -686,20 +718,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['applySessionCompleted']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'SessionCompleted' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applySessionCompleted', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applySessionCompleted(
       authorized.input as unknown as Parameters<
         OperationsComposition['applySessionCompleted']
@@ -710,20 +742,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['applyClinicalRestriction']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'ClinicalRestrictionActivated' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applyClinicalRestriction', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyClinicalRestriction(
       authorized.input as unknown as Parameters<
         OperationsComposition['applyClinicalRestriction']
@@ -734,20 +766,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['applyReturnRecommended']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'ReturnRecommended' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applyReturnRecommended', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyReturnRecommended(
       authorized.input as unknown as Parameters<
         OperationsComposition['applyReturnRecommended']
@@ -758,20 +790,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['assignPackageToAppointment']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['appointment.package.assign'] },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('assignPackageToAppointment', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).assignPackageToAppointment(
       authorized.input as unknown as Parameters<
         OperationsComposition['assignPackageToAppointment']
@@ -782,20 +814,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['applyPackageUnitConsumed']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'PackageUnitConsumed' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applyPackageUnitConsumed', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyPackageUnitConsumed(
       authorized.input as unknown as Parameters<
         OperationsComposition['applyPackageUnitConsumed']
@@ -806,20 +838,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['applyPaymentReceived']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'PaymentReceived' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applyPaymentReceived', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyPaymentReceived(
       authorized.input as unknown as Parameters<
         OperationsComposition['applyPaymentReceived']
@@ -830,20 +862,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['applyRefundIssued']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'RefundIssued' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('applyRefundIssued', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyRefundIssued(
       authorized.input as unknown as Parameters<
         OperationsComposition['applyRefundIssued']
@@ -854,20 +886,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['rescheduleAppointment']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['appointment.reschedule'] },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('rescheduleAppointment', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).rescheduleAppointment(
       authorized.input as unknown as Parameters<
         OperationsComposition['rescheduleAppointment']
@@ -878,20 +910,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['cancelAppointment']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['appointment.cancel'] },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('cancelAppointment', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).cancelAppointment(
       authorized.input as unknown as Parameters<
         OperationsComposition['cancelAppointment']
@@ -902,20 +934,20 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['markAppointmentNoShow']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['appointment.no-show'] },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('markAppointmentNoShow', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).markAppointmentNoShow(
       authorized.input as unknown as Parameters<
         OperationsComposition['markAppointmentNoShow']
@@ -926,30 +958,32 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['dispatchOutboxBatch']>
   ) {
     const input = authorizeSystemDispatch(
-      this.env,
+      executionEnv(this.env),
       this.ctx.props?.caller,
       args[0],
     );
-    return new OperationsComposition(this.env).dispatchOutboxBatch(input);
+    return new OperationsComposition(
+      executionEnv(this.env),
+    ).dispatchOutboxBatch(input);
   }
   async resolveClinicalRestriction(
     ...args: Parameters<OperationsComposition['resolveClinicalRestriction']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'ClinicalRestrictionResolved' },
       args[0],
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('resolveClinicalRestriction', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).resolveClinicalRestriction(
       authorized.input as unknown as Parameters<
         OperationsComposition['resolveClinicalRestriction']
@@ -960,7 +994,7 @@ export default class OperationsWorker extends WorkerEntrypoint<
     ...args: Parameters<OperationsComposition['getServiceTechnicalContext']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       {
         permissions: [
           'session.start',
@@ -975,14 +1009,14 @@ export default class OperationsWorker extends WorkerEntrypoint<
       (value, professionalId) =>
         new OperationsComposition(
           bindRpcAuthority(
-            this.env,
+            executionEnv(this.env),
             (value as { rpcAuthority?: UserRpcAuthorityV1 }).rpcAuthority,
           ),
         ).resourceProfessional(value, professionalId),
     );
     assertRpcContract('getServiceTechnicalContext', authorized.input);
     return new OperationsComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).getServiceTechnicalContext(
       authorized.input as unknown as Parameters<
         OperationsComposition['getServiceTechnicalContext']
@@ -995,3 +1029,5 @@ export {
   invokeClinicalAssessment,
   invokeCommercialTerms,
 } from './composition-root.js';
+
+scopeEntrypoint(OperationsWorker);

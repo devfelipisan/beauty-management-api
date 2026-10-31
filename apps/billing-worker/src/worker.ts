@@ -1,3 +1,4 @@
+import { executionEnv, scopeEntrypoint } from '@beauty/database/d1/invocation';
 import { assertRpcContract } from '@beauty/contracts';
 import { observedHttpRequest } from '@beauty/cloudflare-runtime';
 import {
@@ -33,15 +34,15 @@ export default class BillingWorker extends WorkerEntrypoint<
     return observedHttpRequest(
       request,
       'beauty-billing-worker',
-      this.env.SERVICE_VERSION,
-      this.env.OBSERVE_ENABLED === 'true',
+      executionEnv(this.env).SERVICE_VERSION,
+      executionEnv(this.env).OBSERVE_ENABLED === 'true',
       async (request) => {
         const docs = serveSwagger(request, billingOpenApi);
         if (docs) return docs;
         const health = dispatchHealth(
           request,
           'beauty-billing-worker',
-          this.env.SERVICE_VERSION,
+          executionEnv(this.env).SERVICE_VERSION,
         );
         if (health) return health;
         const match = new URL(request.url).pathname.match(
@@ -55,7 +56,9 @@ export default class BillingWorker extends WorkerEntrypoint<
             .get('authorization')
             ?.match(/^Bearer\s+([^\s]+)$/i)?.[1];
           const identity = token
-            ? await workerSecurity(this.env).identity.authenticate(token)
+            ? await workerSecurity(
+                executionEnv(this.env),
+              ).identity.authenticate(token)
             : null;
           if (!identity)
             return json(
@@ -70,7 +73,7 @@ export default class BillingWorker extends WorkerEntrypoint<
               401,
             );
           const membership = await workerSecurity(
-            this.env,
+            executionEnv(this.env),
           ).membership.findActiveMembership(identity.actorId, match[1]);
           if (!membership)
             return json(
@@ -138,20 +141,20 @@ export default class BillingWorker extends WorkerEntrypoint<
           return mappedError(error, requestId, correlationId);
         }
       },
-      (incoming) => requireHttpAuthority(incoming, this.env),
+      (incoming) => requireHttpAuthority(incoming, executionEnv(this.env)),
     );
   }
   async calculateCommercialTerms(
     ...args: Parameters<BillingComposition['calculateCommercialTerms']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['appointment.create'] },
       args[0],
     );
     assertRpcContract('calculateCommercialTerms', authorized.input);
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).calculateCommercialTerms(
       authorized.input as unknown as Parameters<
         BillingComposition['calculateCommercialTerms']
@@ -162,13 +165,13 @@ export default class BillingWorker extends WorkerEntrypoint<
     ...args: Parameters<BillingComposition['createDepositForAppointment']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'AppointmentCreated' },
       args[0],
     );
     assertRpcContract('createDepositForAppointment', authorized.input);
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).createDepositForAppointment(
       authorized.input as unknown as Parameters<
         BillingComposition['createDepositForAppointment']
@@ -178,9 +181,13 @@ export default class BillingWorker extends WorkerEntrypoint<
   async confirmDeposit(
     ...args: Parameters<BillingComposition['confirmDeposit']>
   ) {
-    const authorized = await authorizeWorkerRpc(this.env, {}, args[0]);
+    const authorized = await authorizeWorkerRpc(
+      executionEnv(this.env),
+      {},
+      args[0],
+    );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).confirmDeposit(
       authorized.input as unknown as Parameters<
         BillingComposition['confirmDeposit']
@@ -190,9 +197,13 @@ export default class BillingWorker extends WorkerEntrypoint<
   async expireDeposit(
     ...args: Parameters<BillingComposition['expireDeposit']>
   ) {
-    const authorized = await authorizeWorkerRpc(this.env, {}, args[0]);
+    const authorized = await authorizeWorkerRpc(
+      executionEnv(this.env),
+      {},
+      args[0],
+    );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).expireDeposit(
       authorized.input as unknown as Parameters<
         BillingComposition['expireDeposit']
@@ -203,23 +214,25 @@ export default class BillingWorker extends WorkerEntrypoint<
     ...args: Parameters<BillingComposition['dispatchOutboxBatch']>
   ) {
     const input = authorizeSystemDispatch(
-      this.env,
+      executionEnv(this.env),
       this.ctx.props?.caller,
       args[0],
     );
-    return new BillingComposition(this.env).dispatchOutboxBatch(input);
+    return new BillingComposition(executionEnv(this.env)).dispatchOutboxBatch(
+      input,
+    );
   }
   async applyPackageConsumptionRequested(
     ...args: Parameters<BillingComposition['applyPackageConsumptionRequested']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'PackageConsumptionRequested' },
       args[0],
     );
     assertRpcContract('applyPackageConsumptionRequested', authorized.input);
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyPackageConsumptionRequested(
       authorized.input as unknown as Parameters<
         BillingComposition['applyPackageConsumptionRequested']
@@ -229,9 +242,13 @@ export default class BillingWorker extends WorkerEntrypoint<
   async materializeCustomerPackage(
     ...args: Parameters<BillingComposition['materializeCustomerPackage']>
   ) {
-    const authorized = await authorizeWorkerRpc(this.env, {}, args[0]);
+    const authorized = await authorizeWorkerRpc(
+      executionEnv(this.env),
+      {},
+      args[0],
+    );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).materializeCustomerPackage(
       authorized.input as unknown as Parameters<
         BillingComposition['materializeCustomerPackage']
@@ -242,13 +259,13 @@ export default class BillingWorker extends WorkerEntrypoint<
     ...args: Parameters<BillingComposition['checkPackageUsageEligibility']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['appointment.create', 'appointment.package.assign'] },
       args[0],
     );
     assertRpcContract('checkPackageUsageEligibility', authorized.input);
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).checkPackageUsageEligibility(
       authorized.input as unknown as Parameters<
         BillingComposition['checkPackageUsageEligibility']
@@ -259,13 +276,13 @@ export default class BillingWorker extends WorkerEntrypoint<
     ...args: Parameters<BillingComposition['applyFinancialSettlementRequested']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'FinancialSettlementRequested' },
       args[0],
     );
     assertRpcContract('applyFinancialSettlementRequested', authorized.input);
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyFinancialSettlementRequested(
       authorized.input as unknown as Parameters<
         BillingComposition['applyFinancialSettlementRequested']
@@ -276,13 +293,13 @@ export default class BillingWorker extends WorkerEntrypoint<
     ...args: Parameters<BillingComposition['registerPayment']>
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['payment.create'] },
       args[0],
     );
     assertRpcContract('registerPayment', authorized.input);
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).registerPayment(
       authorized.input as unknown as Parameters<
         BillingComposition['registerPayment']
@@ -290,9 +307,13 @@ export default class BillingWorker extends WorkerEntrypoint<
     );
   }
   async issueRefund(...args: Parameters<BillingComposition['issueRefund']>) {
-    const authorized = await authorizeWorkerRpc(this.env, {}, args[0]);
+    const authorized = await authorizeWorkerRpc(
+      executionEnv(this.env),
+      {},
+      args[0],
+    );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).issueRefund(
       authorized.input as unknown as Parameters<
         BillingComposition['issueRefund']
@@ -302,9 +323,13 @@ export default class BillingWorker extends WorkerEntrypoint<
   async grantInternalCredit(
     ...args: Parameters<BillingComposition['grantInternalCredit']>
   ) {
-    const authorized = await authorizeWorkerRpc(this.env, {}, args[0]);
+    const authorized = await authorizeWorkerRpc(
+      executionEnv(this.env),
+      {},
+      args[0],
+    );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).grantInternalCredit(
       authorized.input as unknown as Parameters<
         BillingComposition['grantInternalCredit']
@@ -317,7 +342,7 @@ export default class BillingWorker extends WorkerEntrypoint<
     >
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['appointment.cancel'] },
       args[0],
     );
@@ -326,7 +351,7 @@ export default class BillingWorker extends WorkerEntrypoint<
       authorized.input,
     );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).evaluateAppointmentCancellationFinancials(
       authorized.input as unknown as Parameters<
         BillingComposition['evaluateAppointmentCancellationFinancials']
@@ -339,13 +364,13 @@ export default class BillingWorker extends WorkerEntrypoint<
     >
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { permissions: ['appointment.no-show'] },
       args[0],
     );
     assertRpcContract('evaluateAppointmentNoShowFinancials', authorized.input);
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).evaluateAppointmentNoShowFinancials(
       authorized.input as unknown as Parameters<
         BillingComposition['evaluateAppointmentNoShowFinancials']
@@ -355,9 +380,13 @@ export default class BillingWorker extends WorkerEntrypoint<
   async validateFinancialDecisionSnapshot(
     ...args: Parameters<BillingComposition['validateFinancialDecisionSnapshot']>
   ) {
-    const authorized = await authorizeWorkerRpc(this.env, {}, args[0]);
+    const authorized = await authorizeWorkerRpc(
+      executionEnv(this.env),
+      {},
+      args[0],
+    );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).validateFinancialDecisionSnapshot(
       authorized.input as unknown as Parameters<
         BillingComposition['validateFinancialDecisionSnapshot']
@@ -367,9 +396,13 @@ export default class BillingWorker extends WorkerEntrypoint<
   async buildFinancialDecisionSnapshot(
     ...args: Parameters<BillingComposition['buildFinancialDecisionSnapshot']>
   ) {
-    const authorized = await authorizeWorkerRpc(this.env, {}, args[0]);
+    const authorized = await authorizeWorkerRpc(
+      executionEnv(this.env),
+      {},
+      args[0],
+    );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).buildFinancialDecisionSnapshot(
       authorized.input as unknown as Parameters<
         BillingComposition['buildFinancialDecisionSnapshot']
@@ -382,7 +415,7 @@ export default class BillingWorker extends WorkerEntrypoint<
     >
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'AppointmentCanceled' },
       args[0],
     );
@@ -391,7 +424,7 @@ export default class BillingWorker extends WorkerEntrypoint<
       authorized.input,
     );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyAppointmentCanceledFinancialEffects(
       authorized.input as unknown as Parameters<
         BillingComposition['applyAppointmentCanceledFinancialEffects']
@@ -404,7 +437,7 @@ export default class BillingWorker extends WorkerEntrypoint<
     >
   ) {
     const authorized = await authorizeWorkerRpc(
-      this.env,
+      executionEnv(this.env),
       { eventType: 'AppointmentNoShowRecorded' },
       args[0],
     );
@@ -413,7 +446,7 @@ export default class BillingWorker extends WorkerEntrypoint<
       authorized.input,
     );
     return new BillingComposition(
-      bindRpcAuthority(this.env, authorized.authority),
+      bindRpcAuthority(executionEnv(this.env), authorized.authority),
     ).applyAppointmentNoShowFinancialEffects(
       authorized.input as unknown as Parameters<
         BillingComposition['applyAppointmentNoShowFinancialEffects']
@@ -456,3 +489,5 @@ function validPaymentBody(body: unknown): body is Record<string, unknown> {
     (key) => !(key in value) || typeof value[key] === 'string',
   );
 }
+
+scopeEntrypoint(BillingWorker);

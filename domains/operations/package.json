@@ -459,6 +459,30 @@
       "types": "./dist/infrastructure/outbox/billing-appointment-change-delivery.d.ts",
       "workerd": "./src/infrastructure/outbox/billing-appointment-change-delivery.ts",
       "default": "./dist/infrastructure/outbox/billing-appointment-change-delivery.js"
+    },
+    "./modules/profile-media/application/profile-images": {
+      "beauty": "./src/modules/profile-media/application/profile-images.ts",
+      "types": "./dist/modules/profile-media/application/profile-images.d.ts",
+      "workerd": "./src/modules/profile-media/application/profile-images.ts",
+      "default": "./dist/modules/profile-media/application/profile-images.js"
+    },
+    "./modules/profile-media/infrastructure/d1-profile-image-repository": {
+      "beauty": "./src/modules/profile-media/infrastructure/d1-profile-image-repository.ts",
+      "types": "./dist/modules/profile-media/infrastructure/d1-profile-image-repository.d.ts",
+      "workerd": "./src/modules/profile-media/infrastructure/d1-profile-image-repository.ts",
+      "default": "./dist/modules/profile-media/infrastructure/d1-profile-image-repository.js"
+    },
+    "./modules/profile-media/infrastructure/r2-profile-image-storage": {
+      "beauty": "./src/modules/profile-media/infrastructure/r2-profile-image-storage.ts",
+      "types": "./dist/modules/profile-media/infrastructure/r2-profile-image-storage.d.ts",
+      "workerd": "./src/modules/profile-media/infrastructure/r2-profile-image-storage.ts",
+      "default": "./dist/modules/profile-media/infrastructure/r2-profile-image-storage.js"
+    },
+    "./modules/profile-media/domain/profile-image": {
+      "beauty": "./src/modules/profile-media/domain/profile-image.ts",
+      "types": "./dist/modules/profile-media/domain/profile-image.d.ts",
+      "workerd": "./src/modules/profile-media/domain/profile-image.ts",
+      "default": "./dist/modules/profile-media/domain/profile-image.js"
     }
   },
   "scripts": {

@@ -17,7 +17,20 @@ const remote = (): WorkerSecurityEnv => ({
   AUTH_ALGORITHM: 'ES256',
 });
 describe('Worker security composition', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+  it('does not permit Dashboard Text to enable fixture adapters in a production artifact', () => {
+    vi.stubGlobal('__BEAUTY_LOCAL__', false);
+    expect(() =>
+      workerSecurity({
+        D1_DATABASE: {} as never,
+        APP_ENV: 'local',
+        AUTH_PROVIDER: 'mock',
+      }),
+    ).toThrow('INVALID_AUTHENTICATION_CONFIGURATION');
+  });
   it.each(['local', 'test'])(
     'uses explicit fixture adapters only in %s',
     (APP_ENV) => {

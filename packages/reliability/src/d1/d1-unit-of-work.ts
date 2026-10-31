@@ -40,6 +40,19 @@ export class D1UnitOfWork implements UnitOfWork {
             r.status = 'COMPLETED';
             r.response = response;
             r.updatedAt = new Date().toISOString();
+          } else {
+            mutations.push({
+              kind: 'D1_SQL',
+              expectedChanges: 1,
+              sql: "UPDATE idempotency_records SET status='COMPLETED',response_payload=?,updated_at=? WHERE tenant_id=? AND operation=? AND idempotency_key=? AND status='PROCESSING'",
+              params: [
+                JSON.stringify(response),
+                new Date().toISOString(),
+                tenantId,
+                operation,
+                key,
+              ],
+            });
           }
         },
         fail: async (tenantId, operation, key) => {
@@ -52,6 +65,13 @@ export class D1UnitOfWork implements UnitOfWork {
           if (r) {
             r.status = 'FAILED';
             r.updatedAt = new Date().toISOString();
+          } else {
+            mutations.push({
+              kind: 'D1_SQL',
+              expectedChanges: 1,
+              sql: "UPDATE idempotency_records SET status='FAILED',updated_at=? WHERE tenant_id=? AND operation=? AND idempotency_key=? AND status='PROCESSING'",
+              params: [new Date().toISOString(), tenantId, operation, key],
+            });
           }
         },
       } as IdempotencyStore,
@@ -131,7 +151,9 @@ export class D1UnitOfWork implements UnitOfWork {
       ...outbox.map((e) =>
         this.db
           .prepare(
-            'INSERT INTO outbox_events (id, tenant_id, event_type, aggregate_type, aggregate_id, correlation_id, payload_json, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            e.availableAt
+              ? 'INSERT INTO outbox_events (id, tenant_id, event_type, aggregate_type, aggregate_id, correlation_id, payload_json, status, created_at, available_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+              : 'INSERT INTO outbox_events (id, tenant_id, event_type, aggregate_type, aggregate_id, correlation_id, payload_json, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
           )
           .bind(
             e.id,
@@ -143,6 +165,7 @@ export class D1UnitOfWork implements UnitOfWork {
             JSON.stringify(e.payload),
             e.status,
             e.createdAt,
+            ...(e.availableAt ? [e.availableAt] : []),
           ),
       ),
     ];
@@ -156,6 +179,13 @@ export class D1UnitOfWork implements UnitOfWork {
           ) {
             throw new Error('UNIT_OF_WORK_EXPECTED_CHANGES');
           }
+          const capacityCode =
+            error instanceof Error
+              ? /^D1_ERROR: (MEDIA_CAPACITY_UNAVAILABLE|MEDIA_TENANT_QUOTA_UNAVAILABLE): SQLITE_CONSTRAINT/.exec(
+                  error.message,
+                )?.[1]
+              : undefined;
+          if (capacityCode) throw new Error(capacityCode);
           throw error;
         });
       for (let index = 0; index < mutations.length; index += 1) {

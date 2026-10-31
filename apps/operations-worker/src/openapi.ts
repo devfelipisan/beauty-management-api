@@ -1,4 +1,5 @@
 import { servicePaths } from './services/openapi.js';
+import { profileMediaPaths } from './profile-media-openapi.js';
 import {
   array,
   document,
@@ -34,6 +35,7 @@ const customer = object(
 export const operationsOpenApi = document(
   'Beauty — Operations Worker',
   {
+    ...profileMediaPaths,
     '/v1/me/tenants': {
       get: operation(
         '/v1/me/tenants',
