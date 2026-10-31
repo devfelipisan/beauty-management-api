@@ -1,5 +1,5 @@
 {
-  "mode": "validate",
+  "mode": "deploy",
   "worker": "all",
-  "requestId": "initial-validation-001"
+  "requestId": "continuous-deployment-feature"
 }
