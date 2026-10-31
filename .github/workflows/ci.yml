@@ -2,8 +2,13 @@ name: CI
 
 on:
   pull_request:
+    branches:
+      - main
+      - feature/microsservices
   push:
-    branches: [main]
+     branches:
+       - main
+       - feature/microsservices
 
 permissions:
   contents: read
