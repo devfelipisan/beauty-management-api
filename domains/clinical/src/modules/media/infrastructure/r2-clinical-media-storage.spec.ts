@@ -13,6 +13,64 @@ const stream = (...chunks: number[][]) =>
   });
 
 describe('clinical media storage adapters (unit)', () => {
+  it('forwards destination cancellation to the original body reader', async () => {
+    vi.stubGlobal(
+      'FixedLengthStream',
+      class extends TransformStream {
+        constructor() {
+          super();
+        }
+      },
+    );
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array([255, 216, 255]));
+      },
+      cancel,
+    });
+    const reason = new Error('DESTINATION_CANCELED');
+    const put = vi.fn(
+      async (_key: string, readable: ReadableStream<Uint8Array>) => {
+        await readable.cancel(reason);
+        return { etag: 'unused' };
+      },
+    );
+    const storage = new R2ClinicalMediaStorage({ put } as never);
+    await expect(storage.put('key', body, 'image/jpeg', {}, 8, 8)).rejects.toBe(
+      reason,
+    );
+    expect(cancel).toHaveBeenCalledWith(reason);
+  });
+  it('streams intermediate chunks and closes on source EOF while leaving fixed-length enforcement to the runtime', async () => {
+    // Deliberately a pass-through double: this assertion covers adapter streaming,
+    // not acceptance of a size mismatch by Cloudflare FixedLengthStream.
+    vi.stubGlobal(
+      'FixedLengthStream',
+      class extends TransformStream {
+        constructor() {
+          super();
+        }
+      },
+    );
+    const bytes: number[] = [];
+    const put = vi.fn(
+      async (_key: string, readable: ReadableStream<Uint8Array>) => {
+        for await (const chunk of readable) bytes.push(...chunk);
+        return { etag: 'etag' };
+      },
+    );
+    const storage = new R2ClinicalMediaStorage({ put } as never);
+    await storage.put(
+      'key',
+      stream([255, 216, 255], [1], [2]),
+      'image/jpeg',
+      {},
+      8,
+      8,
+    );
+    expect(bytes).toEqual([255, 216, 255, 1, 2]);
+  });
   afterEach(() => vi.unstubAllGlobals());
   it('selects unavailable storage explicitly and rejects all I/O', async () => {
     const storage = clinicalMediaStorage();

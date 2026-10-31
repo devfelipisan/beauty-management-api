@@ -4,6 +4,23 @@ import { document } from './openapi.js';
 import { serveSwagger } from './swagger.js';
 
 describe('Swagger fetch adapter', () => {
+  it('uses the operation description when no explicit browser limitation reason is supplied', async () => {
+    const api = document('Test', {
+      '/resource': {
+        post: {
+          'x-browser-testable': false,
+          description: 'Browser upload unavailable',
+        },
+      },
+    });
+    const response = serveSwagger(
+      new Request('https://api.test/swagger/init.js'),
+      api,
+    )!;
+    expect(await response.text()).toContain(
+      '"reason":"Browser upload unavailable"',
+    );
+  });
   const api = document('Test Worker', {});
 
   it('serves both UI aliases with local assets and no external validator', async () => {

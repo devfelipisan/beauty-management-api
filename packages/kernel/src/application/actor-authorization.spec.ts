@@ -3,8 +3,24 @@ import {
   inheritActorAuthorization,
   assertProfessionalAuthorization,
 } from './actor-authorization.js';
+import * as publicScope from '@beauty/kernel/application/actor-authorization';
 
 describe('verified actor scope', () => {
+  it('preserves verified scope when the public package export composes a child command', () => {
+    const command = publicScope.authorizeActor(
+      { tenantId: 'tenant', actorId: 'actor' },
+      { tenantId: 'tenant', actorId: 'actor', professionalId: 'professional' },
+    );
+    const child = publicScope.inheritActorAuthorization(command, {
+      ...command,
+    });
+    expect(() =>
+      publicScope.assertProfessionalAuthorization(child, 'professional'),
+    ).not.toThrow();
+    expect(() =>
+      publicScope.assertProfessionalAuthorization(child, 'other'),
+    ).toThrow('PERMISSION_DENIED');
+  });
   const scope = {
     tenantId: 'tenant',
     actorId: 'actor',

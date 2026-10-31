@@ -1,6 +1,8 @@
 import { authorizeActor } from '@beauty/kernel/application/actor-authorization';
 import type { UploadClinicalPhotoRequest } from '@beauty/contracts';
 import { PhotoAttachment } from '../domain/photo-attachment.js';
+import { IdempotencyService } from '@beauty/reliability/idempotency/idempotency.service';
+import type { IdempotencyStore } from '@beauty/reliability/idempotency/idempotency-store';
 import {
   UploadSessionPhoto,
   ListSessionPhotos,
@@ -104,6 +106,48 @@ function fixture() {
 }
 
 describe('clinical media application orchestration', () => {
+  it('routes the complete idempotency-store contract to the transaction while reads use the source store', async () => {
+    const f = fixture();
+    let delegated: IdempotencyStore | undefined;
+    const original = IdempotencyService.prototype.reserveOrReplay;
+    const spy = vi
+      .spyOn(IdempotencyService.prototype, 'reserveOrReplay')
+      .mockImplementationOnce(function (store, ...args) {
+        delegated = store;
+        return original.call(this, store, ...args);
+      });
+    try {
+      await f.upload.execute(f.input);
+      expect(delegated).toBeDefined();
+      await delegated!.complete('tenant', 'UPLOAD_SESSION_PHOTO', 'key', {
+        id: 'response',
+      });
+      await delegated!.fail('tenant', 'UPLOAD_SESSION_PHOTO', 'key');
+      expect(f.transaction.idempotency.complete).toHaveBeenCalledWith(
+        'tenant',
+        'UPLOAD_SESSION_PHOTO',
+        'key',
+        { id: 'response' },
+      );
+      expect(f.transaction.idempotency.fail).toHaveBeenCalledWith(
+        'tenant',
+        'UPLOAD_SESSION_PHOTO',
+        'key',
+      );
+      expect(f.store.fail).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+  it('rejects absent content length when pending metadata would have zero bytes', async () => {
+    const f = fixture();
+    f.input.contentLength = undefined;
+    await expect(f.upload.execute(f.input)).rejects.toThrow(
+      'Photo metadata is invalid',
+    );
+    expect(f.photos.createPending).not.toHaveBeenCalled();
+    expect(f.storage.put).not.toHaveBeenCalled();
+  });
   it('uploads a pending photo, publishes metadata, audits and completes idempotency', async () => {
     const f = fixture();
     const result = await f.upload.execute(f.input);

@@ -9,6 +9,53 @@ import {
 } from './rpc-security.js';
 
 describe('RPC authority', () => {
+  it('rejects an unspecified fixture environment for both user and system operations', async () => {
+    const env = { AUTH_PROVIDER: 'mock', D1_DATABASE: {} as never };
+    await expect(
+      authorizeWorkerRpc(env, {}, { tenantId: 'tenant' }),
+    ).rejects.toThrow('PERMISSION_DENIED');
+    expect(() =>
+      authorizeSystemDispatch(env, 'beauty-operations-worker', {
+        workerId: 'worker',
+        batchSize: 1,
+        leaseSeconds: 1,
+      }),
+    ).toThrow('INVALID_AUTHENTICATION_CONFIGURATION');
+  });
+  it('authorizes a current non-professional membership without requiring a professional selector', async () => {
+    const { env } = environment();
+    vi.spyOn(JwtIdentityProvider.prototype, 'authenticate').mockResolvedValue({
+      actorId: 'actor',
+      subject: 'subject',
+    });
+    const { D1TenantMembershipProvider } =
+      await import('./d1-tenant-membership-provider.js');
+    vi.spyOn(
+      D1TenantMembershipProvider.prototype,
+      'findActiveMembership',
+    ).mockResolvedValue({
+      actorId: 'actor',
+      tenantId: 'tenant',
+      active: true,
+      roles: ['reception'],
+      permissions: ['session.complete'],
+    });
+    const result = await authorizeWorkerRpc(
+      env,
+      { permissions: ['session.complete'] },
+      {
+        tenantId: 'tenant',
+        rpcAuthority: { version: 1, kind: 'user', token: 'signed' },
+      },
+    );
+    expect(result.input.actorId).toBe('actor');
+    expect(() =>
+      assertProfessionalAuthorization(
+        result.input as never,
+        'any-professional',
+      ),
+    ).not.toThrow();
+  });
   afterEach(() => vi.restoreAllMocks());
 
   it.each([null, [], 'command', 1])(

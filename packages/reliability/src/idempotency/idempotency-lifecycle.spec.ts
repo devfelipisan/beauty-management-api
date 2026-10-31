@@ -2,8 +2,20 @@ import {
   IdempotencyService,
   IdempotencyInProgressError,
 } from './idempotency.service.js';
+import {
+  IdempotencyKeyConflictError as PublicConflict,
+  IdempotencyInProgressError as PublicInProgress,
+} from '@beauty/reliability/idempotency/idempotency.service';
 
 describe('idempotency reservation lifecycle', () => {
+  it('exports stable public error subclasses and codes', () => {
+    expect(new PublicConflict()).toBeInstanceOf(Error);
+    expect(new PublicConflict().message).toBe('IDEMPOTENCY_KEY_CONFLICT');
+    expect(new PublicInProgress()).toBeInstanceOf(Error);
+    expect(new PublicInProgress().message).toBe(
+      'IDEMPOTENCY_OPERATION_IN_PROGRESS',
+    );
+  });
   const input = { resourceId: 'resource', value: 1 };
   const service = new IdempotencyService();
   function store() {

@@ -1,4 +1,6 @@
 import { StartSession } from './start-session.js';
+import { IdempotencyService } from '@beauty/reliability/idempotency/idempotency.service';
+import type { IdempotencyStore } from '@beauty/reliability/idempotency/idempotency-store';
 
 function fixture() {
   const input = {
@@ -51,6 +53,39 @@ function fixture() {
   return { input, sessions, qualification, context, store, tx, uow, start };
 }
 describe('StartSession orchestration', () => {
+  it('exposes transaction-bound complete/fail operations through the injected idempotency store', async () => {
+    const f = fixture();
+    let delegated: IdempotencyStore | undefined;
+    const original = IdempotencyService.prototype.reserveOrReplay;
+    const spy = vi
+      .spyOn(IdempotencyService.prototype, 'reserveOrReplay')
+      .mockImplementationOnce(function (store, ...args) {
+        delegated = store;
+        return original.call(this, store, ...args);
+      });
+    try {
+      await f.start.execute(f.input);
+      await delegated!.complete('tenant', 'START_SESSION', 'key', {
+        id: 'response',
+      });
+      await delegated!.fail('tenant', 'START_SESSION', 'key');
+      expect(f.tx.idempotency.complete).toHaveBeenCalledWith(
+        'tenant',
+        'START_SESSION',
+        'key',
+        { id: 'response' },
+      );
+      expect(f.tx.idempotency.fail).toHaveBeenCalledWith(
+        'tenant',
+        'START_SESSION',
+        'key',
+      );
+      expect(f.store.complete).not.toHaveBeenCalled();
+      expect(f.store.fail).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
   it('persists a qualified session with audit, outbox and idempotent response in the same transaction', async () => {
     const f = fixture();
     const response = await f.start.execute(f.input);
