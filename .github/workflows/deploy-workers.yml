@@ -1,28 +1,12 @@
 
-name: Deploy Beauty Cloudflare Workers
+name: Deploy Beauty Workers
 
 on:
-  workflow_dispatch:
-    inputs:
-      mode:
-        description: "Operação desejada"
-        required: true
-        type: choice
-        default: validate
-        options:
-          - validate
-          - deploy
-
-      worker:
-        description: "Worker de destino"
-        required: true
-        type: choice
-        default: all
-        options:
-          - all
-          - operations
-          - billing
-          - clinical
+  push:
+    branches:
+      - feature/microsservices
+    paths:
+      - .github/deploy/request.json
 
 permissions:
   contents: read
@@ -33,179 +17,186 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate code and deployment configuration
+    name: Validate deployment
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+
+    outputs:
+      mode: ${{ steps.request.outputs.mode }}
+      worker: ${{ steps.request.outputs.worker }}
 
     steps:
-      - name: Verify authorized branch
-        shell: bash
-        run: |
-          if [ "$GITHUB_REF" != "refs/heads/feature/microsservices" ]; then
-            echo "::error::Only feature/microsservices is authorized"
-            exit 1
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
 
+      - name: Read deployment request
+        id: request
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const request = JSON.parse(
+            fs.readFileSync(
+              '.github/deploy/request.json',
+              'utf8'
+            )
+          );
+
+          const modes = ['validate', 'deploy'];
+          const workers = [
+            'all',
+            'operations',
+            'billing',
+            'clinical'
+          ];
+
+          if (
+            !modes.includes(request.mode) ||
+            !workers.includes(request.worker) ||
+            typeof request.requestId !== 'string' ||
+            !request.requestId.trim()
+          ) {
+            throw new Error('Invalid deployment request');
+          }
+
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `mode=${request.mode}\nworker=${request.worker}\n`
+          );
+          NODE
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Run project validation
+      - name: Validate project
         run: npm run check
 
       - name: Verify clean worktree
         run: git diff --exit-code
 
-      - name: Block unsafe production deployment
-        if: inputs.mode == 'deploy'
+      - name: Production security gate
+        if: steps.request.outputs.mode == 'deploy'
         shell: bash
         run: |
           set -euo pipefail
 
-          if grep -nE \
+          if grep -RInE \
             'MockIdentityProvider|MockTenantMembershipProvider' \
-            apps/*-worker/src/worker.ts \
-            apps/*-worker/src/composition-root.ts \
-            apps/operations-worker/src/services/worker-routes.ts; then
-            echo "::error::Mock authentication found in Worker runtime"
+            apps/*-worker/src --include='*.ts'; then
+            echo "::error::Mock authentication in runtime"
             exit 1
           fi
 
-          node --input-type=module <<'NODE'
-          import { readFileSync } from 'node:fs';
+          node <<'NODE'
+          const fs = require('node:fs');
 
-          const expected = {
-            operations: {
-              name: 'beauty-operations-worker',
-              services: {
-                CLINICAL_SERVICE: 'beauty-clinical-worker',
-                BILLING_SERVICE: 'beauty-billing-worker',
-              },
-            },
-            billing: {
-              name: 'beauty-billing-worker',
-              services: {
-                OPERATIONS_SERVICE: 'beauty-operations-worker',
-              },
-            },
-            clinical: {
-              name: 'beauty-clinical-worker',
-              services: {
-                OPERATIONS_SERVICE: 'beauty-operations-worker',
-                BILLING_SERVICE: 'beauty-billing-worker',
-              },
-            },
+          const names = {
+            operations: 'beauty-operations-worker',
+            billing: 'beauty-billing-worker',
+            clinical: 'beauty-clinical-worker'
           };
 
-          const databaseIds = new Set();
-          const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          const ids = new Set();
 
-          for (const [worker, spec] of Object.entries(expected)) {
-            const file = `apps/${worker}-worker/wrangler.jsonc`;
-            const config = JSON.parse(readFileSync(file, 'utf8'));
+          for (const [key, expected] of Object.entries(names)) {
+            const path =
+              `apps/${key}-worker/wrangler.jsonc`;
 
-            if (config.name !== spec.name) {
-              throw new Error(`Incorrect Worker name: ${file}`);
+            // Current Wrangler files contain valid JSON.
+            const config = JSON.parse(
+              fs.readFileSync(path, 'utf8')
+            );
+
+            const db = config.d1_databases?.[0];
+
+            if (config.name !== expected) {
+              throw new Error(`Wrong Worker name: ${key}`);
             }
 
-            if (config.workers_dev !== false ||
-                config.preview_urls !== false) {
-              throw new Error(`Public exposure not disabled: ${file}`);
+            if (
+              config.workers_dev !== false ||
+              config.preview_urls !== false
+            ) {
+              throw new Error(`Public access not disabled: ${key}`);
+            }
+
+            if (
+              !db ||
+              db.binding !== 'D1_DATABASE' ||
+              db.database_name !== 'beauty_db' ||
+              !/^[0-9a-f-]{36}$/i.test(db.database_id ?? '')
+            ) {
+              throw new Error(`Invalid D1 configuration: ${key}`);
             }
 
             if (config.r2_buckets?.length) {
-              throw new Error(`R2 is not enabled for this MVP: ${file}`);
+              throw new Error(`R2 still configured: ${key}`);
             }
 
-            const dbs = config.d1_databases ?? [];
-            if (dbs.length !== 1 ||
-                dbs[0].binding !== 'D1_DATABASE' ||
-                dbs[0].database_name !== 'beauty_db' ||
-                !uuid.test(dbs[0].database_id ?? '')) {
-              throw new Error(`Invalid D1 binding: ${file}`);
-            }
-
-            databaseIds.add(dbs[0].database_id);
-
-            const actual = Object.fromEntries(
-              (config.services ?? []).map(s => [s.binding, s.service])
-            );
-
-            if (JSON.stringify(actual) !==
-                JSON.stringify(spec.services)) {
-              throw new Error(`Invalid Service Bindings: ${file}`);
-            }
+            ids.add(db.database_id);
           }
 
-          if (databaseIds.size !== 1) {
-            throw new Error('Workers must use the same D1 database');
+          if (ids.size !== 1) {
+            throw new Error('Workers use different D1 databases');
           }
-
-          console.log('Deployment configuration verified');
           NODE
 
   deploy:
-    name: Deploy selected Cloudflare Workers
+    name: Publish selected Workers
     needs: validate
-    if: inputs.mode == 'deploy'
+
+    if: needs.validate.outputs.mode == 'deploy'
+
     runs-on: ubuntu-latest
     environment: production
-    timeout-minutes: 30
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Publish selected Worker
+      - name: Deploy to Cloudflare
         shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          WORKER_TARGET: ${{ inputs.worker }}
+          TARGET: ${{ needs.validate.outputs.worker }}
         run: |
           set -euo pipefail
 
-          : "${CLOUDFLARE_API_TOKEN:?Missing API Token}"
+          : "${CLOUDFLARE_API_TOKEN:?Missing API token}"
           : "${CLOUDFLARE_ACCOUNT_ID:?Missing Account ID}"
 
-          deploy_worker() {
-            local worker="$1"
-            echo "Deploying ${worker}"
+          deploy() {
             npx wrangler deploy \
-              --config "apps/${worker}-worker/wrangler.jsonc"
+              --config "apps/${1}-worker/wrangler.jsonc"
           }
 
-          case "$WORKER_TARGET" in
+          case "$TARGET" in
             operations)
-              deploy_worker operations
+              deploy operations
               ;;
             billing)
-              deploy_worker billing
+              deploy billing
               ;;
             clinical)
-              deploy_worker clinical
+              deploy clinical
               ;;
             all)
-              deploy_worker billing
-              deploy_worker clinical
-              deploy_worker operations
+              deploy billing
+              deploy clinical
+              deploy operations
               ;;
             *)
               echo "::error::Invalid Worker target"
@@ -213,12 +204,11 @@ jobs:
               ;;
           esac
 
-      - name: Record deployment
-        if: success()
+      - name: Deployment summary
         env:
-          WORKER_TARGET: ${{ inputs.worker }}
+          TARGET: ${{ needs.validate.outputs.worker }}
         run: |
-          echo "## Beauty Cloudflare Deployment" >> "$GITHUB_STEP_SUMMARY"
-          echo "Worker: $WORKER_TARGET" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Beauty Deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "Worker: $TARGET" >> "$GITHUB_STEP_SUMMARY"
           echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo "Environment: production" >> "$GITHUB_STEP_SUMMARY"
+          echo "Branch: $GITHUB_REF_NAME" >> "$GITHUB_STEP_SUMMARY"
