@@ -1,0 +1,224 @@
+
+name: Deploy Beauty Cloudflare Workers
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Operação desejada"
+        required: true
+        type: choice
+        default: validate
+        options:
+          - validate
+          - deploy
+
+      worker:
+        description: "Worker de destino"
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - operations
+          - billing
+          - clinical
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beauty-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate code and deployment configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Verify authorized branch
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/feature/microsservices" ]; then
+            echo "::error::Only feature/microsservices is authorized"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run project validation
+        run: npm run check
+
+      - name: Verify clean worktree
+        run: git diff --exit-code
+
+      - name: Block unsafe production deployment
+        if: inputs.mode == 'deploy'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if grep -nE \
+            'MockIdentityProvider|MockTenantMembershipProvider' \
+            apps/*-worker/src/worker.ts \
+            apps/*-worker/src/composition-root.ts \
+            apps/operations-worker/src/services/worker-routes.ts; then
+            echo "::error::Mock authentication found in Worker runtime"
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const expected = {
+            operations: {
+              name: 'beauty-operations-worker',
+              services: {
+                CLINICAL_SERVICE: 'beauty-clinical-worker',
+                BILLING_SERVICE: 'beauty-billing-worker',
+              },
+            },
+            billing: {
+              name: 'beauty-billing-worker',
+              services: {
+                OPERATIONS_SERVICE: 'beauty-operations-worker',
+              },
+            },
+            clinical: {
+              name: 'beauty-clinical-worker',
+              services: {
+                OPERATIONS_SERVICE: 'beauty-operations-worker',
+                BILLING_SERVICE: 'beauty-billing-worker',
+              },
+            },
+          };
+
+          const databaseIds = new Set();
+          const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+          for (const [worker, spec] of Object.entries(expected)) {
+            const file = `apps/${worker}-worker/wrangler.jsonc`;
+            const config = JSON.parse(readFileSync(file, 'utf8'));
+
+            if (config.name !== spec.name) {
+              throw new Error(`Incorrect Worker name: ${file}`);
+            }
+
+            if (config.workers_dev !== false ||
+                config.preview_urls !== false) {
+              throw new Error(`Public exposure not disabled: ${file}`);
+            }
+
+            if (config.r2_buckets?.length) {
+              throw new Error(`R2 is not enabled for this MVP: ${file}`);
+            }
+
+            const dbs = config.d1_databases ?? [];
+            if (dbs.length !== 1 ||
+                dbs[0].binding !== 'D1_DATABASE' ||
+                dbs[0].database_name !== 'beauty_db' ||
+                !uuid.test(dbs[0].database_id ?? '')) {
+              throw new Error(`Invalid D1 binding: ${file}`);
+            }
+
+            databaseIds.add(dbs[0].database_id);
+
+            const actual = Object.fromEntries(
+              (config.services ?? []).map(s => [s.binding, s.service])
+            );
+
+            if (JSON.stringify(actual) !==
+                JSON.stringify(spec.services)) {
+              throw new Error(`Invalid Service Bindings: ${file}`);
+            }
+          }
+
+          if (databaseIds.size !== 1) {
+            throw new Error('Workers must use the same D1 database');
+          }
+
+          console.log('Deployment configuration verified');
+          NODE
+
+  deploy:
+    name: Deploy selected Cloudflare Workers
+    needs: validate
+    if: inputs.mode == 'deploy'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish selected Worker
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          WORKER_TARGET: ${{ inputs.worker }}
+        run: |
+          set -euo pipefail
+
+          : "${CLOUDFLARE_API_TOKEN:?Missing API Token}"
+          : "${CLOUDFLARE_ACCOUNT_ID:?Missing Account ID}"
+
+          deploy_worker() {
+            local worker="$1"
+            echo "Deploying ${worker}"
+            npx wrangler deploy \
+              --config "apps/${worker}-worker/wrangler.jsonc"
+          }
+
+          case "$WORKER_TARGET" in
+            operations)
+              deploy_worker operations
+              ;;
+            billing)
+              deploy_worker billing
+              ;;
+            clinical)
+              deploy_worker clinical
+              ;;
+            all)
+              deploy_worker billing
+              deploy_worker clinical
+              deploy_worker operations
+              ;;
+            *)
+              echo "::error::Invalid Worker target"
+              exit 1
+              ;;
+          esac
+
+      - name: Record deployment
+        if: success()
+        env:
+          WORKER_TARGET: ${{ inputs.worker }}
+        run: |
+          echo "## Beauty Cloudflare Deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "Worker: $WORKER_TARGET" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Environment: production" >> "$GITHUB_STEP_SUMMARY"
