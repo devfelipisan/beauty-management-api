@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: beauty-production
@@ -17,198 +18,80 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate deployment
     runs-on: ubuntu-latest
-
     outputs:
       mode: ${{ steps.request.outputs.mode }}
       worker: ${{ steps.request.outputs.worker }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Read deployment request
-        id: request
-        shell: bash
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-
-          const request = JSON.parse(
-            fs.readFileSync(
-              '.github/deploy/request.json',
-              'utf8'
-            )
-          );
-
-          const modes = ['validate', 'deploy'];
-          const workers = [
-            'all',
-            'operations',
-            'billing',
-            'clinical'
-          ];
-
-          if (
-            !modes.includes(request.mode) ||
-            !workers.includes(request.worker) ||
-            typeof request.requestId !== 'string' ||
-            !request.requestId.trim()
-          ) {
-            throw new Error('Invalid deployment request');
-          }
-
-          fs.appendFileSync(
-            process.env.GITHUB_OUTPUT,
-            `mode=${request.mode}\nworker=${request.worker}\n`
-          );
-          NODE
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate project
-        run: npm run check
-
-      - name: Verify clean worktree
-        run: git diff --exit-code
-
-      - name: Production security gate
-        if: steps.request.outputs.mode == 'deploy'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if grep -RInE \
-            'MockIdentityProvider|MockTenantMembershipProvider' \
-            apps/*-worker/src --include='*.ts'; then
-            echo "::error::Mock authentication in runtime"
-            exit 1
-          fi
-
-          node <<'NODE'
-          const fs = require('node:fs');
-
-          const names = {
-            operations: 'beauty-operations-worker',
-            billing: 'beauty-billing-worker',
-            clinical: 'beauty-clinical-worker'
-          };
-
-          const ids = new Set();
-
-          for (const [key, expected] of Object.entries(names)) {
-            const path =
-              `apps/${key}-worker/wrangler.jsonc`;
-
-            // Current Wrangler files contain valid JSON.
-            const config = JSON.parse(
-              fs.readFileSync(path, 'utf8')
-            );
-
-            const db = config.d1_databases?.[0];
-
-            if (config.name !== expected) {
-              throw new Error(`Wrong Worker name: ${key}`);
-            }
-
-            if (
-              config.workers_dev !== false ||
-              config.preview_urls !== false
-            ) {
-              throw new Error(`Public access not disabled: ${key}`);
-            }
-
-            if (
-              !db ||
-              db.binding !== 'D1_DATABASE' ||
-              db.database_name !== 'beauty_db' ||
-              !/^[0-9a-f-]{36}$/i.test(db.database_id ?? '')
-            ) {
-              throw new Error(`Invalid D1 configuration: ${key}`);
-            }
-
-            if (config.r2_buckets?.length) {
-              throw new Error(`R2 still configured: ${key}`);
-            }
-
-            ids.add(db.database_id);
-          }
-
-          if (ids.size !== 1) {
-            throw new Error('Workers use different D1 databases');
-          }
-          NODE
-
-  deploy:
-    name: Publish selected Workers
-    needs: validate
-
-    if: needs.validate.outputs.mode == 'deploy'
-
-    runs-on: ubuntu-latest
-    environment: production
-
+      requestId: ${{ steps.request.outputs.requestId }}
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-
       - run: npm ci
-
-      - name: Deploy to Cloudflare
+      - name: Validate deployment request and JSONC configurations
+        id: request
+        run: |
+          node scripts/worker-deployment-config.mjs
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          import { deploymentRequest } from './scripts/worker-deployment-config.mjs';
+          const request = deploymentRequest(JSON.parse(readFileSync('.github/deploy/request.json', 'utf8')));
+          appendFileSync(process.env.GITHUB_OUTPUT, `mode=${request.mode}\nworker=${request.worker}\nrequestId=${request.requestId}\n`);
+          NODE
+      - run: npm run check
+      - run: node --test scripts/worker-deployment-config.test.mjs
+      - run: git diff --exit-code
+      - name: Verify production requires approval
+        if: steps.request.outputs.mode == 'deploy'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs
+      - name: Reject direct mock composition in Worker entrypoints
+        if: steps.request.outputs.mode == 'deploy'
         shell: bash
+        run: |
+          if grep -RInE 'MockIdentityProvider|MockTenantMembershipProvider' apps/*-worker/src --include='*.ts'; then
+            echo "::error::Direct mock composition in Worker runtime"
+            exit 1
+          fi
+
+  deploy:
+    needs: validate
+    if: needs.validate.outputs.mode == 'deploy'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Recheck environment protection
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs
+      - name: Bootstrap missing private Workers
+        if: needs.validate.outputs.worker == 'all'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          TARGET: ${{ needs.validate.outputs.worker }}
-        run: |
-          set -euo pipefail
-
-          : "${CLOUDFLARE_API_TOKEN:?Missing API token}"
-          : "${CLOUDFLARE_ACCOUNT_ID:?Missing Account ID}"
-
-          deploy() {
-            npx wrangler deploy \
-              --config "apps/${1}-worker/wrangler.jsonc"
-          }
-
-          case "$TARGET" in
-            operations)
-              deploy operations
-              ;;
-            billing)
-              deploy billing
-              ;;
-            clinical)
-              deploy clinical
-              ;;
-            all)
-              deploy billing
-              deploy clinical
-              deploy operations
-              ;;
-            *)
-              echo "::error::Invalid Worker target"
-              exit 1
-              ;;
-          esac
-
-      - name: Deployment summary
+        run: node scripts/bootstrap-workers.mjs --apply
+      - name: Publish selected Workers sequentially
         env:
-          TARGET: ${{ needs.validate.outputs.worker }}
-        run: |
-          echo "### Beauty Deployment" >> "$GITHUB_STEP_SUMMARY"
-          echo "Worker: $TARGET" >> "$GITHUB_STEP_SUMMARY"
-          echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo "Branch: $GITHUB_REF_NAME" >> "$GITHUB_STEP_SUMMARY"
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/deploy-workers.mjs
+      - name: Preserve partial deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-${{ github.sha }}-${{ github.run_attempt }}
+          path: .cache/deployment/result.json
+          if-no-files-found: ignore

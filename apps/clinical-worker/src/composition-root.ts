@@ -9,6 +9,7 @@ import type {
   RecordSessionTechnicalValuesRequest,
   RecordSessionPowerRequest,
 } from '@beauty/contracts';
+import { inheritActorAuthorization } from '@beauty/kernel/application/actor-authorization';
 import { D1AssessmentRepository } from '@beauty/clinical/modules/assessments/infrastructure/d1-assessment-repository';
 import { CheckAssessmentEligibility } from '@beauty/clinical/modules/assessments/application/check-assessment-eligibility';
 import { D1SessionRepository } from '@beauty/clinical/modules/sessions/infrastructure/d1-session-repository';
@@ -45,7 +46,7 @@ import {
 } from '@beauty/clinical/modules/intercurrences/application/use-cases';
 import { OperationsRestrictionDelivery } from '@beauty/clinical/modules/intercurrences/infrastructure/operations-restriction-delivery';
 import { D1PhotoAttachmentRepository } from '@beauty/clinical/modules/media/infrastructure/d1-photo-attachment-repository';
-import { R2ClinicalMediaStorage } from '@beauty/clinical/modules/media/infrastructure/r2-clinical-media-storage';
+import { clinicalMediaStorage } from '@beauty/clinical/modules/media/infrastructure/r2-clinical-media-storage';
 import {
   EvaluateSessionPhotoRequirement,
   GetClinicalPhoto,
@@ -62,6 +63,55 @@ import { RecommendReturn } from '@beauty/clinical/modules/sessions/application/r
 import type { ClinicalEnv } from './env.js';
 
 export class ClinicalComposition {
+  async resourceProfessional(
+    input: Record<string, unknown>,
+    professionalId: string,
+  ): Promise<string | null> {
+    if (typeof input.tenantId !== 'string') return null;
+    if (typeof input.sessionId === 'string')
+      return (
+        (
+          await new D1SessionRepository(this.env.D1_DATABASE).findById(
+            input.tenantId,
+            input.sessionId,
+          )
+        )?.data.professionalId ?? null
+      );
+    if (typeof input.appointmentId === 'string') {
+      const context = await (
+        this.env.OPERATIONS_SERVICE as SessionStartContextPort
+      ).getSessionStartContext(
+        input as unknown as GetSessionStartContextRequest,
+      );
+      return context.professionalId ?? null;
+    }
+    if (typeof input.formId === 'string') {
+      const form = await new D1TechnicalFormRepository(
+        this.env.D1_DATABASE,
+      ).findById(input.tenantId, input.formId);
+      return form
+        ? this.resourceProfessional(
+            { ...input, formId: undefined, serviceId: form.serviceId },
+            professionalId,
+          )
+        : null;
+    }
+    if (typeof input.serviceId === 'string') {
+      const service = this.env.OPERATIONS_SERVICE as {
+        getServiceTechnicalContext(
+          value: Record<string, unknown>,
+        ): Promise<unknown>;
+      };
+      return (await service.getServiceTechnicalContext({
+        ...input,
+        professionalId,
+      }))
+        ? professionalId
+        : null;
+    }
+    if (input.professionalId === professionalId) return professionalId;
+    return null;
+  }
   getEquipment(tenantId: string, id: string) {
     return new D1EquipmentRepository(this.env.D1_DATABASE).findById(
       tenantId,
@@ -272,13 +322,15 @@ export class ClinicalComposition {
       new D1SessionRepository(this.env.D1_DATABASE),
       new D1IntercurrenceRepository(this.env.D1_DATABASE),
       new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
-      new R2ClinicalMediaStorage(this.env.SESSION_MEDIA),
+      clinicalMediaStorage(this.env.SESSION_MEDIA),
       new D1UnitOfWork(this.env.D1_DATABASE),
       new D1IdempotencyStore(this.env.D1_DATABASE),
-    ).execute({
-      ...input,
-      maxBytes: input.maxBytes || Number(this.env.MAX_CLINICAL_PHOTO_BYTES),
-    });
+    ).execute(
+      inheritActorAuthorization(input, {
+        ...input,
+        maxBytes: input.maxBytes || Number(this.env.MAX_CLINICAL_PHOTO_BYTES),
+      }),
+    );
   }
   async listSessionPhotos(input: {
     tenantId: string;
@@ -299,7 +351,7 @@ export class ClinicalComposition {
     return new GetClinicalPhoto(
       new D1SessionRepository(this.env.D1_DATABASE),
       new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
-      new R2ClinicalMediaStorage(this.env.SESSION_MEDIA),
+      clinicalMediaStorage(this.env.SESSION_MEDIA),
     ).execute(input);
   }
   async reconcilePhotoAttachment(input: {
@@ -311,7 +363,7 @@ export class ClinicalComposition {
   }) {
     return new ReconcilePhotoAttachment(
       new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
-      new R2ClinicalMediaStorage(this.env.SESSION_MEDIA),
+      clinicalMediaStorage(this.env.SESSION_MEDIA),
       new D1UnitOfWork(this.env.D1_DATABASE),
     ).execute(input);
   }

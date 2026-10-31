@@ -301,9 +301,9 @@ describe('Development seed on physical D1 and Workers', () => {
       },
       'mock-flow-total',
     );
-    expect(paidReplay.status).toBe(500);
+    expect(paidReplay.status).toBe(201);
     expect(await paidReplay.json()).toMatchObject({
-      code: 'RECEIVABLE_ALREADY_PAID',
+      data: { status: 'PAID', outstandingAmountCents: 0 },
     });
     const refundInput = {
       tenantId,
@@ -337,12 +337,20 @@ describe('Development seed on physical D1 and Workers', () => {
           .first<{ count: number }>()
       )?.count,
     ).toBe(1);
-    await request(
+    const deniedUpdate = await request(
       operations,
       `/tenants/${tenantId}/services/mock-service-consulta`,
       'PATCH',
       { basePriceCents: 36000 },
     );
+    expect(deniedUpdate.status).toBe(403);
+    // Change fixture configuration directly to verify seed repeatability and frozen snapshots.
+    await db
+      .prepare(
+        'UPDATE services SET base_price_cents=? WHERE tenant_id=? AND id=?',
+      )
+      .bind(36000, tenantId, 'mock-service-consulta')
+      .run();
     await apply();
     expect(
       (

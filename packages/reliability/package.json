@@ -117,6 +117,12 @@
       "types": "./dist/unit-of-work/unit-of-work.d.ts",
       "workerd": "./src/unit-of-work/unit-of-work.ts",
       "default": "./dist/unit-of-work/unit-of-work.js"
+    },
+    "./audit/audited-mutation": {
+      "beauty": "./src/audit/audited-mutation.ts",
+      "types": "./dist/audit/audited-mutation.d.ts",
+      "workerd": "./src/audit/audited-mutation.ts",
+      "default": "./dist/audit/audited-mutation.js"
     }
   },
   "scripts": {

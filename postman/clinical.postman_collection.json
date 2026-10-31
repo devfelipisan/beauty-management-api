@@ -1083,7 +1083,7 @@
               ],
               "query": []
             },
-            "description": "Permissão existente: `equipment.create`.\n\nO handler atual lê o identificador id de um corpo JSON em GET. Navegadores não permitem esse corpo em fetch; este GET não é testável pelo Swagger UI. Não existe parâmetro query equivalente no runtime. A rota permanece documentada sem inventar outro contrato.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "description": "Permissão existente: `equipment.read`.\n\nO handler atual lê o identificador id de um corpo JSON em GET. Navegadores não permitem esse corpo em fetch; este GET não é testável pelo Swagger UI. Não existe parâmetro query equivalente no runtime. A rota permanece documentada sem inventar outro contrato.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"id\": \"\"\n}",

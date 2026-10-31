@@ -45,6 +45,12 @@
       "types": "./dist/index.d.ts",
       "workerd": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./application/actor-authorization": {
+      "beauty": "./src/application/actor-authorization.ts",
+      "types": "./dist/application/actor-authorization.d.ts",
+      "workerd": "./src/application/actor-authorization.ts",
+      "default": "./dist/application/actor-authorization.js"
     }
   },
   "scripts": {

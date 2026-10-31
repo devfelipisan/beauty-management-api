@@ -35,6 +35,8 @@ function run(command, json = false) {
       '--local',
       '--config',
       config,
+      '--env',
+      'local',
       ...(json ? ['--json'] : []),
     ],
     {

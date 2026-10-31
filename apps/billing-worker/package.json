@@ -7,7 +7,7 @@
     "typecheck": "tsc --build tsconfig.json",
     "test": "node ../../scripts/workspace-test.mjs",
     "build": "tsc --build tsconfig.json",
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --env local --local",
     "dry-run": "wrangler deploy --dry-run"
   },
   "dependencies": {

@@ -28,7 +28,7 @@ describe('Services HTTP through Operations Worker', () => {
     ).run();
   });
 
-  it('creates, reads, updates, paginates and deactivates through the existing use cases', async () => {
+  it('creates and reads, but does not grant mutation permissions implicitly', async () => {
     const create = await send(path, 'POST', {
       name: 'Consulta',
       category: 'GENERAL',
@@ -46,7 +46,7 @@ describe('Services HTTP through Operations Worker', () => {
           name: 'Consulta atualizada',
         })
       ).status,
-    ).toBe(200);
+    ).toBe(403);
     const listed = (await (await send(`${path}?limit=1`)).json()) as {
       data: { id: string }[];
     };
@@ -56,13 +56,13 @@ describe('Services HTTP through Operations Worker', () => {
     ).toMatchObject({ data: [] });
     expect(
       await (await send(`${path}/${data.id}`, 'DELETE')).json(),
-    ).toMatchObject({ data: { id: data.id, status: 'INACTIVE' } });
+    ).toMatchObject({ code: 'PERMISSION_DENIED' });
     const row = await env.D1_DATABASE.prepare(
       'SELECT status FROM services WHERE tenant_id=? AND id=?',
     )
       .bind('tenant-dev-001', data.id)
       .first();
-    expect(row).toMatchObject({ status: 'INACTIVE' });
+    expect(row).toMatchObject({ status: 'ACTIVE' });
   });
 
   it('rejects tenant spoofing, invalid input and unauthorized callers', async () => {
@@ -113,7 +113,7 @@ describe('Services HTTP through Operations Worker', () => {
             method === 'PATCH' ? { name: 'Modified' } : undefined,
           )
         ).status,
-      ).toBe(404);
+      ).toBe(method === 'GET' ? 404 : 403);
     }
     const row = await env.D1_DATABASE.prepare(
       'SELECT name,status FROM services WHERE tenant_id=? AND id=?',

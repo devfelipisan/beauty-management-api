@@ -51,6 +51,24 @@
       "types": "./dist/tenant-membership.d.ts",
       "workerd": "./src/tenant-membership.ts",
       "default": "./dist/tenant-membership.js"
+    },
+    "./adapters/d1-tenant-membership-provider": {
+      "beauty": "./src/adapters/d1-tenant-membership-provider.ts",
+      "types": "./dist/adapters/d1-tenant-membership-provider.d.ts",
+      "workerd": "./src/adapters/d1-tenant-membership-provider.ts",
+      "default": "./dist/adapters/d1-tenant-membership-provider.js"
+    },
+    "./adapters/worker-security": {
+      "beauty": "./src/adapters/worker-security.ts",
+      "types": "./dist/adapters/worker-security.d.ts",
+      "workerd": "./src/adapters/worker-security.ts",
+      "default": "./dist/adapters/worker-security.js"
+    },
+    "./adapters/rpc-security": {
+      "beauty": "./src/adapters/rpc-security.ts",
+      "types": "./dist/adapters/rpc-security.d.ts",
+      "workerd": "./src/adapters/rpc-security.ts",
+      "default": "./dist/adapters/rpc-security.js"
     }
   },
   "scripts": {
@@ -61,6 +79,9 @@
     "@beauty/authentication": "0.0.1",
     "@beauty/execution-context": "0.0.1",
     "@nestjs/common": "12.2.0",
-    "express": "5.2.1"
+    "express": "5.2.1",
+    "@beauty/database": "0.0.1",
+    "@beauty/kernel": "0.0.1",
+    "@nestjs/config": "12.0.1"
   }
 }

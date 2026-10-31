@@ -54,6 +54,133 @@
       ]
     },
     {
+      "name": "tenants",
+      "item": [
+        {
+          "name": "GET — Consultar empresas da identidade autenticada",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{myTenants_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{myTenants_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/v1/me/tenants",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "v1",
+                "me",
+                "tenants"
+              ],
+              "query": []
+            },
+            "description": "Exige identidade e membership; o handler não verifica uma permissão adicional.\n\nExige Bearer válido. Não lista empresas de outra identidade nem concede papéis.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('myTenants_x_request_id')) pm.environment.set('myTenants_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('myTenants_x_correlation_id')) pm.environment.set('myTenants_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "context",
+      "item": [
+        {
+          "name": "GET — Consultar contexto autorizado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{myContext_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{myContext_x_correlation_id}}"
+              },
+              {
+                "key": "x-tenant-id",
+                "value": "{{x-tenant-id}}",
+                "disabled": false
+              },
+              {
+                "key": "x-workspace-role",
+                "value": "{{x-workspace-role}}",
+                "disabled": true
+              },
+              {
+                "key": "x-professional-id",
+                "value": "{{x-professional-id}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/v1/me/context",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "v1",
+                "me",
+                "context"
+              ],
+              "query": []
+            },
+            "description": "Exige identidade e membership; o handler não verifica uma permissão adicional.\n\nExige Bearer e x-tenant-id. Seletores x-workspace-role e x-professional-id são confrontados com o vínculo atual.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('myContext_x_request_id')) pm.environment.set('myContext_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('myContext_x_correlation_id')) pm.environment.set('myContext_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "services",
       "item": [
         {
@@ -266,7 +393,7 @@
               ],
               "query": []
             },
-            "description": "Permissão existente: `service.read`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias. O controller existente verifica service.read também para atualização; nenhuma nova permissão foi criada.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "description": "Permissão existente: `service.update`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias. Atualização exige service.update, sem concessão automática.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -327,7 +454,7 @@
               ],
               "query": []
             },
-            "description": "Permissão existente: `service.read`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias. Desativação lógica para INACTIVE, sem exclusão física. O controller existente verifica service.read também para desativação.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+            "description": "Permissão existente: `service.deactivate`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias. Desativação lógica para INACTIVE, sem exclusão física. Desativação exige service.deactivate, sem concessão automática.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
           },
           "event": [
             {
@@ -491,7 +618,7 @@
               ],
               "query": []
             },
-            "description": "Permissão existente: `customer.read`.\n\nO transporte atual verifica customer.read também para PATCH. A documentação registra esse comportamento; não altera a autorização.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "description": "Permissão existente: `customer.update`.\n\nPATCH exige customer.update, sem concessão automática.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
             "body": {
               "mode": "raw",
               "raw": "{}",

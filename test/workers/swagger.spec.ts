@@ -2,7 +2,7 @@ import { env, exports } from 'cloudflare:workers';
 
 type HttpWorker = { fetch(request: Request): Promise<Response> };
 const workers: [string, HttpWorker, number][] = [
-  ['Operations', exports.default as HttpWorker, 17],
+  ['Operations', exports.default as HttpWorker, 19],
   [
     'Billing',
     (env as unknown as { BILLING_SERVICE: HttpWorker }).BILLING_SERVICE,

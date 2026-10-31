@@ -6,7 +6,12 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-async function auxiliaryWorker(entryPoint, name, serviceBindings = {}, r2Buckets = []) {
+async function auxiliaryWorker(
+  entryPoint,
+  name,
+  serviceBindings = {},
+  r2Buckets = [],
+) {
   const result = await build({
     entryPoints: [entryPoint],
     bundle: true,
@@ -29,6 +34,12 @@ async function auxiliaryWorker(entryPoint, name, serviceBindings = {}, r2Buckets
     d1Databases: ['D1_DATABASE'],
     r2Buckets,
     serviceBindings,
+    bindings: {
+      APP_ENV: 'test',
+      AUTH_PROVIDER: 'mock',
+      OBSERVE_ENABLED: 'false',
+      MAX_CLINICAL_PHOTO_BYTES: '10485760',
+    },
     modules: [{ type: 'ESModule', path }],
   };
 }
@@ -43,11 +54,32 @@ export default defineConfig({
         configPath: './apps/operations-worker/wrangler.jsonc',
       },
       miniflare: {
-        bindings: { TEST_MIGRATIONS: migrations, MAX_CLINICAL_PHOTO_BYTES: '10485760' },
+        bindings: {
+          APP_ENV: 'test',
+          AUTH_PROVIDER: 'mock',
+          OBSERVE_ENABLED: 'false',
+          TEST_MIGRATIONS: migrations,
+          MAX_CLINICAL_PHOTO_BYTES: '10485760',
+        },
         workers: [
-          await auxiliaryWorker('./apps/operations-worker/src/worker.ts', 'beauty-operations-runtime'),
-          await auxiliaryWorker('./apps/clinical-worker/src/worker.ts', 'beauty-clinical-worker', { OPERATIONS_SERVICE: 'beauty-operations-runtime', BILLING_SERVICE: 'beauty-billing-worker' }, ['SESSION_MEDIA']),
-          await auxiliaryWorker('./apps/billing-worker/src/worker.ts', 'beauty-billing-worker', { OPERATIONS_SERVICE: 'beauty-operations-runtime' }),
+          await auxiliaryWorker(
+            './apps/operations-worker/src/worker.ts',
+            'beauty-operations-runtime',
+          ),
+          await auxiliaryWorker(
+            './apps/clinical-worker/src/worker.ts',
+            'beauty-clinical-worker',
+            {
+              OPERATIONS_SERVICE: 'beauty-operations-runtime',
+              BILLING_SERVICE: 'beauty-billing-worker',
+            },
+            ['SESSION_MEDIA'],
+          ),
+          await auxiliaryWorker(
+            './apps/billing-worker/src/worker.ts',
+            'beauty-billing-worker',
+            { OPERATIONS_SERVICE: 'beauty-operations-runtime' },
+          ),
         ],
       },
     })),

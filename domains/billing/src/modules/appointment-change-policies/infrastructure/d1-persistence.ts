@@ -4,6 +4,13 @@ import type { AppointmentChangePoliciesPersistence } from '../ports/persistence.
 
 export class D1AppointmentChangePoliciesPersistence implements AppointmentChangePoliciesPersistence {
   constructor(private readonly db: D1DatabaseLike) {}
+  stageReconciliation(context: TransactionalWriteContext, params: unknown[]) {
+    context.add({
+      kind: 'D1_SQL',
+      sql: "INSERT INTO financial_reconciliation_issues (id,tenant_id,source_event_id,appointment_id,issue_type,reason_code,expected_fingerprint,actual_fingerprint,status,created_at) VALUES (?,?,?,?,?,?,?,?,'OPEN',?) ON CONFLICT(tenant_id,source_event_id) DO NOTHING",
+      params,
+    });
+  }
   findAppointmentDeposit<T = Record<string, unknown>>(params: unknown[]) {
     return this.db
       .prepare(

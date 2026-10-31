@@ -11,6 +11,9 @@ export interface AppointmentChangeRepository {
       previousStartsAt: string;
       previousEndsAt: string;
       previousProfessionalId: string;
+      previousStatus: string;
+      previousUpdatedAt: string;
+      serviceId: string;
       reason: string;
       changedAt: string;
       changedBy: string;

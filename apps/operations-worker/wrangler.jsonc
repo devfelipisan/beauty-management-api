@@ -3,13 +3,70 @@
   "name": "beauty-operations-worker",
   "main": "src/worker.ts",
   "compatibility_date": "2026-08-30",
-  "d1_databases": [{
-    "binding": "D1_DATABASE",
-    "database_name": "beauty-operations-local",
-    "migrations_dir": "../../database/d1/migrations"
-  }],
+  "d1_databases": [
+    {
+      "binding": "D1_DATABASE",
+      "database_name": "beauty_db",
+      "migrations_dir": "../../database/d1/migrations"
+    }
+  ],
   "services": [
-    { "binding": "CLINICAL_SERVICE", "service": "beauty-clinical-worker" },
-    { "binding": "BILLING_SERVICE", "service": "beauty-billing-worker" }
-  ]
+    {
+      "binding": "CLINICAL_SERVICE",
+      "service": "beauty-clinical-worker",
+      "props": {
+        "caller": "beauty-operations-worker"
+      }
+    },
+    {
+      "binding": "BILLING_SERVICE",
+      "service": "beauty-billing-worker",
+      "props": {
+        "caller": "beauty-operations-worker"
+      }
+    }
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "APP_ENV": "production",
+    "AUTH_PROVIDER": "jwt",
+    "OBSERVE_ENABLED": "true"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "env": {
+    "local": {
+      "name": "beauty-operations-worker",
+      "vars": {
+        "APP_ENV": "local",
+        "AUTH_PROVIDER": "mock",
+        "OBSERVE_ENABLED": "false"
+      },
+      "d1_databases": [
+        {
+          "binding": "D1_DATABASE",
+          "database_name": "beauty_db",
+          "migrations_dir": "../../database/d1/migrations"
+        }
+      ],
+      "services": [
+        {
+          "binding": "CLINICAL_SERVICE",
+          "service": "beauty-clinical-worker",
+          "props": {
+            "caller": "beauty-operations-worker"
+          }
+        },
+        {
+          "binding": "BILLING_SERVICE",
+          "service": "beauty-billing-worker",
+          "props": {
+            "caller": "beauty-operations-worker"
+          }
+        }
+      ]
+    }
+  }
 }

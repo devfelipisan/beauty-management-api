@@ -6,6 +6,7 @@
 *.tsbuildinfo
 /build/
 /node_modules/
+/.cache/
 **/node_modules/
 **/.wrangler/
 /.playwright-mcp/

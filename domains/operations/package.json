@@ -453,6 +453,12 @@
       "types": "./dist/modules/customer-history/ports/customer-history-repository.d.ts",
       "workerd": "./src/modules/customer-history/ports/customer-history-repository.ts",
       "default": "./dist/modules/customer-history/ports/customer-history-repository.js"
+    },
+    "./infrastructure/outbox/billing-appointment-change-delivery": {
+      "beauty": "./src/infrastructure/outbox/billing-appointment-change-delivery.ts",
+      "types": "./dist/infrastructure/outbox/billing-appointment-change-delivery.d.ts",
+      "workerd": "./src/infrastructure/outbox/billing-appointment-change-delivery.ts",
+      "default": "./dist/infrastructure/outbox/billing-appointment-change-delivery.js"
     }
   },
   "scripts": {

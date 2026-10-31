@@ -20,7 +20,7 @@
     "start:operations": "npm run build:operations && nest start operations-worker",
     "start:billing": "npm run build:billing && nest start billing-worker",
     "start:clinical": "npm run build:clinical && nest start clinical-worker",
-    "dev:workers": "wrangler dev -c apps/operations-worker/wrangler.jsonc -c apps/clinical-worker/wrangler.jsonc -c apps/billing-worker/wrangler.jsonc",
+    "dev:workers": "wrangler dev -c apps/operations-worker/wrangler.jsonc -c apps/clinical-worker/wrangler.jsonc -c apps/billing-worker/wrangler.jsonc --env local --local",
     "lint": "oxlint apps/ domains/ packages/",
     "test": "vitest run --config ./vitest.config.ts",
     "test:unit": "vitest run --config ./vitest.config.ts",
@@ -114,9 +114,9 @@
     "wrangler": "^4.127.1"
   },
   "overrides": {
-    "tmp":"0.2.7",
-    "undici":"7.30.1",
-    "minimatch":"11.0.3"
+    "tmp": "0.2.7",
+    "undici": "7.30.1",
+    "minimatch": "11.0.3"
   },
   "workspaces": [
     "apps/*",

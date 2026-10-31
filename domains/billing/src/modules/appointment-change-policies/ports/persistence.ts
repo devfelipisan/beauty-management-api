@@ -1,6 +1,10 @@
 import type { TransactionalWriteContext } from '@beauty/reliability/unit-of-work/transactional-write-context';
 
 export interface AppointmentChangePoliciesPersistence {
+  stageReconciliation(
+    context: TransactionalWriteContext,
+    params: unknown[],
+  ): void;
   findAppointmentDeposit<T = Record<string, unknown>>(
     params: unknown[],
   ): Promise<T | null>;

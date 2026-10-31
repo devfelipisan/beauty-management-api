@@ -6,9 +6,9 @@ on:
       - main
       - feature/microsservices
   push:
-     branches:
-       - main
-       - feature/microsservices
+    branches:
+      - main
+      - feature/microsservices
 
 permissions:
   contents: read
@@ -24,4 +24,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: node --test scripts/worker-deployment-config.test.mjs
+      - run: node scripts/worker-deployment-config.mjs
       - run: git diff --exit-code

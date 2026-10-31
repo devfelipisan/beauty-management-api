@@ -1,5 +1,5 @@
-import { MockIdentityProvider } from '@beauty/authentication/adapters/mock-identity-provider';
-import { MockTenantMembershipProvider } from '@beauty/tenancy/adapters/mock-tenant-membership-provider';
+import { workerSecurity } from '@beauty/tenancy/adapters/worker-security';
+
 import { ids, json, mappedError, notFound } from '@beauty/cloudflare-runtime';
 import type { OperationsComposition } from '../composition-root.js';
 
@@ -26,23 +26,27 @@ export async function handleServices(
       .get('authorization')
       ?.match(/^Bearer\s+([^\s]+)$/i)?.[1];
     const identity = token
-      ? await new MockIdentityProvider().authenticate(token)
+      ? await workerSecurity(composition.env).identity.authenticate(token)
       : null;
     if (!identity)
       return fail(
         token ? 'INVALID_AUTHENTICATION' : 'AUTHENTICATION_REQUIRED',
         401,
       );
-    const membership =
-      await new MockTenantMembershipProvider().findActiveMembership(
-        identity.actorId,
-        tenantId,
-      );
+    const membership = await workerSecurity(
+      composition.env,
+    ).membership.findActiveMembership(identity.actorId, tenantId);
     if (!membership) return fail('TENANT_ACCESS_DENIED', 403);
-    // Same permissions as the existing Nest controller, including PATCH/DELETE.
+    // Mutations require their own explicitly granted permission.
     if (
       !membership.permissions.includes(
-        method === 'POST' ? 'service.create' : 'service.read',
+        method === 'POST'
+          ? 'service.create'
+          : method === 'PATCH'
+            ? 'service.update'
+            : method === 'DELETE'
+              ? 'service.deactivate'
+              : 'service.read',
       )
     )
       return fail('PERMISSION_DENIED', 403);
@@ -62,7 +66,11 @@ export async function handleServices(
     } else if (method === 'GET')
       result = await services.get.execute(tenantId, serviceId!);
     else if (method === 'DELETE')
-      result = await services.deactivate.execute(tenantId, serviceId!);
+      result = await services.deactivate.execute(tenantId, serviceId!, {
+        actorId: identity.actorId,
+        requestId,
+        correlationId,
+      });
     else {
       let body: unknown;
       try {
@@ -74,13 +82,17 @@ export async function handleServices(
         return fail('VALIDATION_ERROR', 400);
       result =
         method === 'POST'
-          ? await services.create.execute({ ...body, tenantId } as Parameters<
-              typeof services.create.execute
-            >[0])
+          ? await services.create.execute(
+              { ...body, tenantId } as Parameters<
+                typeof services.create.execute
+              >[0],
+              { actorId: identity.actorId, requestId, correlationId },
+            )
           : await services.update.execute(
               tenantId,
               serviceId!,
               body as Parameters<typeof services.update.execute>[2],
+              { actorId: identity.actorId, requestId, correlationId },
             );
     }
     if (result === null) return fail('RESOURCE_NOT_FOUND', 404);
@@ -155,6 +167,14 @@ function validServiceBody(
     (!body.technicalRequirements ||
       typeof body.technicalRequirements !== 'object' ||
       Array.isArray(body.technicalRequirements))
+  )
+    return false;
+  const requirements = body.technicalRequirements as
+    Record<string, unknown> | undefined;
+  if (
+    requirements &&
+    'requiresPhotography' in requirements &&
+    typeof requirements.requiresPhotography !== 'boolean'
   )
     return false;
   return true;

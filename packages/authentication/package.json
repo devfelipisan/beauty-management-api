@@ -63,6 +63,12 @@
       "types": "./dist/ports/identity-provider.d.ts",
       "workerd": "./src/ports/identity-provider.ts",
       "default": "./dist/ports/identity-provider.js"
+    },
+    "./adapters/jwt-identity-provider": {
+      "beauty": "./src/adapters/jwt-identity-provider.ts",
+      "types": "./dist/adapters/jwt-identity-provider.d.ts",
+      "workerd": "./src/adapters/jwt-identity-provider.ts",
+      "default": "./dist/adapters/jwt-identity-provider.js"
     }
   },
   "scripts": {
@@ -74,6 +80,7 @@
     "@nestjs/common": "12.2.0",
     "@nestjs/config": "12.0.1",
     "@nestjs/core": "12.2.0",
-    "express": "5.2.1"
+    "express": "5.2.1",
+    "jose": "^6.2.13"
   }
 }

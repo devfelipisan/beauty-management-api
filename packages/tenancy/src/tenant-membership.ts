@@ -4,4 +4,5 @@ export interface TenantMembership {
   active: boolean;
   roles: string[];
   permissions: string[];
+  professionalId?: string;
 }

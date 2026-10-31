@@ -7,7 +7,7 @@ import { clinicalOpenApi } from '../../../clinical-worker/src/openapi.js';
 
 describe('HTTP OpenAPI contracts', () => {
   for (const [name, api, count] of [
-    ['operations', operationsOpenApi, 17],
+    ['operations', operationsOpenApi, 19],
     ['billing', billingOpenApi, 2],
     ['clinical', clinicalOpenApi, 20],
   ] as const) {
@@ -66,7 +66,14 @@ describe('HTTP OpenAPI contracts', () => {
     expect(
       operationsOpenApi.paths['/tenants/{tenantId}/customers/{customerId}']
         .patch['x-permission'],
-    ).toBe('customer.read');
+    ).toBe('customer.update');
+    expect(operationsOpenApi.paths).toHaveProperty('/v1/me/tenants');
+    expect(operationsOpenApi.paths).toHaveProperty('/v1/me/context');
+    expect(
+      clinicalOpenApi.paths['/tenants/{tenantId}/equipment'].get[
+        'x-permission'
+      ],
+    ).toBe('equipment.read');
     expect(
       operationsOpenApi.paths['/tenants/{tenantId}/customers'],
     ).not.toHaveProperty('post');

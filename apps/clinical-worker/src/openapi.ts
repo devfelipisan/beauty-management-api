@@ -78,7 +78,7 @@ const equipmentRead = operation(
   `${tenant}/equipment`,
   'getEquipmentLegacy',
   'Consultar equipamento — limitação do transporte atual',
-  'equipment.create',
+  'equipment.read',
   {
     description:
       'O handler atual lê o identificador id de um corpo JSON em GET. Navegadores não permitem esse corpo em fetch; este GET não é testável pelo Swagger UI. Não existe parâmetro query equivalente no runtime. A rota permanece documentada sem inventar outro contrato.',

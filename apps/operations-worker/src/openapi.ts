@@ -3,6 +3,7 @@ import {
   array,
   document,
   envelope,
+  header,
   integer,
   object,
   operation,
@@ -33,6 +34,72 @@ const customer = object(
 export const operationsOpenApi = document(
   'Beauty — Operations Worker',
   {
+    '/v1/me/tenants': {
+      get: operation(
+        '/v1/me/tenants',
+        'myTenants',
+        'Consultar empresas da identidade autenticada',
+        null,
+        {
+          response: envelope(
+            object(
+              {
+                tenants: array(
+                  object(
+                    {
+                      id: text(),
+                      displayName: text(),
+                      status: text(),
+                      roles: array(object({}, [], true)),
+                    },
+                    ['id', 'displayName', 'roles'],
+                  ),
+                ),
+              },
+              ['tenants'],
+            ),
+          ),
+          description:
+            'Exige Bearer válido. Não lista empresas de outra identidade nem concede papéis.',
+        },
+      ),
+    },
+    '/v1/me/context': {
+      get: operation(
+        '/v1/me/context',
+        'myContext',
+        'Consultar contexto autorizado',
+        null,
+        {
+          parameters: [
+            header(
+              'x-tenant-id',
+              'Empresa selecionada, confrontada com membership ativa.',
+              true,
+            ),
+            header(
+              'x-workspace-role',
+              'Papel selecionado, sem autoridade própria.',
+            ),
+            header('x-professional-id', 'Profissional associado à identidade.'),
+          ],
+          response: envelope(
+            object(
+              {
+                actorId: text(),
+                tenantId: text(),
+                roles: array(text()),
+                permissions: array(text()),
+                professionalId: text(),
+              },
+              ['actorId', 'tenantId', 'roles', 'permissions'],
+            ),
+          ),
+          description:
+            'Exige Bearer e x-tenant-id. Seletores x-workspace-role e x-professional-id são confrontados com o vínculo atual.',
+        },
+      ),
+    },
     ...servicePaths,
     [`${tenant}/customers`]: {
       get: operation(
@@ -59,7 +126,7 @@ export const operationsOpenApi = document(
         `${tenant}/customers/{customerId}`,
         'updateCustomer',
         'Atualizar dados do cliente',
-        'customer.read',
+        'customer.update',
         {
           body: object({
             fullName: text(),
@@ -68,8 +135,7 @@ export const operationsOpenApi = document(
             document: text(),
           }),
           response: envelope(ref('Customer')),
-          description:
-            'O transporte atual verifica customer.read também para PATCH. A documentação registra esse comportamento; não altera a autorização.',
+          description: 'PATCH exige customer.update, sem concessão automática.',
         },
       ),
     },

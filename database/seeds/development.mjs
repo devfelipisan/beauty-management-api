@@ -421,7 +421,10 @@ export function buildDevelopmentSeed(
       origin: 'RECEPTION',
       ...overrides,
     },
-    expected: { status, ...(code ? { code } : {}) },
+    expected: {
+      status,
+      ...(code ? { code: status === 500 ? 'INTERNAL_ERROR' : code } : {}),
+    },
   }));
   return {
     statements: [...guards, ...inserts],

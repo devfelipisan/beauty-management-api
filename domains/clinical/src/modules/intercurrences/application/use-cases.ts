@@ -1,5 +1,239 @@
-import type { IntercurrenceResponse, ReportIntercurrenceRequest, ResolveIntercurrenceRequest } from '@beauty/contracts';
-import { IdempotencyService } from '@beauty/reliability/idempotency/idempotency.service';import type { IdempotencyStore } from '@beauty/reliability/idempotency/idempotency-store';import type { UnitOfWork } from '@beauty/reliability/unit-of-work/unit-of-work';import type { SessionRepository } from '../../sessions/ports/session-repository.js';import { Intercurrence } from '../domain/intercurrence.js';import type { IntercurrenceRepository } from '../ports/intercurrence-repository.js';
-const tx=(s:IdempotencyStore,t:any):IdempotencyStore=>({find:(a,b,c)=>s.find(a,b,c),reserve:r=>t.idempotency.reserve(r),complete:(a,b,c,d)=>t.idempotency.complete(a,b,c,d),fail:(a,b,c)=>t.idempotency.fail(a,b,c)});const view=(x:Intercurrence):IntercurrenceResponse=>({id:x.id,tenantId:x.tenantId,sessionId:x.sessionId,customerId:x.customerId,serviceId:x.serviceId,professionalId:x.professionalId,typeCode:x.typeCode,severity:x.severity,description:x.description,conduct:x.conduct,equipmentUsageId:x.equipmentUsageId,powerRecordId:x.powerRecordId,requiresFollowUp:x.requiresFollowUp,requiresReassessment:x.requiresReassessment,blocksNewAppointments:x.blocksNewAppointments,status:x.status,occurredAt:x.occurredAt,reportedAt:x.reportedAt,reportedBy:x.reportedBy,resolvedAt:x.resolvedAt,resolvedBy:x.resolvedBy});
-export class ReportIntercurrence {constructor(private readonly sessions:SessionRepository,private readonly repo:IntercurrenceRepository,private readonly uow:UnitOfWork,private readonly store:IdempotencyStore,private readonly idem=new IdempotencyService()){}async execute(i:ReportIntercurrenceRequest){const s=await this.sessions.findById(i.tenantId,i.sessionId);if(!s)throw new Error('SESSION_NOT_FOUND');if(s.data.status!=='IN_PROGRESS')throw new Error('INTERCURRENCE_REPORT_NOT_ALLOWED');if(i.actorId!==s.data.professionalId&&i.actorId!=='actor-dev-admin')throw new Error('PERMISSION_DENIED');if(!i.occurredAt||Date.parse(i.occurredAt)>Date.now()||Date.parse(i.occurredAt)<Date.parse(s.data.startedAt))throw new Error('INTERCURRENCE_TIME_INVALID');const now=new Date().toISOString();const item=new Intercurrence(crypto.randomUUID(),i.tenantId,i.sessionId,s.data.customerId,s.data.serviceId,s.data.professionalId,i.typeCode,i.severity,i.description,i.conduct,i.occurredAt,now,i.actorId,i.requiresFollowUp,i.requiresReassessment,i.blocksNewAppointments,'OPEN',i.equipmentUsageId,i.powerRecordId);const restriction=i.blocksNewAppointments||i.requiresReassessment;return this.uow.execute(async t=>{const r=await this.idem.reserveOrReplay(tx(this.store,t),i.tenantId,'REPORT_INTERCURRENCE',i.idempotencyKey,{tenantId:i.tenantId,sessionId:i.sessionId,typeCode:i.typeCode,severity:i.severity,description:i.description,occurredAt:i.occurredAt});if(r.replay)return r.record.response as IntercurrenceResponse;this.repo.create(item,restriction?item.id:undefined,t.persistence);const response=view(item);await t.audit.append({id:crypto.randomUUID(),tenantId:i.tenantId,actorId:i.actorId,action:'intercurrence.reported',resourceType:'INTERCURRENCE',resourceId:item.id,requestId:i.requestId,correlationId:i.correlationId,occurredAt:now,metadata:{sessionId:i.sessionId,severity:i.severity,requiresFollowUp:i.requiresFollowUp,requiresReassessment:i.requiresReassessment}});if(restriction)await t.outbox.append({id:crypto.randomUUID(),tenantId:i.tenantId,type:'ClinicalRestrictionActivated',aggregateType:'CLINICAL_RESTRICTION',aggregateId:item.id,correlationId:i.correlationId,payload:{eventId:item.id,tenantId:i.tenantId,customerId:item.customerId,restrictionId:item.id,sourceIntercurrenceId:item.id,blocksNewAppointments:item.blocksNewAppointments,requiresReassessment:item.requiresReassessment,serviceId:item.serviceId},status:'PENDING',createdAt:now});await t.idempotency.complete(i.tenantId,'REPORT_INTERCURRENCE',i.idempotencyKey,response);return response;});}}
-export class ResolveIntercurrence {constructor(private readonly sessions:SessionRepository,private readonly repo:IntercurrenceRepository,private readonly uow:UnitOfWork,private readonly store:IdempotencyStore,private readonly idem=new IdempotencyService()){}async execute(i:ResolveIntercurrenceRequest){const x=await this.repo.findById(i.tenantId,i.intercurrenceId);if(!x||x.data.status==='RESOLVED')throw new Error('INTERCURRENCE_NOT_FOUND');const s=await this.sessions.findById(i.tenantId,i.sessionId);if(!s||s.data.professionalId!==i.actorId&&i.actorId!=='actor-dev-admin')throw new Error('PERMISSION_DENIED');if(!i.resolutionNote?.trim())throw new Error('RESOLUTION_NOTE_REQUIRED');return this.uow.execute(async t=>{const r=await this.idem.reserveOrReplay(tx(this.store,t),i.tenantId,'RESOLVE_INTERCURRENCE',i.idempotencyKey,{tenantId:i.tenantId,sessionId:i.sessionId,intercurrenceId:i.intercurrenceId,resolutionNote:i.resolutionNote});if(r.replay)return r.record.response;const now=new Date().toISOString();this.repo.resolve(i.tenantId,i.intercurrenceId,now,i.actorId,i.resolutionNote.trim(),t.persistence);const response={...view(x),status:'RESOLVED' as const,resolvedAt:now,resolvedBy:i.actorId,conduct:i.resolutionNote.trim()};if(x.data.blocksNewAppointments||x.data.requiresReassessment)await t.outbox.append({id:crypto.randomUUID(),tenantId:i.tenantId,type:'ClinicalRestrictionResolved',aggregateType:'CLINICAL_RESTRICTION',aggregateId:i.intercurrenceId,correlationId:i.correlationId,payload:{eventId:i.intercurrenceId+':resolved',tenantId:i.tenantId,customerId:x.data.customerId,restrictionId:i.intercurrenceId,sourceIntercurrenceId:i.intercurrenceId,blocksNewAppointments:x.data.blocksNewAppointments,requiresReassessment:x.data.requiresReassessment},status:'PENDING',createdAt:now});await t.audit.append({id:crypto.randomUUID(),tenantId:i.tenantId,actorId:i.actorId,action:'intercurrence.resolved',resourceType:'INTERCURRENCE',resourceId:i.intercurrenceId,requestId:i.requestId,correlationId:i.correlationId,occurredAt:now,metadata:{sessionId:i.sessionId}});await t.idempotency.complete(i.tenantId,'RESOLVE_INTERCURRENCE',i.idempotencyKey,response);return response;});}}
+import { assertProfessionalAuthorization } from '@beauty/kernel/application/actor-authorization';
+import type {
+  IntercurrenceResponse,
+  ReportIntercurrenceRequest,
+  ResolveIntercurrenceRequest,
+} from '@beauty/contracts';
+import { IdempotencyService } from '@beauty/reliability/idempotency/idempotency.service';
+import type { IdempotencyStore } from '@beauty/reliability/idempotency/idempotency-store';
+import type { UnitOfWork } from '@beauty/reliability/unit-of-work/unit-of-work';
+import type { SessionRepository } from '../../sessions/ports/session-repository.js';
+import { Intercurrence } from '../domain/intercurrence.js';
+import type { IntercurrenceRepository } from '../ports/intercurrence-repository.js';
+const tx = (s: IdempotencyStore, t: any): IdempotencyStore => ({
+  find: (a, b, c) => s.find(a, b, c),
+  reserve: (r) => t.idempotency.reserve(r),
+  complete: (a, b, c, d) => t.idempotency.complete(a, b, c, d),
+  fail: (a, b, c) => t.idempotency.fail(a, b, c),
+});
+const view = (x: Intercurrence): IntercurrenceResponse => ({
+  id: x.id,
+  tenantId: x.tenantId,
+  sessionId: x.sessionId,
+  customerId: x.customerId,
+  serviceId: x.serviceId,
+  professionalId: x.professionalId,
+  typeCode: x.typeCode,
+  severity: x.severity,
+  description: x.description,
+  conduct: x.conduct,
+  equipmentUsageId: x.equipmentUsageId,
+  powerRecordId: x.powerRecordId,
+  requiresFollowUp: x.requiresFollowUp,
+  requiresReassessment: x.requiresReassessment,
+  blocksNewAppointments: x.blocksNewAppointments,
+  status: x.status,
+  occurredAt: x.occurredAt,
+  reportedAt: x.reportedAt,
+  reportedBy: x.reportedBy,
+  resolvedAt: x.resolvedAt,
+  resolvedBy: x.resolvedBy,
+});
+export class ReportIntercurrence {
+  constructor(
+    private readonly sessions: SessionRepository,
+    private readonly repo: IntercurrenceRepository,
+    private readonly uow: UnitOfWork,
+    private readonly store: IdempotencyStore,
+    private readonly idem = new IdempotencyService(),
+  ) {}
+  async execute(i: ReportIntercurrenceRequest) {
+    const s = await this.sessions.findById(i.tenantId, i.sessionId);
+    if (!s) throw new Error('SESSION_NOT_FOUND');
+    if (s.data.status !== 'IN_PROGRESS')
+      throw new Error('INTERCURRENCE_REPORT_NOT_ALLOWED');
+    assertProfessionalAuthorization(i, s.data.professionalId);
+    if (
+      !i.occurredAt ||
+      Date.parse(i.occurredAt) > Date.now() ||
+      Date.parse(i.occurredAt) < Date.parse(s.data.startedAt)
+    )
+      throw new Error('INTERCURRENCE_TIME_INVALID');
+    const now = new Date().toISOString();
+    const item = new Intercurrence(
+      crypto.randomUUID(),
+      i.tenantId,
+      i.sessionId,
+      s.data.customerId,
+      s.data.serviceId,
+      s.data.professionalId,
+      i.typeCode,
+      i.severity,
+      i.description,
+      i.conduct,
+      i.occurredAt,
+      now,
+      i.actorId,
+      i.requiresFollowUp,
+      i.requiresReassessment,
+      i.blocksNewAppointments,
+      'OPEN',
+      i.equipmentUsageId,
+      i.powerRecordId,
+    );
+    const restriction = i.blocksNewAppointments || i.requiresReassessment;
+    return this.uow.execute(async (t) => {
+      const r = await this.idem.reserveOrReplay(
+        tx(this.store, t),
+        i.tenantId,
+        'REPORT_INTERCURRENCE',
+        i.idempotencyKey,
+        {
+          tenantId: i.tenantId,
+          sessionId: i.sessionId,
+          typeCode: i.typeCode,
+          severity: i.severity,
+          description: i.description,
+          occurredAt: i.occurredAt,
+        },
+      );
+      if (r.replay) return r.record.response as IntercurrenceResponse;
+      this.repo.create(item, restriction ? item.id : undefined, t.persistence);
+      const response = view(item);
+      await t.audit.append({
+        id: crypto.randomUUID(),
+        tenantId: i.tenantId,
+        actorId: i.actorId,
+        action: 'intercurrence.reported',
+        resourceType: 'INTERCURRENCE',
+        resourceId: item.id,
+        requestId: i.requestId,
+        correlationId: i.correlationId,
+        occurredAt: now,
+        metadata: {
+          sessionId: i.sessionId,
+          severity: i.severity,
+          requiresFollowUp: i.requiresFollowUp,
+          requiresReassessment: i.requiresReassessment,
+        },
+      });
+      if (restriction)
+        await t.outbox.append({
+          id: crypto.randomUUID(),
+          tenantId: i.tenantId,
+          type: 'ClinicalRestrictionActivated',
+          aggregateType: 'CLINICAL_RESTRICTION',
+          aggregateId: item.id,
+          correlationId: i.correlationId,
+          payload: {
+            eventId: item.id,
+            tenantId: i.tenantId,
+            customerId: item.customerId,
+            restrictionId: item.id,
+            sourceIntercurrenceId: item.id,
+            blocksNewAppointments: item.blocksNewAppointments,
+            requiresReassessment: item.requiresReassessment,
+            serviceId: item.serviceId,
+          },
+          status: 'PENDING',
+          createdAt: now,
+        });
+      await t.idempotency.complete(
+        i.tenantId,
+        'REPORT_INTERCURRENCE',
+        i.idempotencyKey,
+        response,
+      );
+      return response;
+    });
+  }
+}
+export class ResolveIntercurrence {
+  constructor(
+    private readonly sessions: SessionRepository,
+    private readonly repo: IntercurrenceRepository,
+    private readonly uow: UnitOfWork,
+    private readonly store: IdempotencyStore,
+    private readonly idem = new IdempotencyService(),
+  ) {}
+  async execute(i: ResolveIntercurrenceRequest) {
+    const x = await this.repo.findById(i.tenantId, i.intercurrenceId);
+    if (!x || x.data.status === 'RESOLVED')
+      throw new Error('INTERCURRENCE_NOT_FOUND');
+    const s = await this.sessions.findById(i.tenantId, i.sessionId);
+    if (!s || x.data.sessionId !== i.sessionId)
+      throw new Error('PERMISSION_DENIED');
+    assertProfessionalAuthorization(i, s.data.professionalId);
+    if (!i.resolutionNote?.trim()) throw new Error('RESOLUTION_NOTE_REQUIRED');
+    return this.uow.execute(async (t) => {
+      const r = await this.idem.reserveOrReplay(
+        tx(this.store, t),
+        i.tenantId,
+        'RESOLVE_INTERCURRENCE',
+        i.idempotencyKey,
+        {
+          tenantId: i.tenantId,
+          sessionId: i.sessionId,
+          intercurrenceId: i.intercurrenceId,
+          resolutionNote: i.resolutionNote,
+        },
+      );
+      if (r.replay) return r.record.response;
+      const now = new Date().toISOString();
+      this.repo.resolve(
+        i.tenantId,
+        i.intercurrenceId,
+        now,
+        i.actorId,
+        i.resolutionNote.trim(),
+        t.persistence,
+      );
+      const response = {
+        ...view(x),
+        status: 'RESOLVED' as const,
+        resolvedAt: now,
+        resolvedBy: i.actorId,
+        conduct: i.resolutionNote.trim(),
+      };
+      if (x.data.blocksNewAppointments || x.data.requiresReassessment)
+        await t.outbox.append({
+          id: crypto.randomUUID(),
+          tenantId: i.tenantId,
+          type: 'ClinicalRestrictionResolved',
+          aggregateType: 'CLINICAL_RESTRICTION',
+          aggregateId: i.intercurrenceId,
+          correlationId: i.correlationId,
+          payload: {
+            eventId: i.intercurrenceId + ':resolved',
+            tenantId: i.tenantId,
+            customerId: x.data.customerId,
+            restrictionId: i.intercurrenceId,
+            sourceIntercurrenceId: i.intercurrenceId,
+            blocksNewAppointments: x.data.blocksNewAppointments,
+            requiresReassessment: x.data.requiresReassessment,
+          },
+          status: 'PENDING',
+          createdAt: now,
+        });
+      await t.audit.append({
+        id: crypto.randomUUID(),
+        tenantId: i.tenantId,
+        actorId: i.actorId,
+        action: 'intercurrence.resolved',
+        resourceType: 'INTERCURRENCE',
+        resourceId: i.intercurrenceId,
+        requestId: i.requestId,
+        correlationId: i.correlationId,
+        occurredAt: now,
+        metadata: { sessionId: i.sessionId },
+      });
+      await t.idempotency.complete(
+        i.tenantId,
+        'RESOLVE_INTERCURRENCE',
+        i.idempotencyKey,
+        response,
+      );
+      return response;
+    });
+  }
+}

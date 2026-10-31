@@ -12,8 +12,8 @@ import {
   ListCustomersUseCase,
   UpdateCustomerUseCase,
 } from '@beauty/operations/modules/customers/application/use-cases';
-import { MockIdentityProvider } from '@beauty/authentication/adapters/mock-identity-provider';
-import { MockTenantMembershipProvider } from '@beauty/tenancy/adapters/mock-tenant-membership-provider';
+import { workerSecurity } from '@beauty/tenancy/adapters/worker-security';
+
 import { ids, json, mappedError } from '@beauty/cloudflare-runtime';
 import type {
   AssessmentEligibilityRequest,
@@ -74,6 +74,7 @@ import { D1AppointmentCancellationRepository } from '@beauty/operations/modules/
 import { D1OutboxDeliveryRepository } from '@beauty/reliability/d1/d1-outbox-delivery-repository';
 import { DispatchOutboxBatch } from '@beauty/reliability/outbox/dispatch-outbox-batch';
 import { BillingFinancialSettlementDelivery } from '@beauty/operations/infrastructure/outbox/billing-financial-settlement-delivery';
+import { BillingAppointmentChangeDelivery } from '@beauty/operations/infrastructure/outbox/billing-appointment-change-delivery';
 import { AssignPackageToAppointment } from '@beauty/operations/modules/appointments/application/assign-package-to-appointment';
 import { D1PackageAssignmentRepository } from '@beauty/operations/modules/appointments/infrastructure/d1-package-assignment-repository';
 import type { OperationsEnv } from './env.js';
@@ -131,6 +132,8 @@ export async function invokeCreateAppointment(
     { calculate: (terms) => invokeCommercialTerms(env, terms) },
     new D1UnitOfWork(env.D1_DATABASE),
     new D1IdempotencyStore(env.D1_DATABASE),
+    undefined,
+    false, // Photography is suspended in the approved no-R2 release.
   ).execute(input);
 }
 function appointmentLifecycle(env: OperationsEnv) {
@@ -194,21 +197,59 @@ export function getRuntime(env: OperationsEnv): Runtime {
     runtime = {
       get: new GetCustomerUseCase(repository),
       list: new ListCustomersUseCase(repository),
-      update: new UpdateCustomerUseCase(repository),
+      update: new UpdateCustomerUseCase(
+        repository,
+        new D1UnitOfWork(env.D1_DATABASE),
+      ),
     };
   }
   return runtime;
 }
 
 export class OperationsComposition {
+  async resourceProfessional(
+    input: Record<string, unknown>,
+    professionalId: string,
+  ): Promise<string | null> {
+    if (typeof input.tenantId !== 'string') return null;
+    if (typeof input.appointmentId === 'string')
+      return (
+        (
+          await new D1AppointmentRepository(this.env.D1_DATABASE).findById(
+            input.tenantId,
+            input.appointmentId,
+          )
+        )?.data.professionalId ?? null
+      );
+    if (typeof input.serviceId === 'string')
+      return (await new D1ProfessionalServiceEligibility(
+        this.env.D1_DATABASE,
+      ).isEnabled(input.tenantId, professionalId, input.serviceId))
+        ? professionalId
+        : null;
+    return typeof input.professionalId === 'string'
+      ? input.professionalId
+      : null;
+  }
   services() {
     const repository = new D1ServiceRepository(this.env.D1_DATABASE);
     return {
-      create: new CreateServiceUseCase(repository),
+      create: new CreateServiceUseCase(
+        repository,
+        false,
+        new D1UnitOfWork(this.env.D1_DATABASE),
+      ),
       get: new GetServiceUseCase(repository),
       list: new ListServicesUseCase(repository),
-      update: new UpdateServiceUseCase(repository),
-      deactivate: new DeactivateServiceUseCase(repository),
+      update: new UpdateServiceUseCase(
+        repository,
+        false,
+        new D1UnitOfWork(this.env.D1_DATABASE),
+      ),
+      deactivate: new DeactivateServiceUseCase(
+        repository,
+        new D1UnitOfWork(this.env.D1_DATABASE),
+      ),
     };
   }
 
@@ -226,7 +267,7 @@ export class OperationsComposition {
       .get('authorization')
       ?.match(/^Bearer\s+([^\s]+)$/i)?.[1];
     const identity = token
-      ? await new MockIdentityProvider().authenticate(token)
+      ? await workerSecurity(this.env).identity.authenticate(token)
       : null;
     if (!identity)
       return json(
@@ -238,11 +279,9 @@ export class OperationsComposition {
         },
         401,
       );
-    const membership =
-      await new MockTenantMembershipProvider().findActiveMembership(
-        identity.actorId,
-        m[1],
-      );
+    const membership = await workerSecurity(
+      this.env,
+    ).membership.findActiveMembership(identity.actorId, m[1]);
     if (!membership)
       return json(
         {
@@ -266,6 +305,22 @@ export class OperationsComposition {
         },
         403,
       );
+    if (
+      membership.professionalId &&
+      (await this.resourceProfessional(
+        { tenantId: m[1], appointmentId: m[2] },
+        membership.professionalId,
+      )) !== membership.professionalId
+    )
+      return json(
+        {
+          status: 'error',
+          code: 'PERMISSION_DENIED',
+          requestId,
+          correlationId,
+        },
+        403,
+      );
     const key = request.headers.get('Idempotency-Key');
     if (!key?.trim())
       return json(
@@ -279,7 +334,14 @@ export class OperationsComposition {
       );
     try {
       const body = (await request.json()) as { customerPackageId?: string };
-      if (!body.customerPackageId)
+      if (
+        !body ||
+        typeof body !== 'object' ||
+        Array.isArray(body) ||
+        Object.keys(body).some((key) => key !== 'customerPackageId') ||
+        typeof body.customerPackageId !== 'string' ||
+        !body.customerPackageId.trim()
+      )
         return json(
           {
             status: 'error',
@@ -441,11 +503,18 @@ export class OperationsComposition {
     return new DispatchOutboxBatch(
       new D1OutboxDeliveryRepository(this.env.D1_DATABASE, [
         'FinancialSettlementRequested',
+        'AppointmentCanceled',
+        'AppointmentNoShowRecorded',
       ]),
       {
         deliver: (e) =>
-          new BillingFinancialSettlementDelivery(
-            this.env.BILLING_SERVICE as never,
+          (e.type === 'FinancialSettlementRequested'
+            ? new BillingFinancialSettlementDelivery(
+                this.env.BILLING_SERVICE as never,
+              )
+            : new BillingAppointmentChangeDelivery(
+                this.env.BILLING_SERVICE as never,
+              )
           ).deliver(e),
       },
     ).execute(input);

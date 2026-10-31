@@ -1,3 +1,107 @@
-import type { RegisterPaymentRequest,RegisterPaymentResponse } from '@beauty/contracts';import type { ReceivableRepository } from '../../receivables/ports/receivable-repository.js';import type { UnitOfWork } from '@beauty/reliability/unit-of-work/unit-of-work';import type { IdempotencyStore } from '@beauty/reliability/idempotency/idempotency-store';import { IdempotencyService } from '@beauty/reliability/idempotency/idempotency.service';
-const tx=(s:IdempotencyStore,t:any):IdempotencyStore=>({find:(a,b,c)=>s.find(a,b,c),reserve:r=>t.idempotency.reserve(r),complete:(a,b,c,d)=>t.idempotency.complete(a,b,c,d),fail:(a,b,c)=>t.idempotency.fail(a,b,c)});
-export class RegisterPayment {constructor(private readonly repo:ReceivableRepository,private readonly uow:UnitOfWork,private readonly store:IdempotencyStore,private readonly idem=new IdempotencyService()){}async execute(i:RegisterPaymentRequest):Promise<RegisterPaymentResponse>{if(i.method==='INTERNAL_CREDIT')throw new Error('PAYMENT_METHOD_NOT_AVAILABLE');if(!Number.isInteger(i.amountCents)||i.amountCents<=0)throw new Error('INVALID_PAYMENT_AMOUNT');const r=await this.repo.findById(i.tenantId,i.receivableId);if(!r)throw new Error('RECEIVABLE_NOT_FOUND');if(i.customerId&&r.customer_id!==i.customerId)throw new Error('CUSTOMER_MISMATCH');if(r.outstanding_amount_cents===0)throw new Error('RECEIVABLE_ALREADY_PAID');if(i.amountCents>r.outstanding_amount_cents)throw new Error('PAYMENT_EXCEEDS_OUTSTANDING');const at=new Date().toISOString();return this.uow.execute(async t=>{const k=await this.idem.reserveOrReplay(tx(this.store,t),i.tenantId,'REGISTER_PAYMENT',i.idempotencyKey,i);if(k.replay)return k.record.response as RegisterPaymentResponse;const paymentId=crypto.randomUUID();await this.repo.applyPayment({...i,paymentId,receivedAt:at,receivedBy:i.actorId},t.persistence);const paid=r.paid_amount_cents+i.amountCents;const out={paymentId,receivableId:i.receivableId,amountCents:i.amountCents,paidAmountCents:paid,outstandingAmountCents:r.outstanding_amount_cents-i.amountCents,status:paid===r.net_amount_cents?'PAID':'PARTIALLY_PAID'} as RegisterPaymentResponse;await t.audit.append({id:crypto.randomUUID(),tenantId:i.tenantId,actorId:i.actorId,action:'payment.received',resourceType:'PAYMENT',resourceId:paymentId,requestId:i.requestId,correlationId:i.correlationId,occurredAt:at,metadata:{receivableId:i.receivableId,amountCents:i.amountCents,method:i.method}});await t.outbox.append({id:crypto.randomUUID(),tenantId:i.tenantId,type:'PaymentReceived',aggregateType:'RECEIVABLE',aggregateId:i.receivableId,correlationId:i.correlationId,payload:{eventId:paymentId,tenantId:i.tenantId,customerId:r.customer_id,receivableId:i.receivableId,paymentId,amountCents:i.amountCents,method:i.method,receivedAt:at,sourceType:r.source_type,sourceId:r.source_id,correlationId:i.correlationId},status:'PENDING',createdAt:at});await t.idempotency.complete(i.tenantId,'REGISTER_PAYMENT',i.idempotencyKey,out);return out;});}}
+import type {
+  RegisterPaymentRequest,
+  RegisterPaymentResponse,
+} from '@beauty/contracts';
+import type { ReceivableRepository } from '../../receivables/ports/receivable-repository.js';
+import type { UnitOfWork } from '@beauty/reliability/unit-of-work/unit-of-work';
+import type { IdempotencyStore } from '@beauty/reliability/idempotency/idempotency-store';
+import { IdempotencyService } from '@beauty/reliability/idempotency/idempotency.service';
+const tx = (s: IdempotencyStore, t: any): IdempotencyStore => ({
+  find: (a, b, c) => s.find(a, b, c),
+  reserve: (r) => t.idempotency.reserve(r),
+  complete: (a, b, c, d) => t.idempotency.complete(a, b, c, d),
+  fail: (a, b, c) => t.idempotency.fail(a, b, c),
+});
+export class RegisterPayment {
+  constructor(
+    private readonly repo: ReceivableRepository,
+    private readonly uow: UnitOfWork,
+    private readonly store: IdempotencyStore,
+    private readonly idem = new IdempotencyService(),
+  ) {}
+  async execute(i: RegisterPaymentRequest): Promise<RegisterPaymentResponse> {
+    if (i.method === 'INTERNAL_CREDIT')
+      throw new Error('PAYMENT_METHOD_NOT_AVAILABLE');
+    if (!Number.isInteger(i.amountCents) || i.amountCents <= 0)
+      throw new Error('INVALID_PAYMENT_AMOUNT');
+    const at = new Date().toISOString();
+    return this.uow.execute(async (t) => {
+      const k = await this.idem.reserveOrReplay(
+        tx(this.store, t),
+        i.tenantId,
+        'REGISTER_PAYMENT',
+        i.idempotencyKey,
+        i,
+      );
+      if (k.replay) return k.record.response as RegisterPaymentResponse;
+      const r = await this.repo.findById(i.tenantId, i.receivableId);
+      if (!r) throw new Error('RECEIVABLE_NOT_FOUND');
+      if (i.customerId && r.customer_id !== i.customerId)
+        throw new Error('CUSTOMER_MISMATCH');
+      if (r.outstanding_amount_cents === 0)
+        throw new Error('RECEIVABLE_ALREADY_PAID');
+      if (i.amountCents > r.outstanding_amount_cents)
+        throw new Error('PAYMENT_EXCEEDS_OUTSTANDING');
+      const paymentId = crypto.randomUUID();
+      await this.repo.applyPayment(
+        { ...i, paymentId, receivedAt: at, receivedBy: i.actorId },
+        t.persistence,
+      );
+      const paid = r.paid_amount_cents + i.amountCents;
+      const out = {
+        paymentId,
+        receivableId: i.receivableId,
+        amountCents: i.amountCents,
+        paidAmountCents: paid,
+        outstandingAmountCents: r.outstanding_amount_cents - i.amountCents,
+        status: paid === r.net_amount_cents ? 'PAID' : 'PARTIALLY_PAID',
+      } as RegisterPaymentResponse;
+      await t.audit.append({
+        id: crypto.randomUUID(),
+        tenantId: i.tenantId,
+        actorId: i.actorId,
+        action: 'payment.received',
+        resourceType: 'PAYMENT',
+        resourceId: paymentId,
+        requestId: i.requestId,
+        correlationId: i.correlationId,
+        occurredAt: at,
+        metadata: {
+          receivableId: i.receivableId,
+          amountCents: i.amountCents,
+          method: i.method,
+        },
+      });
+      await t.outbox.append({
+        id: crypto.randomUUID(),
+        tenantId: i.tenantId,
+        type: 'PaymentReceived',
+        aggregateType: 'RECEIVABLE',
+        aggregateId: i.receivableId,
+        correlationId: i.correlationId,
+        payload: {
+          eventId: paymentId,
+          tenantId: i.tenantId,
+          customerId: r.customer_id,
+          receivableId: i.receivableId,
+          paymentId,
+          amountCents: i.amountCents,
+          method: i.method,
+          receivedAt: at,
+          sourceType: r.source_type,
+          sourceId: r.source_id,
+          correlationId: i.correlationId,
+        },
+        status: 'PENDING',
+        createdAt: at,
+      });
+      await t.idempotency.complete(
+        i.tenantId,
+        'REGISTER_PAYMENT',
+        i.idempotencyKey,
+        out,
+      );
+      return out;
+    });
+  }
+}
