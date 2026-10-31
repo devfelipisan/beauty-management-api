@@ -8,6 +8,13 @@ dependências declaradas, ciclos e ausência de SQL/framework nas camadas intern
 O CI usa `npm run check`, incluindo a suíte Cloudflare completa para mudanças
 em aplicações, domínios ou pacotes compartilhados.
 
+O harness Cloudflare usa `env.local`, desabilita bindings remotos e atribui
+explicitamente o mesmo ID Miniflare ao D1 do Worker principal e dos auxiliares.
+Compartilhamento ocorre pelo ID do banco, não pelo nome `D1_DATABASE`; o UUID de
+produção não participa dos testes. O setup aplica migrations nesse único banco
+local antes das jornadas HTTP/RPC. O ambiente local declara `secrets.required: []`;
+produção continua exigindo os quatro bindings JWT, sem valores no repositório.
+
 `npm run test:e2e` compila os workspaces e verifica health nos quatro runtimes
 Node. O harness usa JavaScript compilado para preservar metadados de DI Nest;
 unitários e Cloudflare continuam resolvendo os fontes dos workspaces.

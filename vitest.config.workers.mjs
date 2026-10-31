@@ -6,6 +6,10 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+// Miniflare shares D1 by database ID, not by binding name. Keep this explicit
+// and independent of the production UUID so migrations and RPC use one test DB.
+const testD1Databases = { D1_DATABASE: 'beauty-workers-test-db' };
+
 async function auxiliaryWorker(
   entryPoint,
   name,
@@ -31,7 +35,7 @@ async function auxiliaryWorker(
     name,
     modulesRoot: directory,
     compatibilityDate: '2026-08-30',
-    d1Databases: ['D1_DATABASE'],
+    d1Databases: { ...testD1Databases },
     r2Buckets,
     serviceBindings,
     bindings: {
@@ -50,10 +54,13 @@ export default defineConfig({
   resolve: { conditions: ['beauty'] },
   plugins: [
     cloudflareTest(async () => ({
+      remoteBindings: false,
       wrangler: {
         configPath: './apps/operations-worker/wrangler.jsonc',
+        environment: 'local',
       },
       miniflare: {
+        d1Databases: { ...testD1Databases },
         bindings: {
           APP_ENV: 'test',
           AUTH_PROVIDER: 'mock',

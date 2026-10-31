@@ -48,6 +48,7 @@
   "env": {
     "local": {
       "name": "beauty-operations-worker",
+      "secrets": { "required": [] },
       "vars": {
         "APP_ENV": "local",
         "AUTH_PROVIDER": "mock",
