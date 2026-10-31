@@ -3,7 +3,8 @@
 Segurança e implantação dos Workers: [relatório atual](docs/worker-hardening-implementation.md),
 [decisões aprovadas](docs/adr/0015-worker-authority-and-release-safety.md) e
 [runbook de liberação](docs/worker-release-runbook.md). A configuração remota ainda
-exige UUID real do D1 e parâmetros públicos de JWT; a entrega não efetuou deploy.
+usa o UUID confirmado do D1 e exige os quatro bindings JWT cadastrados manualmente
+como secrets na Cloudflare; a entrega não efetuou deploy.
 
 Backend multiempresa para agenda, confirmação, sinal, clientes, histórico técnico, sessões, pagamentos e retornos.
 

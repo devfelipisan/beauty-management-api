@@ -8,6 +8,12 @@ export const workerConfigurations = Object.freeze({
   billing: 'apps/billing-worker/wrangler.jsonc',
   clinical: 'apps/clinical-worker/wrangler.jsonc',
 });
+export const requiredJwtSecretNames = Object.freeze([
+  'AUTH_ISSUER',
+  'AUTH_AUDIENCE',
+  'AUTH_JWKS_URL',
+  'AUTH_ALGORITHM',
+]);
 export function selectedWorkers(target) {
   if (target === 'all') return ['billing', 'clinical', 'operations'];
   if (!Object.hasOwn(workerConfigurations, target))
@@ -96,22 +102,48 @@ export function validateWorkerConfigurations(
     )
       throw new Error(`Missing trusted caller properties: ${name}`);
     if (production) {
+      // Authentication values belong only to remote secret bindings, including
+      // named environments. Never accept values in a checked-in vars map.
+      if (
+        [config, ...Object.values(config.env ?? {})].some((environment) =>
+          requiredJwtSecretNames.some((name) =>
+            Object.hasOwn(environment.vars ?? {}, name),
+          ),
+        )
+      ) {
+        throw new Error(
+          `JWT values must be remote secret bindings: ${workerConfigurations[name]}`,
+        );
+      }
       if (
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
           db.database_id ?? '',
         ) ||
         /^0{8}-/.test(db.database_id)
       )
-        throw new Error(`Real D1 UUID required: ${name}`);
+        throw new Error(
+          `Real D1 UUID required: ${name}. Set d1_databases[0].database_id in ${workerConfigurations[name]} to the existing beauty_db UUID; all three Workers must use the same UUID. database_name alone is insufficient.`,
+        );
       if (
         config.vars?.APP_ENV !== 'production' ||
-        config.vars?.AUTH_PROVIDER !== 'jwt' ||
-        !config.vars.AUTH_ISSUER ||
-        !config.vars.AUTH_AUDIENCE ||
-        !config.vars.AUTH_JWKS_URL ||
-        !['ES256', 'RS256'].includes(config.vars.AUTH_ALGORITHM)
+        config.vars?.AUTH_PROVIDER !== 'jwt'
       )
-        throw new Error(`Production JWT configuration required: ${name}`);
+        throw new Error(
+          `Production JWT configuration required: ${name}. Check APP_ENV=production and AUTH_PROVIDER=jwt in ${workerConfigurations[name]}.`,
+        );
+      const required = config.secrets?.required;
+      if (
+        !Array.isArray(required) ||
+        required.some(
+          (secret) => typeof secret !== 'string' || !secret.trim(),
+        ) ||
+        new Set(required).size !== required.length ||
+        requiredJwtSecretNames.some((secret) => !required.includes(secret))
+      ) {
+        throw new Error(
+          `Required JWT secret declarations missing or invalid: ${workerConfigurations[name]}`,
+        );
+      }
       ids.add(db.database_id);
     }
   }

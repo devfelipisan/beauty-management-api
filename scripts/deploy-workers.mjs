@@ -7,6 +7,11 @@ import {
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import {
+  requireRemoteSecrets,
+  requiredBindingsFailure,
+} from './worker-required-secrets.mjs';
+import { deploymentOutcome } from './worker-deployment-output.mjs';
+import {
   deploymentRequest,
   readConfiguration,
   selectedWorkers,
@@ -18,15 +23,13 @@ const request = deploymentRequest(
   JSON.parse(readFileSync('.github/deploy/request.json', 'utf8')),
 );
 if (request.mode !== 'deploy') throw new Error('A deploy request is required');
-validateWorkerConfigurations(
-  Object.fromEntries(
-    Object.entries(workerConfigurations).map(([name, path]) => [
-      name,
-      readConfiguration(path),
-    ]),
-  ),
-  true,
+const configurations = Object.fromEntries(
+  Object.entries(workerConfigurations).map(([name, path]) => [
+    name,
+    readConfiguration(path),
+  ]),
 );
+validateWorkerConfigurations(configurations, true);
 if (!process.env.CLOUDFLARE_API_TOKEN || !process.env.CLOUDFLARE_ACCOUNT_ID)
   throw new Error('Cloudflare credentials are required');
 if (!/^[0-9a-f]{40}$/.test(process.env.GITHUB_SHA ?? ''))
@@ -46,6 +49,15 @@ const report = {
 };
 let failed = false;
 try {
+  try {
+    await requireRemoteSecrets(configurations, request.worker, {
+      accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+      apiToken: process.env.CLOUDFLARE_API_TOKEN,
+    });
+  } catch {
+    report.failureCode = 'PRODUCTION_BINDINGS_UNAVAILABLE';
+    throw new Error(requiredBindingsFailure);
+  }
   for (const name of selectedWorkers(request.worker)) {
     const result = spawnSync(
       process.execPath,
@@ -61,25 +73,33 @@ try {
       ],
       { encoding: 'utf8' },
     );
-    const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-    process.stdout.write(output);
-    const version = output.match(/Current Version ID:\s*([0-9a-f-]{36})/i)?.[1];
-    const status = result.status === 0 ? 'published' : 'failed';
+    // Wrangler output may contain remote diagnostics: never forward it to CI.
+    const outcome = deploymentOutcome(result);
     report.workers.push({
       worker: name,
-      status,
-      version: version ?? null,
-      exitCode: result.status,
+      ...outcome,
     });
     writeFileSync(
       '.cache/deployment/result.json',
       JSON.stringify(report, null, 2),
     );
-    if (result.error || result.status !== 0 || !version) {
+    if (outcome.status !== 'published') {
+      console.error(
+        'Worker deployment failed; verify production configuration in Cloudflare.',
+      );
       failed = true;
       break;
     }
+    console.log(`Published ${name}: ${outcome.version}`);
   }
+} catch {
+  failed = true;
+  report.failureCode ??= 'DEPLOYMENT_FAILED';
+  console.error(
+    report.failureCode === 'PRODUCTION_BINDINGS_UNAVAILABLE'
+      ? requiredBindingsFailure
+      : 'Worker deployment failed; verify production configuration in Cloudflare.',
+  );
 } finally {
   writeFileSync(
     '.cache/deployment/result.json',

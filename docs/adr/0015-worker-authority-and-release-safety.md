@@ -9,6 +9,13 @@ emissor, audiência e validade; a identidade interna é a combinação issuer/su
 D1 é a autoridade de memberships, permissões atuais, tenant ativo e vínculo
 profissional. Nenhum papel é concedido por inferência do token.
 
+Os parâmetros do emissor são fornecidos exclusivamente por bindings remotos
+AUTH_ISSUER, AUTH_AUDIENCE, AUTH_JWKS_URL e AUTH_ALGORITHM. Os Wranglers declaram
+os nomes em secrets.required; o repositório não define seus valores. O deploy
+verifica somente metadados de presença/tipo dos secrets e falha fechado, sem
+imprimir respostas remotas. A declaração arquitetural não determina as URLs ou
+o algoritmo efetivamente configurados no ambiente.
+
 Foram aprovadas customer.update, service.update e service.deactivate como
 permissões separadas, sem concessão automática. Operações legadas sem catálogo
 aprovado ficam negadas pelo PermissionGuard, inclusive administração de tenants,

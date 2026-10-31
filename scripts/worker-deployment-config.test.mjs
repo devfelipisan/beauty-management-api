@@ -6,6 +6,7 @@ import {
   validateWorkerConfigurations,
   readConfiguration,
   workerConfigurations,
+  requiredJwtSecretNames,
 } from './worker-deployment-config.mjs';
 
 test('selects only approved configs and orders all sequentially', () => {
@@ -43,7 +44,7 @@ test('rejects unknown request fields and output injection', () => {
     }),
   );
 });
-test('validates JSONC configs but blocks production without a real database and JWT configuration', () => {
+test('validates JSONC declarations without requiring authentication values in the repository', () => {
   const configs = Object.fromEntries(
     Object.entries(workerConfigurations).map(([name, path]) => [
       name,
@@ -51,15 +52,11 @@ test('validates JSONC configs but blocks production without a real database and 
     ]),
   );
   assert.doesNotThrow(() => validateWorkerConfigurations(configs));
+  // Make the missing-UUID case explicit, even after production config is filled.
+  delete configs.operations.d1_databases[0].database_id;
   assert.throws(() => validateWorkerConfigurations(configs, true));
   for (const config of Object.values(configs)) {
     config.d1_databases[0].database_id = '12345678-1234-1234-1234-123456789abc';
-    Object.assign(config.vars, {
-      AUTH_ISSUER: 'https://identity.test/auth/v1',
-      AUTH_JWKS_URL: 'https://identity.test/auth/v1/.well-known/jwks.json',
-      AUTH_AUDIENCE: 'api',
-      AUTH_ALGORITHM: 'ES256',
-    });
   }
   assert.doesNotThrow(() => validateWorkerConfigurations(configs, true));
   configs.clinical.workers_dev = true;
@@ -68,4 +65,104 @@ test('validates JSONC configs but blocks production without a real database and 
   configs.billing.d1_databases[0].database_id =
     '12345678-1234-1234-1234-123456789abd';
   assert.throws(() => validateWorkerConfigurations(configs, true));
+});
+
+test('identifies the exact missing D1 configuration without weakening the production gate', () => {
+  const configs = Object.fromEntries(
+    Object.entries(workerConfigurations).map(([name, path]) => [
+      name,
+      readConfiguration(path),
+    ]),
+  );
+  for (const config of Object.values(configs)) {
+    config.d1_databases[0].database_id = '12345678-1234-1234-1234-123456789abc';
+  }
+  for (const [name, path] of Object.entries(workerConfigurations)) {
+    for (const invalid of [
+      undefined,
+      '',
+      '<UUID_REAL_BEAUTY_DB>',
+      '00000000-0000-0000-0000-000000000000',
+    ]) {
+      const candidate = JSON.parse(JSON.stringify(configs));
+      candidate[name].d1_databases[0].database_id = invalid;
+      assert.throws(
+        () => validateWorkerConfigurations(candidate, true),
+        (error) => {
+          assert.match(
+            error.message,
+            new RegExp(`Real D1 UUID required: ${name}`),
+          );
+          assert.ok(error.message.includes(path));
+          return true;
+        },
+      );
+    }
+  }
+});
+
+test('requires all four secret names on every production Worker and rejects checked-in JWT values', () => {
+  const configs = Object.fromEntries(
+    Object.entries(workerConfigurations).map(([name, path]) => [
+      name,
+      readConfiguration(path),
+    ]),
+  );
+  assert.deepEqual(requiredJwtSecretNames, [
+    'AUTH_ISSUER',
+    'AUTH_AUDIENCE',
+    'AUTH_JWKS_URL',
+    'AUTH_ALGORITHM',
+  ]);
+  assert.doesNotThrow(() => validateWorkerConfigurations(configs, true));
+  for (const name of Object.keys(configs)) {
+    for (const secret of requiredJwtSecretNames) {
+      const missing = structuredClone(configs);
+      missing[name].secrets.required = missing[name].secrets.required.filter(
+        (value) => value !== secret,
+      );
+      assert.throws(
+        () => validateWorkerConfigurations(missing, true),
+        /Required JWT secret declarations missing or invalid/,
+      );
+      const inline = structuredClone(configs);
+      inline[name].vars[secret] = 'sensitive-fixture-value';
+      assert.throws(
+        () => validateWorkerConfigurations(inline, true),
+        (error) => {
+          assert.match(
+            error.message,
+            /JWT values must be remote secret bindings/,
+          );
+          assert.ok(!error.message.includes('sensitive-fixture-value'));
+          return true;
+        },
+      );
+      const named = structuredClone(configs);
+      named[name].env.local.vars[secret] = 'sensitive-fixture-value';
+      assert.throws(
+        () => validateWorkerConfigurations(named, true),
+        /JWT values must be remote secret bindings/,
+      );
+    }
+    for (const required of [
+      undefined,
+      [],
+      [...requiredJwtSecretNames, requiredJwtSecretNames[0]],
+      [...requiredJwtSecretNames, 1],
+    ]) {
+      const invalid = structuredClone(configs);
+      invalid[name].secrets = { required };
+      assert.throws(
+        () => validateWorkerConfigurations(invalid, true),
+        /Required JWT secret declarations missing or invalid/,
+      );
+    }
+    const mock = structuredClone(configs);
+    mock[name].vars.AUTH_PROVIDER = 'mock';
+    assert.throws(
+      () => validateWorkerConfigurations(mock, true),
+      /Production JWT configuration required/,
+    );
+  }
 });
