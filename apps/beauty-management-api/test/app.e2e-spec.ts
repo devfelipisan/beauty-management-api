@@ -6,7 +6,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../dist/app.module.js';
 
 describe('Health (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -18,7 +18,7 @@ describe('Health (e2e)', () => {
   });
 
   it('/health (GET)', () => {
-    return request(app.getHttpServer())
+    return request(app!.getHttpServer())
       .get('/health')
       .expect(200)
       .expect((response) => {
@@ -29,6 +29,7 @@ describe('Health (e2e)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await app?.close();
+    app = undefined;
   });
 });

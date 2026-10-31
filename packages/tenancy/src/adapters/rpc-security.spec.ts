@@ -4,10 +4,243 @@ import {
   authorizeWorkerRpc,
   authorizeSystemDispatch,
   bindRpcAuthority,
+  dispatchConfiguration,
+  userRpcMetadata,
 } from './rpc-security.js';
 
 describe('RPC authority', () => {
   afterEach(() => vi.restoreAllMocks());
+
+  it.each([null, [], 'command', 1])(
+    'rejects a non-object input %j before using any adapter',
+    async (input) => {
+      await expect(authorizeWorkerRpc({} as never, {}, input)).rejects.toThrow(
+        'VALIDATION_ERROR',
+      );
+    },
+  );
+
+  it('requires tenant identity and validates the user authority envelope without coercion', async () => {
+    const { env } = environment();
+    for (const tenantId of [undefined, '', ' ', 1])
+      await expect(authorizeWorkerRpc(env, {}, { tenantId })).rejects.toThrow(
+        'TENANT_ACCESS_DENIED',
+      );
+    for (const rpcAuthority of [
+      { version: 2, kind: 'user', token: 't' },
+      { version: 1, kind: 'system', token: 't' },
+      { version: 1, kind: 'user', token: 1 },
+    ]) {
+      await expect(
+        authorizeWorkerRpc(
+          env,
+          { permissions: ['session.complete'] },
+          { tenantId: 'tenant', rpcAuthority },
+        ),
+      ).rejects.toThrow('AUTHENTICATION_REQUIRED');
+    }
+    vi.spyOn(JwtIdentityProvider.prototype, 'authenticate').mockResolvedValue(
+      null,
+    );
+    await expect(
+      authorizeWorkerRpc(
+        env,
+        { permissions: ['session.complete'] },
+        {
+          tenantId: 'tenant',
+          rpcAuthority: { version: 1, kind: 'user', token: 'invalid' },
+        },
+      ),
+    ).rejects.toThrow('INVALID_AUTHENTICATION');
+  });
+
+  it('reconstructs system facts from the committed tenant event and rejects altered/uncommitted payloads', async () => {
+    const first = vi.fn().mockResolvedValue({
+      payload_json: JSON.stringify({
+        amountCents: 100,
+        aggregateId: 'resource',
+      }),
+      correlation_id: 'stored-correlation',
+    });
+    const bind = vi.fn(() => ({ first }));
+    const env = { D1_DATABASE: { prepare: vi.fn(() => ({ bind })) } } as never;
+    const policy = { eventType: 'FinancialSettlementRequested' };
+    const input = {
+      tenantId: 'tenant',
+      eventId: 'event',
+      amountCents: 100,
+      correlationId: 'untrusted',
+      rpcAuthority: { kind: 'system' },
+    };
+    expect(await authorizeWorkerRpc(env, policy, input)).toEqual({
+      input: {
+        tenantId: 'tenant',
+        eventId: 'event',
+        amountCents: 100,
+        aggregateId: 'resource',
+        correlationId: 'stored-correlation',
+      },
+    });
+    expect(bind).toHaveBeenCalledWith(
+      'tenant',
+      'event',
+      'FinancialSettlementRequested',
+    );
+    await expect(
+      authorizeWorkerRpc(env, policy, { ...input, amountCents: 999 }),
+    ).rejects.toThrow('PERMISSION_DENIED');
+    await expect(
+      authorizeWorkerRpc(env, policy, { ...input, actorId: 'forged' }),
+    ).rejects.toThrow('PERMISSION_DENIED');
+    first.mockResolvedValue(null);
+    await expect(authorizeWorkerRpc(env, policy, input)).rejects.toThrow(
+      'PERMISSION_DENIED',
+    );
+    for (const eventId of [undefined, '', 1])
+      await expect(
+        authorizeWorkerRpc(env, policy, { tenantId: 'tenant', eventId }),
+      ).rejects.toThrow('PERMISSION_DENIED');
+  });
+
+  it('supports explicitly selected fixture authority without leaking its transport envelope', async () => {
+    const env = {
+      APP_ENV: 'test',
+      AUTH_PROVIDER: 'mock',
+      D1_DATABASE: {} as never,
+    };
+    const rpcAuthority = {
+      version: 1 as const,
+      kind: 'user' as const,
+      token: 'fixture',
+    };
+    const result = await authorizeWorkerRpc(
+      env,
+      {},
+      { tenantId: 'tenant', actorId: 'actor', rpcAuthority },
+    );
+    expect(result.authority).toBe(rpcAuthority);
+    expect(result.input).toEqual({ tenantId: 'tenant', actorId: 'actor' });
+    expect(() =>
+      assertProfessionalAuthorization(
+        result.input as never,
+        'any-professional',
+      ),
+    ).not.toThrow();
+    expect((await authorizeWorkerRpc(env, {}, { value: 1 })).input).toEqual({
+      value: 1,
+    });
+  });
+
+  it('requires measured positive integer dispatch settings and takes production limits/time from the receiver', () => {
+    const { env } = environment();
+    const configured = {
+      ...env,
+      OUTBOX_BATCH_SIZE: '2',
+      OUTBOX_LEASE_SECONDS: '60',
+    };
+    expect(dispatchConfiguration(configured)).toEqual({
+      batchSize: 2,
+      leaseSeconds: 60,
+    });
+    for (const invalid of [undefined, '0', '-1', '1.5', 'NaN', 'Infinity']) {
+      expect(() =>
+        dispatchConfiguration({ ...configured, OUTBOX_BATCH_SIZE: invalid }),
+      ).toThrow('VALIDATION_ERROR');
+      expect(() =>
+        dispatchConfiguration({ ...configured, OUTBOX_LEASE_SECONDS: invalid }),
+      ).toThrow('VALIDATION_ERROR');
+    }
+    const input = {
+      workerId: 'forged-worker',
+      batchSize: 999,
+      leaseSeconds: 999,
+      now: 'forged-time',
+    };
+    const result = authorizeSystemDispatch(
+      configured,
+      'beauty-operations-worker',
+      input,
+    );
+    expect(result).toMatchObject({
+      batchSize: 2,
+      leaseSeconds: 60,
+      now: undefined,
+    });
+    expect(result.workerId).not.toBe(input.workerId);
+    expect(
+      authorizeSystemDispatch(
+        { D1_DATABASE: {} as never, APP_ENV: 'test', AUTH_PROVIDER: 'mock' },
+        undefined,
+        input,
+      ),
+    ).toBe(input);
+  });
+
+  it('uses a matching professional selector only when no resource resolver exists, and rejects missing membership', async () => {
+    const { env, revoke } = environment();
+    vi.spyOn(JwtIdentityProvider.prototype, 'authenticate').mockResolvedValue({
+      actorId: 'actor',
+      subject: 'subject',
+    });
+    const input = {
+      tenantId: 'tenant',
+      professionalId: 'professional-1',
+      rpcAuthority: { version: 1, kind: 'user', token: 'signed' },
+    };
+    expect(
+      (
+        await authorizeWorkerRpc(
+          env,
+          { permissions: ['session.complete'] },
+          input,
+        )
+      ).input.actorId,
+    ).toBe('actor');
+    await expect(
+      authorizeWorkerRpc(
+        env,
+        { permissions: ['session.complete'] },
+        { ...input, professionalId: 'other' },
+      ),
+    ).rejects.toThrow('PERMISSION_DENIED');
+    revoke();
+    await expect(
+      authorizeWorkerRpc(env, { permissions: ['session.complete'] }, input),
+    ).rejects.toThrow('PERMISSION_DENIED');
+  });
+
+  it('extracts only bearer credentials and leaves absent bindings/authority untouched', async () => {
+    expect(
+      userRpcMetadata(
+        new Request('https://api.test', {
+          headers: { authorization: 'Bearer signed' },
+        }),
+      ),
+    ).toEqual({ rpcAuthority: { version: 1, kind: 'user', token: 'signed' } });
+    expect(
+      userRpcMetadata(new Request('https://api.test')).rpcAuthority.token,
+    ).toBe('');
+    const fetch = vi.fn(function (this: unknown, request: Request) {
+      return Promise.resolve(request);
+    });
+    const binding = { fetch, constant: 'value' };
+    const env = {
+      SOMETHING_SERVICE: null,
+      OTHER_SERVICE: 'string',
+      BILLING_SERVICE: binding,
+      other: 'value',
+    };
+    expect(bindRpcAuthority(env)).toBe(env);
+    const wrapped = bindRpcAuthority(env, {
+      version: 1,
+      kind: 'user',
+      token: 'signed',
+    });
+    expect(wrapped.BILLING_SERVICE.constant).toBe('value');
+    const request = new Request('https://api.test');
+    expect(await wrapped.BILLING_SERVICE.fetch(request)).toBe(request);
+    expect(fetch.mock.contexts[0]).toBe(binding);
+  });
 
   function environment() {
     let permissions = ['session.complete'];
