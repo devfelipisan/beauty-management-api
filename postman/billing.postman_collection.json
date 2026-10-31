@@ -1,0 +1,134 @@
+{
+  "info": {
+    "name": "Beauty — Billing Worker",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Rotas HTTP implementadas neste Worker Cloudflare. Use Try it out para executar chamadas reais.\n\nNo provider mock local existente: Authorize → actor-dev-admin; tenantId → tenant-dev-001. IDs de recursos precisam existir no D1 local; a documentação não cria fixtures.\n\nOperações RPC internas não são endpoints HTTP e não aparecem como rotas executáveis. Os controllers Nest possuem outro transporte e não são publicados por este documento.\n\nGerada por node scripts/generate-postman.mjs. Selecionar Beauty — Local. Executar requisições individualmente: não executar todas as mutações em sequência indiscriminadamente."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET — Verificar funcionamento do Worker",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billingUrl}}/health",
+              "host": [
+                "{{billingUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            },
+            "description": "\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "receivables",
+      "item": [
+        {
+          "name": "POST — Registrar pagamento de um recebível",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{registerPayment_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{registerPayment_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{registerPayment_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{billingUrl}}/tenants/{{tenantId}}/receivables/{{receivableId}}/payments",
+              "host": [
+                "{{billingUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "receivables",
+                "{{receivableId}}",
+                "payments"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `payment.create`.\n\nO recebível deve existir. Refunds, créditos, sinais, pacotes e liquidação possuem operações RPC internas, sem endpoints HTTP neste Worker.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountCents\": 1,\n  \"method\": \"CASH\",\n  \"customerId\": \"{{customerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('registerPayment_x_request_id')) pm.environment.set('registerPayment_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('registerPayment_x_correlation_id')) pm.environment.set('registerPayment_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('registerPayment_Idempotency_Key')) pm.environment.set('registerPayment_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json().data; const id = data?.['paymentId'] ?? data?.id; if (id) pm.environment.set('paymentId', id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

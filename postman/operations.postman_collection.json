@@ -1,0 +1,1126 @@
+{
+  "info": {
+    "name": "Beauty — Operations Worker",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Rotas HTTP implementadas neste Worker Cloudflare. Use Try it out para executar chamadas reais.\n\nNo provider mock local existente: Authorize → actor-dev-admin; tenantId → tenant-dev-001. IDs de recursos precisam existir no D1 local; a documentação não cria fixtures.\n\nOperações RPC internas não são endpoints HTTP e não aparecem como rotas executáveis. Os controllers Nest possuem outro transporte e não são publicados por este documento.\n\nGerada por node scripts/generate-postman.mjs. Selecionar Beauty — Local. Executar requisições individualmente: não executar todas as mutações em sequência indiscriminadamente."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET — Verificar funcionamento do Worker",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{operationsUrl}}/health",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            },
+            "description": "\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "services",
+      "item": [
+        {
+          "name": "GET — Listar serviços",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{listServices_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{listServices_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services?limit={{limit}}&cursor={{cursor}}",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "services"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{cursor}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Permissão existente: `service.read`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('listServices_x_request_id')) pm.environment.set('listServices_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('listServices_x_correlation_id')) pm.environment.set('listServices_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Cadastrar serviço",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{createService_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{createService_x_correlation_id}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "services"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `service.create`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"category\": \"\",\n  \"durationMinutes\": 1,\n  \"basePriceCents\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('createService_x_request_id')) pm.environment.set('createService_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('createService_x_correlation_id')) pm.environment.set('createService_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json().data; const id = data?.['id'] ?? data?.id; if (id) pm.environment.set('serviceId', id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GET — Consultar serviço",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{getService_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{getService_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services/{{serviceId}}",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "services",
+                "{{serviceId}}"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `service.read`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('getService_x_request_id')) pm.environment.set('getService_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('getService_x_correlation_id')) pm.environment.set('getService_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "PATCH — Atualizar serviço",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{updateService_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{updateService_x_correlation_id}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services/{{serviceId}}",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "services",
+                "{{serviceId}}"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `service.read`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias. O controller existente verifica service.read também para atualização; nenhuma nova permissão foi criada.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('updateService_x_request_id')) pm.environment.set('updateService_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('updateService_x_correlation_id')) pm.environment.set('updateService_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "DELETE — Desativar serviço",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{deactivateService_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{deactivateService_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services/{{serviceId}}",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "services",
+                "{{serviceId}}"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `service.read`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias. Desativação lógica para INACTIVE, sem exclusão física. O controller existente verifica service.read também para desativação.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('deactivateService_x_request_id')) pm.environment.set('deactivateService_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('deactivateService_x_correlation_id')) pm.environment.set('deactivateService_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "customers",
+      "item": [
+        {
+          "name": "GET — Listar clientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{listCustomers_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{listCustomers_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/customers",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "customers"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `customer.read`.\n\nO handler atual usa a paginação padrão do caso de uso; não lê parâmetros de paginação da URL.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('listCustomers_x_request_id')) pm.environment.set('listCustomers_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('listCustomers_x_correlation_id')) pm.environment.set('listCustomers_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GET — Consultar cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{getCustomer_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{getCustomer_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/customers/{{customerId}}",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "customers",
+                "{{customerId}}"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `customer.read`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('getCustomer_x_request_id')) pm.environment.set('getCustomer_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('getCustomer_x_correlation_id')) pm.environment.set('getCustomer_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "PATCH — Atualizar dados do cliente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{updateCustomer_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{updateCustomer_x_correlation_id}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/customers/{{customerId}}",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "customers",
+                "{{customerId}}"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `customer.read`.\n\nO transporte atual verifica customer.read também para PATCH. A documentação registra esse comportamento; não altera a autorização.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('updateCustomer_x_request_id')) pm.environment.set('updateCustomer_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('updateCustomer_x_correlation_id')) pm.environment.set('updateCustomer_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GET — Consultar histórico do cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{listCustomerHistory_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{listCustomerHistory_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/customers/{{customerId}}/history?from={{from}}&to={{to}}&serviceId={{serviceId}}&professionalId={{professionalId}}&eventType={{eventType}}&status={{status}}&cursor={{cursor}}&limit={{limit}}",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "customers",
+                "{{customerId}}",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{from}}",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "{{to}}",
+                  "disabled": true
+                },
+                {
+                  "key": "serviceId",
+                  "value": "{{serviceId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "professionalId",
+                  "value": "{{professionalId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "eventType",
+                  "value": "{{eventType}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "{{status}}",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{cursor}}",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Permissão existente: `customer.history.read`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('listCustomerHistory_x_request_id')) pm.environment.set('listCustomerHistory_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('listCustomerHistory_x_correlation_id')) pm.environment.set('listCustomerHistory_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "appointments",
+      "item": [
+        {
+          "name": "POST — Agendar atendimento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{createAppointment_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{createAppointment_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{createAppointment_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "appointments"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `appointment.create`.\n\nClientes, profissionais, serviços, disponibilidade, licença e avaliação precisam estar configurados. O Swagger não cria essas dependências.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"serviceId\": \"{{serviceId}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"startsAt\": \"{{startsAt}}\",\n  \"origin\": \"RECEPTION\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('createAppointment_x_request_id')) pm.environment.set('createAppointment_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('createAppointment_x_correlation_id')) pm.environment.set('createAppointment_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('createAppointment_Idempotency_Key')) pm.environment.set('createAppointment_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json().data; const id = data?.['appointmentId'] ?? data?.id; if (id) pm.environment.set('appointmentId', id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Confirmar atendimento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{confirmAppointment_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{confirmAppointment_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{confirmAppointment_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/confirm",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "appointments",
+                "{{appointmentId}}",
+                "confirm"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `appointment.confirm`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('confirmAppointment_x_request_id')) pm.environment.set('confirmAppointment_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('confirmAppointment_x_correlation_id')) pm.environment.set('confirmAppointment_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('confirmAppointment_Idempotency_Key')) pm.environment.set('confirmAppointment_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Registrar chegada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{checkInAppointment_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{checkInAppointment_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{checkInAppointment_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/check-in",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "appointments",
+                "{{appointmentId}}",
+                "check-in"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `appointment.check-in`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('checkInAppointment_x_request_id')) pm.environment.set('checkInAppointment_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('checkInAppointment_x_correlation_id')) pm.environment.set('checkInAppointment_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('checkInAppointment_Idempotency_Key')) pm.environment.set('checkInAppointment_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Registrar ausência",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{markNoShow_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{markNoShow_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{markNoShow_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/no-show",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "appointments",
+                "{{appointmentId}}",
+                "no-show"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `appointment.no-show`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('markNoShow_x_request_id')) pm.environment.set('markNoShow_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('markNoShow_x_correlation_id')) pm.environment.set('markNoShow_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('markNoShow_Idempotency_Key')) pm.environment.set('markNoShow_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Reagendar atendimento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{rescheduleAppointment_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{rescheduleAppointment_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{rescheduleAppointment_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/reschedule",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "appointments",
+                "{{appointmentId}}",
+                "reschedule"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `appointment.reschedule`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startsAt\": \"{{rescheduleStartsAt}}\",\n  \"professionalId\": \"{{professionalId}}\",\n  \"reason\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('rescheduleAppointment_x_request_id')) pm.environment.set('rescheduleAppointment_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('rescheduleAppointment_x_correlation_id')) pm.environment.set('rescheduleAppointment_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('rescheduleAppointment_Idempotency_Key')) pm.environment.set('rescheduleAppointment_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Cancelar atendimento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{cancelAppointment_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{cancelAppointment_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{cancelAppointment_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/cancel",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "appointments",
+                "{{appointmentId}}",
+                "cancel"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `appointment.cancel`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": \"CUSTOMER\",\n  \"reason\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('cancelAppointment_x_request_id')) pm.environment.set('cancelAppointment_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('cancelAppointment_x_correlation_id')) pm.environment.set('cancelAppointment_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('cancelAppointment_Idempotency_Key')) pm.environment.set('cancelAppointment_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Vincular pacote ao atendimento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{assignAppointmentPackage_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{assignAppointmentPackage_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{assignAppointmentPackage_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/package",
+              "host": [
+                "{{operationsUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "appointments",
+                "{{appointmentId}}",
+                "package"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `appointment.package.assign`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerPackageId\": \"{{customerPackageId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('assignAppointmentPackage_x_request_id')) pm.environment.set('assignAppointmentPackage_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('assignAppointmentPackage_x_correlation_id')) pm.environment.set('assignAppointmentPackage_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('assignAppointmentPackage_Idempotency_Key')) pm.environment.set('assignAppointmentPackage_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

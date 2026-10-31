@@ -1,0 +1,1338 @@
+{
+  "info": {
+    "name": "Beauty — Clinical Worker",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Rotas HTTP implementadas neste Worker Cloudflare. Use Try it out para executar chamadas reais.\n\nNo provider mock local existente: Authorize → actor-dev-admin; tenantId → tenant-dev-001. IDs de recursos precisam existir no D1 local; a documentação não cria fixtures.\n\nOperações RPC internas não são endpoints HTTP e não aparecem como rotas executáveis. Os controllers Nest possuem outro transporte e não são publicados por este documento.\n\nGerada por node scripts/generate-postman.mjs. Selecionar Beauty — Local. Executar requisições individualmente: não executar todas as mutações em sequência indiscriminadamente."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET — Verificar funcionamento do Worker",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{clinicalUrl}}/health",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            },
+            "description": "\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "appointments",
+      "item": [
+        {
+          "name": "POST — Iniciar sessão do atendimento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{startSession_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{startSession_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{startSession_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/session/start",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "appointments",
+                "{{appointmentId}}",
+                "session",
+                "start"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `session.start`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('startSession_x_request_id')) pm.environment.set('startSession_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('startSession_x_correlation_id')) pm.environment.set('startSession_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('startSession_Idempotency_Key')) pm.environment.set('startSession_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json().data; const id = data?.['sessionId'] ?? data?.id; if (id) pm.environment.set('sessionId', id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "services",
+      "item": [
+        {
+          "name": "GET — Consultar ficha técnica ativa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{getActiveTechnicalForm_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{getActiveTechnicalForm_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/services/{{serviceId}}/technical-forms",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "services",
+                "{{serviceId}}",
+                "technical-forms"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `technical-form.read`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('getActiveTechnicalForm_x_request_id')) pm.environment.set('getActiveTechnicalForm_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('getActiveTechnicalForm_x_correlation_id')) pm.environment.set('getActiveTechnicalForm_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Criar ficha técnica",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{createTechnicalForm_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{createTechnicalForm_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{createTechnicalForm_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/services/{{serviceId}}/technical-forms",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "services",
+                "{{serviceId}}",
+                "technical-forms"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `technical-form.create`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fields\": [\n    {\n      \"key\": \"\",\n      \"name\": \"\",\n      \"type\": \"SHORT_TEXT\",\n      \"order\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('createTechnicalForm_x_request_id')) pm.environment.set('createTechnicalForm_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('createTechnicalForm_x_correlation_id')) pm.environment.set('createTechnicalForm_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('createTechnicalForm_Idempotency_Key')) pm.environment.set('createTechnicalForm_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json().data; const id = data?.['id'] ?? data?.id; if (id) pm.environment.set('formId', id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Publicar ficha técnica",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{publishTechnicalForm_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{publishTechnicalForm_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{publishTechnicalForm_Idempotency_Key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/services/{{serviceId}}/technical-forms/{{formId}}/publish",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "services",
+                "{{serviceId}}",
+                "technical-forms",
+                "{{formId}}",
+                "publish"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `technical-form.publish`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('publishTechnicalForm_x_request_id')) pm.environment.set('publishTechnicalForm_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('publishTechnicalForm_x_correlation_id')) pm.environment.set('publishTechnicalForm_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('publishTechnicalForm_Idempotency_Key')) pm.environment.set('publishTechnicalForm_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "sessions",
+      "item": [
+        {
+          "name": "POST — Registrar valores da ficha técnica",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{recordTechnicalValues_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{recordTechnicalValues_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{recordTechnicalValues_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/technical-values",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "technical-values"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `session.technical.update`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"values\": [\n    {\n      \"fieldId\": \"{{fieldId}}\",\n      \"value\": \"\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('recordTechnicalValues_x_request_id')) pm.environment.set('recordTechnicalValues_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('recordTechnicalValues_x_correlation_id')) pm.environment.set('recordTechnicalValues_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('recordTechnicalValues_Idempotency_Key')) pm.environment.set('recordTechnicalValues_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Registrar potência",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{recordSessionPower_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{recordSessionPower_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{recordSessionPower_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/power",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "power"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `session.technical.update`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"\",\n  \"unit\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('recordSessionPower_x_request_id')) pm.environment.set('recordSessionPower_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('recordSessionPower_x_correlation_id')) pm.environment.set('recordSessionPower_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('recordSessionPower_Idempotency_Key')) pm.environment.set('recordSessionPower_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GET — Verificar elegibilidade para conclusão",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{checkSessionCompletion_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{checkSessionCompletion_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/completion-eligibility",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "completion-eligibility"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `session.complete`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('checkSessionCompletion_x_request_id')) pm.environment.set('checkSessionCompletion_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('checkSessionCompletion_x_correlation_id')) pm.environment.set('checkSessionCompletion_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Concluir sessão",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{completeSession_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{completeSession_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{completeSession_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/complete",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "complete"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `session.complete`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('completeSession_x_request_id')) pm.environment.set('completeSession_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('completeSession_x_correlation_id')) pm.environment.set('completeSession_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('completeSession_Idempotency_Key')) pm.environment.set('completeSession_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Registrar recomendação de retorno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{recommendReturn_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{recommendReturn_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{recommendReturn_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/return-recommendation",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "return-recommendation"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `session.complete`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"required\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('recommendReturn_x_request_id')) pm.environment.set('recommendReturn_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('recommendReturn_x_correlation_id')) pm.environment.set('recommendReturn_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('recommendReturn_Idempotency_Key')) pm.environment.set('recommendReturn_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GET — Listar metadados das fotos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{listSessionPhotos_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{listSessionPhotos_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/photos",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "photos"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `clinical.photo.read`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('listSessionPhotos_x_request_id')) pm.environment.set('listSessionPhotos_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('listSessionPhotos_x_correlation_id')) pm.environment.set('listSessionPhotos_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Enviar foto da sessão (arquivo binário)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{uploadSessionPhoto_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{uploadSessionPhoto_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{uploadSessionPhoto_Idempotency_Key}}"
+              },
+              {
+                "key": "x-content-checksum",
+                "value": "{{x-content-checksum}}",
+                "disabled": true
+              },
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/photos?purpose=BEFORE&intercurrenceId={{intercurrenceId}}",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "photos"
+              ],
+              "query": [
+                {
+                  "key": "purpose",
+                  "value": "BEFORE",
+                  "disabled": false
+                },
+                {
+                  "key": "intercurrenceId",
+                  "value": "{{intercurrenceId}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Permissão existente: `clinical.photo.upload`.\n\nEnviar o arquivo diretamente no corpo, sem multipart/form-data. O navegador define Content-Length. O limite vem do binding MAX_CLINICAL_PHOTO_BYTES já previsto pelo runtime; esta documentação não configura esse valor.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "file",
+              "file": {}
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('uploadSessionPhoto_x_request_id')) pm.environment.set('uploadSessionPhoto_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('uploadSessionPhoto_x_correlation_id')) pm.environment.set('uploadSessionPhoto_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('uploadSessionPhoto_Idempotency_Key')) pm.environment.set('uploadSessionPhoto_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json().data; const id = data?.['id'] ?? data?.id; if (id) pm.environment.set('photoId', id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GET — Baixar foto da sessão",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{getSessionPhoto_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{getSessionPhoto_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/photos/{{photoId}}",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "photos",
+                "{{photoId}}"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `clinical.photo.read`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('getSessionPhoto_x_request_id')) pm.environment.set('getSessionPhoto_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('getSessionPhoto_x_correlation_id')) pm.environment.set('getSessionPhoto_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Registrar uso de equipamento na sessão",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{recordEquipmentUsage_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{recordEquipmentUsage_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{recordEquipmentUsage_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/equipment-usages",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "equipment-usages"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `session.technical.update`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentId\": \"{{equipmentId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('recordEquipmentUsage_x_request_id')) pm.environment.set('recordEquipmentUsage_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('recordEquipmentUsage_x_correlation_id')) pm.environment.set('recordEquipmentUsage_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('recordEquipmentUsage_Idempotency_Key')) pm.environment.set('recordEquipmentUsage_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GET — Consultar contexto da sessão anterior",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{getPreviousSessionContext_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{getPreviousSessionContext_x_correlation_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/previous-context",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "previous-context"
+              ],
+              "query": []
+            },
+            "description": "Exige identidade e membership; o handler não verifica uma permissão adicional.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('getPreviousSessionContext_x_request_id')) pm.environment.set('getPreviousSessionContext_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('getPreviousSessionContext_x_correlation_id')) pm.environment.set('getPreviousSessionContext_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Justificar alerta de variação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{justifyVariationAlert_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{justifyVariationAlert_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{justifyVariationAlert_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/variation-alerts/{{alertId}}/justify",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "sessions",
+                "{{sessionId}}",
+                "variation-alerts",
+                "{{alertId}}",
+                "justify"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `session.technical.update`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"justification\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('justifyVariationAlert_x_request_id')) pm.environment.set('justifyVariationAlert_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('justifyVariationAlert_x_correlation_id')) pm.environment.set('justifyVariationAlert_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('justifyVariationAlert_Idempotency_Key')) pm.environment.set('justifyVariationAlert_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "equipment",
+      "item": [
+        {
+          "name": "GET — Consultar equipamento — limitação do transporte atual",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{getEquipmentLegacy_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{getEquipmentLegacy_x_correlation_id}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/equipment",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "equipment"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `equipment.create`.\n\nO handler atual lê o identificador id de um corpo JSON em GET. Navegadores não permitem esse corpo em fetch; este GET não é testável pelo Swagger UI. Não existe parâmetro query equivalente no runtime. A rota permanece documentada sem inventar outro contrato.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('getEquipmentLegacy_x_request_id')) pm.environment.set('getEquipmentLegacy_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('getEquipmentLegacy_x_correlation_id')) pm.environment.set('getEquipmentLegacy_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Cadastrar equipamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{createEquipment_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{createEquipment_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{createEquipment_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/equipment",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "equipment"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `equipment.create`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('createEquipment_x_request_id')) pm.environment.set('createEquipment_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('createEquipment_x_correlation_id')) pm.environment.set('createEquipment_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('createEquipment_Idempotency_Key')) pm.environment.set('createEquipment_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json().data; const id = data?.['id'] ?? data?.id; if (id) pm.environment.set('equipmentId', id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "POST — Configurar serviços do equipamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{configureEquipmentServices_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{configureEquipmentServices_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{configureEquipmentServices_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/equipment/{{equipmentId}}/services",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "equipment",
+                "{{equipmentId}}",
+                "services"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `equipment.update`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceIds\": [\n    \"\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('configureEquipmentServices_x_request_id')) pm.environment.set('configureEquipmentServices_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('configureEquipmentServices_x_correlation_id')) pm.environment.set('configureEquipmentServices_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('configureEquipmentServices_Idempotency_Key')) pm.environment.set('configureEquipmentServices_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "variation-policies",
+      "item": [
+        {
+          "name": "POST — Configurar política de variação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "{{configureVariationPolicy_x_request_id}}"
+              },
+              {
+                "key": "x-correlation-id",
+                "value": "{{configureVariationPolicy_x_correlation_id}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{configureVariationPolicy_Idempotency_Key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/variation-policies",
+              "host": [
+                "{{clinicalUrl}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}",
+                "variation-policies"
+              ],
+              "query": []
+            },
+            "description": "Permissão existente: `variation-policy.configure`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"parameterKey\": \"\",\n  \"mode\": \"ABSOLUTE\",\n  \"threshold\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('configureVariationPolicy_x_request_id')) pm.environment.set('configureVariationPolicy_x_request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('configureVariationPolicy_x_correlation_id')) pm.environment.set('configureVariationPolicy_x_correlation_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "if (!pm.environment.get('configureVariationPolicy_Idempotency_Key')) pm.environment.set('configureVariationPolicy_Idempotency_Key', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status esperado: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}
