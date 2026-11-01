@@ -104,6 +104,29 @@ ou em transição autorizada, como D1_DATABASE. O mesmo campo aparece no CLI, re
 e artefato. Um binding desconhecido resulta em BINDING_MISMATCH sem divulgar seu
 nome. Não registrar os valores comparados, UUIDs de recursos ou settings completos.
 
+Para Service Bindings conhecidos, reason é opcional e usa somente esta lista:
+
+| reason               | Interpretação e conferência privada                       |
+| -------------------- | --------------------------------------------------------- |
+| TYPE_MISMATCH        | O tipo do binding difere de service                       |
+| DESTINATION_MISMATCH | O Worker de destino difere do contrato                    |
+| SELECTOR_MISMATCH    | Entrypoint ou environment difere do contrato              |
+| PROPS_MISMATCH       | Props foi retornado e diverge das propriedades declaradas |
+
+Se houver várias diferenças, a prioridade é tipo → destino → seletores → props.
+Bindings ausentes ou malformados mantêm os códigos existentes e não recebem uma
+razão estrutural de serviço. D1 e R2 não recebem essa classificação. O campo é
+calculado localmente, nunca copiado da API ou de transition.reason, que continua
+sendo uma justificativa documental livre. CLI, resumo e artefato usam a mesma
+sanitização, sem consultas adicionais à Cloudflare.
+
+Depois de uma execução autorizada, usar a razão para conferir o atributo afetado
+privadamente no Dashboard. Não remover bindings nem presumir que environment
+production equivale à ausência de seletor. Uma diferença real exige correção
+administrativa revisada ou transição explícita com estado anterior exato e testes
+de interoperabilidade. Essa aprovação é independente deste ajuste diagnóstico;
+o pós-check sempre exige o estado final, e props.caller não deve ser removido.
+
 Para BINDING_MISMATCH, distinguir representação de destino real: database_id é o
 campo D1 moderno, com id legado aceito e aliases conflitantes bloqueados. Serviços
 comparam destino, entrypoint e ambiente; ausência e null são equivalentes somente

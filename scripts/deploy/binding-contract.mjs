@@ -71,6 +71,25 @@ export function expectedBindings(config) {
     })),
   ].map(normalizeBinding);
 }
+// undefined means there is no service comparison to classify.
+export function serviceMismatchReason(actual, expected) {
+  if (!actual || expected?.type !== 'service' || actual.name !== expected.name)
+    return undefined;
+  if (actual.type !== expected.type) return 'TYPE_MISMATCH';
+  if (actual.service !== expected.service) return 'DESTINATION_MISMATCH';
+  if (
+    actual.entrypoint !== expected.entrypoint ||
+    actual.environment !== expected.environment
+  )
+    return 'SELECTOR_MISMATCH';
+  if (
+    actual.props !== undefined &&
+    expected.props !== undefined &&
+    !isDeepStrictEqual(actual.props, expected.props)
+  )
+    return 'PROPS_MISMATCH';
+  return null;
+}
 export function matchesBinding(actual, expected) {
   if (!actual || actual.name !== expected.name || actual.type !== expected.type)
     return false;
@@ -78,14 +97,7 @@ export function matchesBinding(actual, expected) {
     case 'd1':
       return actual.database_id === expected.database_id;
     case 'service':
-      return (
-        actual.service === expected.service &&
-        actual.entrypoint === expected.entrypoint &&
-        actual.environment === expected.environment &&
-        (actual.props === undefined ||
-          expected.props === undefined ||
-          isDeepStrictEqual(actual.props, expected.props))
-      );
+      return serviceMismatchReason(actual, expected) === null;
     case 'r2_bucket':
       return actual.bucket_name === expected.bucket_name;
     default:

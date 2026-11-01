@@ -60,6 +60,12 @@ const operations = new Set([
   'wrangler.deploy',
   'release',
 ]);
+const serviceMismatchReasons = new Set([
+  'TYPE_MISMATCH',
+  'DESTINATION_MISMATCH',
+  'SELECTOR_MISMATCH',
+  'PROPS_MISMATCH',
+]);
 export const requiredBindingsFailure =
   'Required production bindings unavailable; deployment blocked.';
 export class DeploymentValidationError extends Error {
@@ -79,6 +85,13 @@ export class DeploymentValidationError extends Error {
       context.allowedBindings.has(context.binding)
     )
       this.binding = context.binding;
+    if (
+      this.binding &&
+      this.code === 'BINDING_MISMATCH' &&
+      this.operation === 'worker.settings' &&
+      serviceMismatchReasons.has(context.reason)
+    )
+      this.reason = context.reason;
     if (
       Number.isInteger(context.status) &&
       context.status >= 100 &&
@@ -106,8 +119,17 @@ export function diagnostic(error, context = {}) {
       'requestId',
       'commitSha',
       'binding',
+      'reason',
     ]
-      .filter((key) => safe[key] !== undefined)
+      .filter(
+        (key) =>
+          safe[key] !== undefined &&
+          (key !== 'reason' ||
+            (safe.code === 'BINDING_MISMATCH' &&
+              safe.operation === 'worker.settings' &&
+              safe.binding !== undefined &&
+              serviceMismatchReasons.has(safe.reason))),
+      )
       .map((key) => [key, safe[key]]),
   );
 }
