@@ -367,7 +367,8 @@ export function githubClient({
         manifest?.formatVersion !== 1 ||
         !manifest.workers?.[worker] ||
         (record.payload.packageVersion !== undefined &&
-          record.payload.packageVersion !== manifest.workers[worker].packageVersion)
+          record.payload.packageVersion !==
+            manifest.workers[worker].packageVersion)
       )
         continue;
       return {

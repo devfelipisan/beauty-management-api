@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { release } from './release.mjs';
 import { preflight } from './preflight.mjs';
 import { postcheck } from './postcheck.mjs';
+import { activeVersion } from './worker-state.mjs';
 import { simulateRelease, validateManifest } from './manifest.mjs';
 import { fail, diagnostic } from './errors.mjs';
 import {
@@ -24,6 +25,16 @@ const context = {
 const published = () => ({
   status: 0,
   stdout: `Current Version ID: ${version}`,
+});
+test('active version rejects malformed UUIDs and split traffic', () => {
+  for (const versions of [
+    [{ version_id: '-'.repeat(36), percentage: 100 }],
+    [{ version_id: version, percentage: 50 }],
+  ]) {
+    assert.throws(() => activeVersion({ deployments: [{ versions }] }, {}), {
+      code: 'PUBLISHED_VERSION_MISMATCH',
+    });
+  }
 });
 test('complete release has one preflight, directed postchecks and per-Worker provenance', async () => {
   const f = fixture(),
@@ -104,7 +115,8 @@ test('postcheck failure retains actual published version and prevents next desti
   });
   assert.deepEqual(order, ['billing']);
   assert.equal(result.workers[0].version, version);
-  assert.equal(result.workers[0].verification, 'failed');
+  assert.equal(result.workers[0].verification, 'published_unverified');
+  assert.equal(result.status, 'published_unverified');
   assert.equal(result.failure.code, 'PUBLIC_EXPOSURE');
 });
 test('preflight failure prevents every publication', async () => {
@@ -211,7 +223,14 @@ test('postcheck reads only its Worker and rejects stale version or public exposu
       path.endsWith('/settings')
         ? response({
             ...settings('billing'),
-            bindings: [...settings('billing').bindings, { name: 'SERVICE_VERSION', type: 'plain_text', text: 'b'.repeat(40) }],
+            bindings: [
+              ...settings('billing').bindings,
+              {
+                name: 'SERVICE_VERSION',
+                type: 'plain_text',
+                text: 'b'.repeat(40),
+              },
+            ],
           })
         : undefined,
   ]) {

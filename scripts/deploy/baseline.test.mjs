@@ -35,7 +35,11 @@ test('legacy validator at the reviewed base reproduces 48 explicit calls without
       );
     if (url.endsWith('/settings')) {
       const legacySettings = settings(worker);
-      legacySettings.bindings.push({ name: 'SERVICE_VERSION', type: 'plain_text', text: sha });
+      legacySettings.bindings.push({
+        name: 'SERVICE_VERSION',
+        type: 'plain_text',
+        text: sha,
+      });
       legacySettings.bindings = legacySettings.bindings.map((binding) =>
         binding.type === 'd1'
           ? { name: binding.name, type: 'd1', id: binding.database_id }

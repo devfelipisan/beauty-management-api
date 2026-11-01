@@ -11,7 +11,9 @@ export function activeVersion(deployments, scope) {
     !Array.isArray(current?.versions) ||
     current.versions.length !== 1 ||
     current.versions[0].percentage !== 100 ||
-    !/^[0-9a-f-]{36}$/i.test(current.versions[0].version_id ?? '')
+    !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(
+      current.versions[0].version_id ?? '',
+    )
   )
     fail('PUBLISHED_VERSION_MISMATCH', {
       ...scope,
@@ -39,6 +41,10 @@ export async function publishedWorker(
     operation: 'worker.deployments',
     worker: name,
   });
-  const active = activeVersion(deployments, { ...context, phase, worker: name });
+  const active = activeVersion(deployments, {
+    ...context,
+    phase,
+    worker: name,
+  });
   return { worker: name, ...active, settings: state };
 }

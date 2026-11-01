@@ -75,8 +75,11 @@ test('audit compares published per-Worker configuration and reuses reads', async
 test('audit rejects configuration that differs from its actually published manifest', async () => {
   const f = fixture();
   f.github.provenanceByVersion = async (name) => ({
-    ...await fixture().github.provenanceByVersion(name),
-    workerManifest: { ...manifest.workers[name], configurationHash: '0'.repeat(64) },
+    ...(await fixture().github.provenanceByVersion(name)),
+    workerManifest: {
+      ...manifest.workers[name],
+      configurationHash: '0'.repeat(64),
+    },
   });
   f.github.file = async (path) => readFileSync(path, 'utf8');
   await assert.rejects(auditInfrastructure({ ...f }), {
@@ -100,7 +103,10 @@ test('audit uses published Text contracts rather than unpublished controller cha
   f.github.provenanceByVersion = async (name) => {
     const contract = structuredClone(manifest.workers[name]);
     if (name === 'billing') contract.productionText.OUTBOX_BATCH_SIZE = '4';
-    return { ...await fixture().github.provenanceByVersion(name), workerManifest: contract };
+    return {
+      ...(await fixture().github.provenanceByVersion(name)),
+      workerManifest: contract,
+    };
   };
   f.github.file = async (path) => readFileSync(path, 'utf8');
   assert.equal((await auditInfrastructure({ ...f })).published.length, 3);

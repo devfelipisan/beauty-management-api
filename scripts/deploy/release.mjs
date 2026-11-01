@@ -111,11 +111,8 @@ export async function release({
           controlSha: context.controlSha,
         });
       } catch (error) {
-        record.verification = record.verification === 'passed'
-          ? 'published_unverified'
-          : 'failed';
-        if (record.verification === 'published_unverified')
-          report.status = 'published_unverified';
+        record.verification = 'published_unverified';
+        report.status = 'published_unverified';
         throw error;
       }
       persist(report);
