@@ -11,7 +11,8 @@ D1 é a autoridade de memberships atuais, tenant ativo, permissões e escopo
 profissional. Nenhum papel é inferido do token.
 
 AUTH_ISSUER, AUTH_AUDIENCE, AUTH_JWKS_URL e AUTH_ALGORITHM são secrets remotos.
-Wrangler declara somente seus nomes; o preflight consulta presença/tipo, sem
+Wrangler declara somente seus nomes e verifica nativamente sua presença. O preflight
+rejeita tipos incompatíveis nos metadados já consultados, sem listar secrets,
 recuperar valores ou imprimir respostas remotas. A arquitetura não determina
 URLs reais nem o algoritmo efetivamente configurado.
 
@@ -75,11 +76,21 @@ UoW. JWKS pode ser reutilizado; memberships não são armazenadas em cache.
 O pool PostgreSQL legado limita cinco conexões por processo sem ativar seu módulo
 nos Workers. Não se trata de limite distribuído global de concorrência.
 
-request.json permanece como solicitação versionada. Publicação all segue Billing
-→ Clinical → Operations, com aprovação production, SHA fixo e migrations
-independentes. Bootstrap cria apenas Workers privados ausentes e interrompe a
-publicação até configuração manual e nova solicitação. Sem staging remoto ou
-Wrangler raiz no caminho de deploy.
+request.json permanece como solicitação versionada no SHA escolhido por dispatch
+manual. O SHA deve pertencer à feature/microsservices e possuir CI push confiável.
+Publicação all segue Billing → Clinical → Operations, com aprovação production,
+SHA fixo, preflight único, pós-check por destino e migrations independentes em
+production-migrations. Baseline e versões publicadas exigem manifesto/proveniência
+comprovados; all não dispensa compatibilidade intermediária.
+
+Bootstrap é um fluxo protegido independente que cria somente Workers privados
+ausentes. Readiness mantém inventário e habilitação de mídia fora do release;
+os gates transacionais continuam bloqueando uploads sem aprovação. Auditoria
+somente leitura usa environment próprio na main; sua frequência semanal depende
+da primeira homologação manual. Sem staging remoto ou Wrangler raiz no deploy.
+
+Detalhes e adoção: [PR-DEPLOY](../04-infrastructure/deployment-refactoring-plan.md)
+e [runbook](../worker-release-runbook.md).
 
 ## Web
 

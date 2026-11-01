@@ -1,46 +1,44 @@
-
 name: CI
 
 on:
   push:
-    branches:
-      - main
-
+    branches: [main, feature/microsservices]
   pull_request:
-    branches:
-      - main
-      - feature/microsservices
+    branches: [main, feature/microsservices]
 
 permissions:
   contents: read
 
 jobs:
   verify:
-    name: Verify code quality and tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate project
+      - run: npm ci
+      - name: Check formatting of changed files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if ! [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || [[ "$BASE_SHA" == 0000000000000000000000000000000000000000 ]]; then
+            BASE_SHA=$(git rev-parse HEAD^ 2>/dev/null || printf 4b825dc642cb6eb9a060e54bf8d69288fbee4904)
+          fi
+          node scripts/check-format-changes.mjs "$BASE_SHA" HEAD
+      - name: Verify code, contracts, architecture and local migrations
         run: npm run check
-
-      - name: Test deployment configuration
-        run: node --test scripts/worker-deployment-config.test.mjs scripts/worker-required-secrets.test.mjs
-
-      - name: Validate deployment configuration
-        run: node scripts/worker-deployment-config.mjs
-
-      - name: Verify clean worktree
+      - name: Test all deployment and infrastructure modules
+        run: node scripts/test-deployment.mjs
+      - name: Validate versioned configuration and manifest
+        run: |
+          node scripts/worker-deployment-config.mjs
+          node scripts/deploy/manifest-check.mjs
+      - name: Reject generated drift
         run: git diff --exit-code

@@ -1,0 +1,307 @@
+{
+  "formatVersion": 1,
+  "workers": {
+    "operations": {
+      "provided": {
+        "revision": "5c7e59618844fba5c78057cbe5c4390d08d817c49997b4d500253c0c0080ac54",
+        "rpcMethods": [
+          "appointmentChangeRoute",
+          "packageAssignmentRoute",
+          "applyDepositConfirmed",
+          "applyDepositExpired",
+          "getSessionStartContext",
+          "applySessionStarted",
+          "applySessionCompleted",
+          "applyClinicalRestriction",
+          "applyReturnRecommended",
+          "assignPackageToAppointment",
+          "applyPackageUnitConsumed",
+          "applyPaymentReceived",
+          "applyRefundIssued",
+          "rescheduleAppointment",
+          "cancelAppointment",
+          "markAppointmentNoShow",
+          "dispatchOutboxBatch",
+          "resolveClinicalRestriction",
+          "getServiceTechnicalContext"
+        ],
+        "events": [
+          "ProfileImageDeletionRequested",
+          "ProfileImageReconciliationRequested",
+          "FinancialSettlementRequested",
+          "AppointmentCanceled",
+          "AppointmentNoShowRecorded"
+        ]
+      },
+      "requires": {
+        "clinical": [
+          "5ffc4da4a50267a4b4204b92a03c67e6dab44a0b6e57277dd859f1c2f03c9a29"
+        ],
+        "billing": [
+          "730bfad7e91d3b364ce9fcb00276cfa131d8d94b25de53d40a33a2b4052132ba"
+        ]
+      },
+      "minMigration": "0030",
+      "productionText": {
+        "APP_ENV": "production",
+        "AUTH_PROVIDER": "jwt",
+        "OBSERVE_ENABLED": "true",
+        "OUTBOX_BATCH_SIZE": "5",
+        "OUTBOX_LEASE_SECONDS": "60",
+        "MAX_PROFILE_IMAGE_BYTES": "300000"
+      },
+      "requiredSecrets": [
+        "AUTH_ISSUER",
+        "AUTH_AUDIENCE",
+        "AUTH_JWKS_URL",
+        "AUTH_ALGORITHM"
+      ],
+      "configurationHash": "c92264586d6364e7f1f01c4b9832d021f35e1d2f32484e864b58c5aabdc9b287",
+      "transitions": []
+    },
+    "billing": {
+      "provided": {
+        "revision": "730bfad7e91d3b364ce9fcb00276cfa131d8d94b25de53d40a33a2b4052132ba",
+        "rpcMethods": [
+          "calculateCommercialTerms",
+          "createDepositForAppointment",
+          "confirmDeposit",
+          "expireDeposit",
+          "dispatchOutboxBatch",
+          "applyPackageConsumptionRequested",
+          "materializeCustomerPackage",
+          "checkPackageUsageEligibility",
+          "applyFinancialSettlementRequested",
+          "registerPayment",
+          "issueRefund",
+          "grantInternalCredit",
+          "evaluateAppointmentCancellationFinancials",
+          "evaluateAppointmentNoShowFinancials",
+          "validateFinancialDecisionSnapshot",
+          "buildFinancialDecisionSnapshot",
+          "applyAppointmentCanceledFinancialEffects",
+          "applyAppointmentNoShowFinancialEffects"
+        ],
+        "events": [
+          "DepositConfirmed",
+          "DepositExpired",
+          "PackageUnitConsumed",
+          "PaymentReceived",
+          "RefundIssued"
+        ]
+      },
+      "requires": {
+        "operations": [
+          "5c7e59618844fba5c78057cbe5c4390d08d817c49997b4d500253c0c0080ac54"
+        ]
+      },
+      "minMigration": "0026",
+      "productionText": {
+        "APP_ENV": "production",
+        "AUTH_PROVIDER": "jwt",
+        "OBSERVE_ENABLED": "true",
+        "OUTBOX_BATCH_SIZE": "5",
+        "OUTBOX_LEASE_SECONDS": "60"
+      },
+      "requiredSecrets": [
+        "AUTH_ISSUER",
+        "AUTH_AUDIENCE",
+        "AUTH_JWKS_URL",
+        "AUTH_ALGORITHM"
+      ],
+      "configurationHash": "837ac316f0f338626a16fee91012f1e9beb643040847014a4336fcbb12842328",
+      "transitions": []
+    },
+    "clinical": {
+      "provided": {
+        "revision": "5ffc4da4a50267a4b4204b92a03c67e6dab44a0b6e57277dd859f1c2f03c9a29",
+        "rpcMethods": [
+          "handleReturnRoute",
+          "handleCompletionRoute",
+          "handleMediaRoute",
+          "auth",
+          "handleEquipmentRoute",
+          "checkAssessmentEligibility",
+          "startSession",
+          "getSessionStartContext",
+          "dispatchOutboxBatch",
+          "createTechnicalForm",
+          "publishTechnicalForm",
+          "recordSessionTechnicalValues",
+          "recordSessionPower",
+          "createEquipment",
+          "configureEquipmentServices",
+          "changeEquipmentStatus",
+          "recordSessionEquipmentUsage",
+          "getPreviousSessionContext",
+          "configureVariationPolicy",
+          "justifyVariationAlert",
+          "reportIntercurrence",
+          "resolveIntercurrence",
+          "uploadSessionPhoto",
+          "listSessionPhotos",
+          "getClinicalPhoto",
+          "reconcilePhotoAttachment",
+          "evaluateSessionPhotoRequirement",
+          "checkSessionCompletionEligibility",
+          "completeSession",
+          "recommendReturn"
+        ],
+        "events": [
+          "SessionStarted",
+          "SessionCompleted",
+          "ReturnRecommended",
+          "PackageConsumptionRequested",
+          "ClinicalRestrictionActivated",
+          "ClinicalRestrictionResolved"
+        ]
+      },
+      "requires": {
+        "operations": [
+          "5c7e59618844fba5c78057cbe5c4390d08d817c49997b4d500253c0c0080ac54"
+        ],
+        "billing": [
+          "730bfad7e91d3b364ce9fcb00276cfa131d8d94b25de53d40a33a2b4052132ba"
+        ]
+      },
+      "minMigration": "0026",
+      "productionText": {
+        "APP_ENV": "production",
+        "AUTH_PROVIDER": "jwt",
+        "OBSERVE_ENABLED": "true",
+        "OUTBOX_BATCH_SIZE": "5",
+        "OUTBOX_LEASE_SECONDS": "60"
+      },
+      "requiredSecrets": [
+        "AUTH_ISSUER",
+        "AUTH_AUDIENCE",
+        "AUTH_JWKS_URL",
+        "AUTH_ALGORITHM"
+      ],
+      "configurationHash": "96e7d8a6f264ee6a56b00150d96165fbfa8ad870637973f1a9457d2f5601905f",
+      "transitions": []
+    }
+  },
+  "migrations": [
+    {
+      "name": "0001_operations_foundation.sql",
+      "hash": "0143e84e737893d6fa7544bfd89b852d748e6aa59c1d8d9d7910005d607e5fb9"
+    },
+    {
+      "name": "0002_reliability_foundation.sql",
+      "hash": "ef3b4609135486b0853898f044bee79a02daddf60e8e6a5954141d1dfa757ef8"
+    },
+    {
+      "name": "0003_scheduling_foundation.sql",
+      "hash": "5d82e0599d32f4b7c36c66c5d448851d235890f4c6ab559f3a5b6ba06de801cd"
+    },
+    {
+      "name": "0004_appointment_admission_dependencies.sql",
+      "hash": "167945d883d5d36342b0176238a967d0e73970f7b003e4c7ad4c3f75e34bde29"
+    },
+    {
+      "name": "0005_commercial_policy_materialization.sql",
+      "hash": "ce2ee4ba47e54255287c302ce784115161e0bd1a94268a9e9e265e328b9c2ef7"
+    },
+    {
+      "name": "0006_create_appointment_authoritative_snapshot.sql",
+      "hash": "53b572d38f5b1f3b471eea4a80b88ccbb11d64d42321120eba8b6a8205f9514a"
+    },
+    {
+      "name": "0007_deposit_lifecycle.sql",
+      "hash": "ea8e5fe6ed0628262b722a364491f12de9e520f095fa714d65c476955124e1b6"
+    },
+    {
+      "name": "0008_outbox_delivery_foundation.sql",
+      "hash": "e43b11521258622faf8342350fc8bd906eb0795d9f5c5e2831693f7136adbd4c"
+    },
+    {
+      "name": "0009_appointment_confirmation_presence.sql",
+      "hash": "081552d2b40424cf51463624d1b84fa3ab2979c9da4cb1174974f3b613a6877a"
+    },
+    {
+      "name": "0010_session_foundation.sql",
+      "hash": "a92d143985898c3e4b9494fd836890f3803274a50eae454f6eadb55a8f6dcf2e"
+    },
+    {
+      "name": "0011_technical_form_session_parameters.sql",
+      "hash": "5e917debc8ca5cd0400dd99fc76603e775b4522fd538a26b0447b2145a20757c"
+    },
+    {
+      "name": "0012_equipment_usage_previous_session_comparison_variation_alerts.sql",
+      "hash": "414bc5aac99c068a2dd25d37cd533cf521e9b2fcf7d3e8ef6ed4efda8a83bd8e"
+    },
+    {
+      "name": "0013_intercurrence_clinical_restrictions.sql",
+      "hash": "43fb35d9263dc2bc6bf1408c920d55becc94dcfe893d5d0cf52df75c0fc7203b"
+    },
+    {
+      "name": "0014_session_photos_r2_storage.sql",
+      "hash": "d0d002780216a96c95aa94fe7c9f053d9756fbeb6aa5ade40c9416384fd70a5d"
+    },
+    {
+      "name": "0015_session_completion.sql",
+      "hash": "d8cfd6efb894138b0194914e2c250bf8fc2f2beabbf9596a9595bf57338a9838"
+    },
+    {
+      "name": "0016_customer_history_profile_return.sql",
+      "hash": "7ac8f3644c65dd0eba3da42b7f7c1d4482624daebbe76aa10e7006afbdb0e8df"
+    },
+    {
+      "name": "0017_packages_session_consumption.sql",
+      "hash": "9a7e44deb3e28bfb6ac8a8bbdf174e233abc8c21f70fdbfc61d32643f6cf3b45"
+    },
+    {
+      "name": "0018_package_assignment_qualification.sql",
+      "hash": "7ccd75d5e42be6a74fd36426ad6b4b24b2207ded8355ae9cf148ca80b4519a18"
+    },
+    {
+      "name": "0019_receivable_payment_ledger_foundation.sql",
+      "hash": "06bfb138496291158589a153158f345c0da9c33484700b160293d753350277f8"
+    },
+    {
+      "name": "0020_refund_internal_credit_financial_reversal.sql",
+      "hash": "b307cfa2794e6fac846ad26ed0d9a032e7608009ebe9158d8865ff2086f0c8cb"
+    },
+    {
+      "name": "0021_appointment_change_financial_effects.sql",
+      "hash": "a069744606235094e0339416b6a6174d405bd346043bd89ff5d70779dc9c044b"
+    },
+    {
+      "name": "0022_cancellation_no_show_policy_materialization.sql",
+      "hash": "cd7becb8bda1ee2939a7d3987f085b33a56a2d2364ffb1c83fab47fd15e0004f"
+    },
+    {
+      "name": "0023_financial_effect_execution_reconciliation.sql",
+      "hash": "5e379f52c2e439ef9e4776bc29dbd7adb03d5be2e0fead1824f9dc76d6a5bb0b"
+    },
+    {
+      "name": "0024_financial_entity_versions.sql",
+      "hash": "d462a083b06f1dea252e14cde6ad1b71ab41b530691c1bdb0798d321dde224e6"
+    },
+    {
+      "name": "0025_payment_versions.sql",
+      "hash": "5db41b2c6c90ba003d7f8d14d742751cd051ffc7b016f93f27955a0fdc350c49"
+    },
+    {
+      "name": "0026_identity_rbac.sql",
+      "hash": "7eefa268e75da85e7ccc3069ac1863c06357cde2b2211dd175bf6f5b60d0cf32"
+    },
+    {
+      "name": "0027_media_capacity.sql",
+      "hash": "c3a826da6b51c7f0c65f8a7a5d26260225c4197cd0f3ee18b56667ab844ab547"
+    },
+    {
+      "name": "0028_clinical_upload_correlation.sql",
+      "hash": "292ab79f560ffab3bab93b821ae6bb39847bf131b6a3c44163924455736bc15d"
+    },
+    {
+      "name": "0029_profile_images.sql",
+      "hash": "28b54cedc0c1ecc47ca27a30df4c52ec7f12f260f1b8b24826f2d062048aa04f"
+    },
+    {
+      "name": "0030_profile_image_limit.sql",
+      "hash": "d4817c7ff08192c6cae4dfce41b72e8ef146cec98f4588770ed63a606eb57a8c"
+    }
+  ]
+}

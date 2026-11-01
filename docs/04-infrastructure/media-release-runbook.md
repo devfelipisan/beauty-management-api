@@ -36,7 +36,11 @@ o job para configuração manual e nova solicitação. Não substitui Workers ex
 ## Inventário e aprovação: gate obrigatório
 
 A migration inicializa `media_capacity` com todas as aprovações desabilitadas e
-não provisiona quotas. Deploy de mídia e novos uploads ficam bloqueados.
+não provisiona quotas. Novos uploads ficam bloqueados. A publicação de correções
+de código não depende dessas aprovações: o release consulta somente esquema e
+recursos obrigatórios, enquanto readiness verifica inventário, política e capacidade.
+O gate transacional de upload continua obrigatório. Ver o
+[runbook de release](../worker-release-runbook.md) para a sequência e as credenciais.
 Não habilitar os indicadores para contornar o gate.
 
 O responsável deverá registrar e revisar um inventário completo, feito fora do

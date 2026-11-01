@@ -22,6 +22,14 @@ anterior sobre captura clínica em R2 e limite de perfil de 2 MB.
 
 ## Sequência operacional
 
+Para a orquestração de publicação, esta seção é complementada e substituída pelo
+[PR-DEPLOY](deployment-refactoring-plan.md) e pelo
+[runbook de release](../worker-release-runbook.md). Inventário e aprovação de mídia
+continuam obrigatórios para habilitar uploads, mas não bloqueiam uma publicação
+independente de código quando o esquema e os contratos necessários estão disponíveis.
+CI não tem credenciais remotas; release é intencional por SHA, migrations são
+independentes e readiness mantém as aprovações fora do caminho normal de deploy.
+
 1. Validar localmente contratos, testes, migrations e dry-runs.
 2. Inventariar D1 remoto, migrations e intenções pendentes.
 3. Aplicar migrations revisadas no workflow independente e protegido.

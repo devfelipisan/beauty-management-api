@@ -1,0 +1,65 @@
+name: Private Worker bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Create only missing private Workers; configure them manually afterwards
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beauty-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: |
+          test "$GITHUB_REF" = 'refs/heads/feature/microsservices'
+          npm run check
+          node scripts/test-deployment.mjs
+      - env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs
+  bootstrap:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs
+      - env:
+          APPLY: ${{ inputs.apply }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ "$APPLY" = true ]; then
+            node scripts/bootstrap-workers.mjs --apply
+          else
+            node scripts/bootstrap-workers.mjs
+          fi

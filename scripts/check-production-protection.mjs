@@ -1,68 +1,61 @@
-// Read-only preflight: naming an environment does not prove that it requires approval.
-const repository = process.env.GITHUB_REPOSITORY;
-if (!repository || !process.env.GITHUB_TOKEN)
-  throw new Error('GitHub environment inspection credentials are required');
-const response = await fetch(
-  `https://api.github.com/repos/${repository}/environments/production`,
-  {
-    headers: {
-      authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  },
-);
-if (!response.ok)
-  throw new Error(
-    `Cannot verify production protection (HTTP ${response.status}); deployment is blocked`,
-  );
-const environment = await response.json();
-if (
-  !environment.protection_rules?.some(
-    (rule) => rule.type === 'required_reviewers' && rule.reviewers?.length,
-  )
-) {
-  throw new Error(
-    'production must have required reviewers; deployment is blocked',
-  );
-}
-if (!environment.deployment_branch_policy)
-  throw new Error('production must restrict deployment branches');
-if (environment.deployment_branch_policy.custom_branch_policies) {
-  const rules = await fetch(
-    `https://api.github.com/repos/${repository}/environments/production/deployment-branch-policies`,
-    {
-      headers: {
-        authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-        accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    },
-  );
-  if (!rules.ok)
-    throw new Error('Cannot verify production branch restrictions');
-  const policies = (await rules.json()).branch_policies;
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { githubClient } from './deploy/github-client.mjs';
+import { diagnostic, fail } from './deploy/errors.mjs';
+
+export async function checkProtection({
+  environment = 'production',
+  repository,
+  token,
+  fetchImpl,
+}) {
+  const context = { phase: 'eligibility', operation: 'github.request' };
   if (
-    !Array.isArray(policies) ||
-    policies.length !== 1 ||
-    policies[0].name !== 'feature/microsservices' ||
-    policies[0].type !== 'branch'
+    !['production', 'production-migrations', 'infrastructure-audit'].includes(
+      environment,
+    )
   )
-    throw new Error(
-      'production must allow only the feature/microsservices branch',
-    );
-} else if (environment.deployment_branch_policy.protected_branches) {
-  const branch = await fetch(
-    `https://api.github.com/repos/${repository}/branches/feature%2Fmicrosservices`,
-    {
-      headers: {
-        authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-        accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    },
+    fail('INVALID_REQUEST', context);
+  const github = githubClient({ repository, token, fetchImpl, context });
+  const config = await github.request(`/environments/${environment}`);
+  const expectedBranch =
+    environment === 'infrastructure-audit' ? 'main' : 'feature/microsservices';
+  if (
+    environment !== 'infrastructure-audit' &&
+    !config.protection_rules?.some(
+      (rule) => rule.type === 'required_reviewers' && rule.reviewers?.length,
+    )
+  )
+    fail('PROTECTION_UNAVAILABLE', context);
+  if (
+    config.deployment_branch_policy?.custom_branch_policies !== true ||
+    config.deployment_branch_policy.protected_branches === true
+  )
+    fail('PROTECTION_UNAVAILABLE', context);
+  const rules = await github.request(
+    `/environments/${environment}/deployment-branch-policies`,
   );
-  if (!branch.ok || !(await branch.json()).protected)
-    throw new Error('The release branch must be protected');
-} else throw new Error('No effective production branch restriction');
-console.log('Production approval and branch protection are configured');
+  if (
+    !Array.isArray(rules.branch_policies) ||
+    rules.branch_policies.length !== 1 ||
+    rules.branch_policies[0].name !== expectedBranch ||
+    rules.branch_policies[0].type !== 'branch'
+  )
+    fail('PROTECTION_UNAVAILABLE', context);
+}
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
+  try {
+    await checkProtection({
+      environment: process.argv[2] ?? 'production',
+      repository: process.env.GITHUB_REPOSITORY,
+      token: process.env.GITHUB_TOKEN,
+    });
+    console.log('Environment policy verified');
+  } catch (error) {
+    console.error(JSON.stringify(diagnostic(error)));
+    process.exitCode = 1;
+  }
+}

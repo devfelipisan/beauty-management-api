@@ -1,123 +1,116 @@
-# Qualificação e operação dos Workers
+# Operação protegida dos Workers
 
-## Estado e requisitos antes da liberação
+## Preparação administrativa
 
-Esta entrega altera código e pipelines, mas não publica serviços nem aplica
-migrations remotas. O UUID de beauty_db informado pelo responsável foi aplicado
-nos três Wranglers de produção. O validador de deploy
-rejeita ausência, placeholders, destinos incorretos e exposição pública.
+O código deste PR não executa mudanças remotas. Configurar manualmente:
 
-AUTH_ISSUER, AUTH_AUDIENCE, AUTH_JWKS_URL e AUTH_ALGORITHM são bindings de secrets
-obrigatórios, declarados somente por nome em `secrets.required`. Não cadastrar
-seus valores no repositório, em `vars`, argumentos de comando ou artefatos de CI.
-O emissor previsto é Supabase Auth conforme ADR-0015; URL, audiência e algoritmo
-do ambiente não são inferidos dessa decisão arquitetural.
+| Environment           | Branch exclusiva       | Secret Cloudflare           | Capacidade                                                              |
+| --------------------- | ---------------------- | --------------------------- | ----------------------------------------------------------------------- |
+| production            | feature/microsservices | CLOUDFLARE_DEPLOY_TOKEN     | Workers autorizados; leituras necessárias de Workers, D1 e metadados R2 |
+| production-migrations | feature/microsservices | CLOUDFLARE_MIGRATIONS_TOKEN | D1 Read/Write                                                           |
+| infrastructure-audit  | main                   | CLOUDFLARE_AUDIT_TOKEN      | Workers Metadata, D1 e R2 somente leitura                               |
 
-O responsável cadastra os quatro valores manualmente no Cloudflare Dashboard,
-como secrets de cada Worker: beauty-operations-worker, beauty-billing-worker e
-beauty-clinical-worker. Não basta cadastrá-los em apenas um Worker. Se algum nome
-de Worker ainda não existir, provisioná-lo privadamente antes de cadastrar seus
-secrets; o preflight bloqueia serviços ausentes antes de qualquer publicação.
+Ambientes mutáveis exigem required reviewers e política customizada de branch
+exata; não basta criar o environment com esse nome. Cadastrar também
+`CLOUDFLARE_ACCOUNT_ID` como variável do environment. Validar capacidades dos
+tokens contra os endpoints usados; não adicionar escrita R2 ao deploy para uploads
+realizados pelo binding do Worker. Retirar escrita D1 do token de deploy quando
+o token independente de migrations estiver operacional.
 
-O gate local valida a declaração dos bindings e a estrutura de produção, sem
-receber seus valores. O job protegido consulta apenas nomes/tipos pelo endpoint
-de metadados de secrets; não lê valores ou settings gerais. Ausência, tipo
-incorreto, resposta inválida, indisponibilidade ou falta de autorização produzem
-mensagem genérica e bloqueiam todos os destinos selecionados antes do primeiro
-deploy. `secrets.required` também é verificado pelo Wrangler durante publicação.
-Existência de um nome não comprova que o valor está correto: configuração e JWT
-continuam validados em runtime, sem fallback remoto para mocks.
+Text de produção pertence ao Dashboard: APP_ENV=production, AUTH_PROVIDER=jwt,
+OBSERVE_ENABLED=true, OUTBOX_BATCH_SIZE=5, OUTBOX_LEASE_SECONDS=60 e, em Operations,
+MAX_PROFILE_IMAGE_BYTES=300000. SERVICE_VERSION pertence ao pipeline. Os quatro
+nomes AUTH_ISSUER, AUTH_AUDIENCE, AUTH_JWKS_URL e AUTH_ALGORITHM permanecem em
+secrets.required; cadastrar valores reais manualmente em cada Worker. Não colocar
+valores em repositório, comandos, logs ou artefatos. Supabase é a arquitetura de
+identidade aprovada; nenhum endpoint ou algoritmo é presumido.
 
-O pipeline não imprime stdout/stderr brutos do Wrangler. Evidências de publicação
-contêm somente requestId, SHA, destino, status, código de saída e versão publicada.
-Uma falha deve ser investigada pelo operador no Dashboard, sem enviar valores de
-autenticação aos logs. A interface metadata-only corresponde ao SDK oficial:
-[consulta dos nomes dos secrets](https://github.com/cloudflare/workers-sdk/blob/main/packages/deploy-helpers/src/deploy/helpers/check-remote-secrets-override.ts).
+## Primeira adoção
 
-Produção usa AUTH_PROVIDER=jwt e APP_ENV=production. ES256 ou RS256 deve refletir
-a chave efetivamente configurada no Supabase. Não utilizar secret/service-role
-no Web. O ambiente local explícito usa --env local --local, AUTH_PROVIDER=mock;
-esse ambiente nunca é destino de deploy.
+1. Executar Node de .nvmrc, npm ci, npm run check, node scripts/test-deployment.mjs,
+   node scripts/worker-deployment-config.mjs, node scripts/deploy/manifest-check.mjs
+   e git diff --check. Revisar manifesto, contratos e transições.
+2. Se Workers estiverem ausentes, executar bootstrap privado em modo inspeção.
+   Após revisão e aprovação, aplicar somente ausentes. A execução que cria Workers
+   termina bloqueada deliberadamente; cadastrar configuração manual e iniciar
+   outra solicitação. Não publicar a aplicação nesse procedimento.
+3. Inspecionar migrations com D1 migrations, apply=false, no SHA revisado. Conferir
+   artefato, dados existentes, pendências e compatibilidade anterior/futura.
+4. Executar novamente o mesmo workflow no mesmo SHA, apply=true e inspection_run_id
+   da inspeção bem-sucedida. A aprovação de production-migrations antecede aplicação.
+   Histórico divergente, inspeção de outro SHA ou migration desconhecida bloqueiam.
+   Inspeção consulta sqlite_master antes de d1_migrations; não exige media_capacity.
+5. Provisionar recursos obrigatórios manualmente. Executar readiness. Para abrir
+   uploads, revisar inventário de todo beauty-r2, privacidade, quotas, política e
+   escritores coordenados; registrar aprovações reais pelo procedimento administrativo
+   existente e executar readiness media. Não alterar flags para liberar publicação.
+6. Inventariar SHA e versão Cloudflare ativa de cada Worker. Homologar contratos e
+   interoperabilidade. Registrar em .github/deploy/baseline.json, para cada nome
+   operations/billing/clinical, commitSha, versionId e qualificationReference.
+   Não preencher com versões ilustrativas. Revisar/commitar e executar readiness
+   baseline. Estados ativos precisam corresponder exatamente à declaração.
+7. Aguardar CI push confiável do SHA candidato. Selecionar all em request.json
+   daquele commit e executar o release manual com o SHA completo.
 
-## Baseline reproduzível
+Um placeholder de bootstrap não é baseline de aplicação homologada. Se não há
+aplicação com contratos comprovados, o primeiro provisionamento funcional precisa
+de uma migração de topologia explicitamente revisada; o release normal permanece
+bloqueado. Não falsificar SERVICE_VERSION ou proveniência para passar pelo gate.
 
-Usar Node de .nvmrc, npm ci e npm run check. Executar também
-`node --test scripts/worker-deployment-config.test.mjs scripts/worker-required-secrets.test.mjs`
-e git diff --check.
-O check inclui lint, typecheck, unitários/arquitetura, Workers com D1 local,
-E2E e dry-run dos três bundles. Dry-run não comprova autorização real nem
-disponibilidade remota. Não declarar liberação apenas por esses gates.
+## Release normal
 
-## Inventário e primeiro administrador
+Usar Deploy Beauty Workers → Run workflow na branch autorizada; informar SHA
+completo ancestral da feature/microsservices. O preparo exige CI push concluído
+com sucesso do workflow ci.yml do próprio repositório. CI de PR não autoriza release.
+mode, worker e requestId são lidos do request.json naquele SHA, mesmo se a branch
+avançar. mode=validate termina no preparo, sem credenciais Cloudflare ou escrita.
 
-Antes de aplicar 0026, conferir schema e d1_migrations remotos, duplicidades de
-professionals(tenant_id,id), integridade e colisões com as tabelas novas. A
-migration é aditiva e não cria identidades, permissões ou concessões.
+Conferir SHA e destinos no resumo antes de aprovar production. O checkout da
+aplicação é imutável; o controle usa separadamente o SHA confiável do dispatch.
+O orquestrador realiza um preflight remoto e publica Billing → Clinical → Operations
+para all. Cada publicação passa por pós-check dirigido e registro de proveniência.
+Não há aplicação implícita de migrations, bootstrap ou aprovação de mídia.
 
-Provisionamento inicial é uma mudança administrativa revisada, executada por
-operador com acesso ao D1 e aprovação registrada: confirmar issuer/subject do
-usuário Supabase, tenant existente e ativo, identificador interno e papel
-aprovado; preparar SQL com valores explícitos e as concessões individualmente
-aprovadas; revisar e executar identidade, membership, papel e vínculos em batch
-atômico, incluindo registro na auditoria existente. Não conceder as três novas
-permissões automaticamente. Registrar ticket, operador, SHA e resultado sem
-token/senha/PII. Verificar consultas autenticadas e revogação antes de liberar.
-Não existe endpoint público de bootstrap nem script com grants padrão.
+Se houver erro, consultar código/fase/operation/worker/status no artefato sanitizado.
+Não copiar saída bruta do Wrangler ou valores do Dashboard. Secret obrigatório
+ausente falha nativamente no Wrangler; tipos Text incorretos falham antes da publicação.
+As consultas D1 de esquema usam leitura, conforme a
+[API oficial D1](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/).
 
-## Fluxo de publicação
+## Falha parcial e recuperação
 
-1. Configurar production com revisores obrigatórios e restrição efetiva da branch
-   feature/microsservices; configurar credenciais Cloudflare de escopo mínimo.
-   O pipeline consulta essa proteção e falha se não conseguir comprová-la.
-2. Revisar migrations em execução independente com apply=false. Conferir o
-   inventário e o SQL, aprovar execução com apply=true no SHA revisado. O workflow
-   workflow_dispatch precisa existir também na branch padrão para ser acionável.
-   Não reescrever migrations históricas nem aplicar migrations durante deploy.
-3. Alterar .github/deploy/request.json preservando mode, worker e requestId.
-   validate executa gates; deploy exige production. Checkouts usam github.sha.
-4. Após os gates e aprovação, o preflight verifica secrets de todos os destinos
-   selecionados. Serviços ausentes ou sem os bindings interrompem o fluxo;
-   nenhum placeholder é publicado para contornar essa verificação. O bootstrap
-   privado existente nunca substitui um Worker já provisionado. all publica
-   Billing, Clinical, Operations sequencialmente. Os pacotes compartilhados são empacotados pelo
-   entrypoint de cada configuração, sem redistribuição de arquivos pelo GitHub.
-5. Conferir artefato result.json e resumo: requestId, SHA, destino, versões e
-   falha parcial. Uma publicação anterior ao erro continua ativa; não há rollback
-   automático entre Workers.
+O artefato .cache/deployment/result.json registra versões efetivamente publicadas,
+pós-check, tempos e métricas mesmo quando o segundo destino falha. GitHub Deployment
+de um destino aprovado continua válido independentemente do resultado global.
+Se a publicação ocorreu, mas seu pós-check ou registro falhou, não presumir que
+a versão anterior continua ativa. Inspecionar e homologar o estado real; uma
+versão sem associação comprovada bloqueia novas publicações até recuperação revisada.
 
-## Smoke e recuperação — qualificação ainda necessária
+Corrigir a causa e emitir nova solicitação de SHA compatível. Não restaurar D1,
+apagar objetos, reabrir Clinical R2 ou alterar quotas/aprovações automaticamente.
+Rollback também exige CI, manifesto compatível e aprovação. Repetir release não
+provisiona recursos nem executa efeitos de negócio.
 
-Em acesso interno e pelo BFF configurado, verificar health/versão, login, consulta
-dos próprios workspaces, contexto com membership atual, rejeição de JWT falso e
-revogado, tenant cruzado, mutação sem permissão e leitura que tenta escrever.
-Validar operação suportada com dados de qualificação, auditoria e replay; conferir
-que mídia indisponível não cria registro e que foto obrigatória impede conclusão.
-URLs e credenciais de smoke não foram fornecidas; não há smoke remoto comprovado
-ou liberação automática condicionada a esse resultado nesta entrega.
+## Auditoria
 
-Rollback de Worker: revisar versão anterior compatível com schema, aprovar no
-mesmo ambiente protegido e usar Wrangler rollback com --config explícito para
-cada destino afetado. Registrar versões e repetir smoke. Não reverter dados junto
-com código. Migration defeituosa exige migration corretiva aditiva revisada.
-Restauração excepcional de D1 exige janela de incidente, identificação do ponto
-de recuperação, avaliação de perda/replay e aprovação específica. Ensaios remotos
-dessas três formas de recuperação continuam pendentes.
+Publicar workflow e módulos de controle em main, confirmada como branch padrão.
+Executar Infrastructure audit manualmente com token de leitura e ambiente exclusivo.
+O relatório considera manifestos por destino realmente publicado, inclusive releases
+parciais; não compara com alterações não publicadas da feature.
 
-## Jornadas e limitações explícitas
+Após homologação manual bem-sucedida, registrar a execução aprovada e, em commit
+revisado na main, habilitar o bloco schedule comentado: `0 6 * * 0`, domingo às
+06:00 UTC. Até essa aprovação, a auditoria é somente manual. Drift falha visivelmente
+no Actions; não há correção automática ou notificação externa. Não listar objetos.
 
-O BFF integra sessão por e-mail/senha e transporte autenticado de /me/tenants,
-/me/context e leitura/atualização de clientes. A página visual de clientes ainda
-depende de composição de dashboard incompatível; transporte disponível não
-comprova jornada visual completa. Outras capacidades retornam indisponibilidade
-até adequação dos contratos, sem fallback HTTP/bootstrap público.
+## Mídia e administração inicial
 
-RPC sem política aprovada permanece negado. Devolução automática de sinal,
-refund/credit e outros efeitos financeiros incompletos seguem para reconciliação
-durável; não declarar paridade financeira. createDepositForAppointment exige
-evento comprometido, mas a produção completa desse evento ainda requer integração.
-Eventos locais sem consumidor não são marcados como enviados artificialmente.
-Métricas de atraso devem distinguir tipos roteáveis de notificações locais.
-Batch/lease/frequência de Outbox, reconciliação operacional, smoke automatizado,
-UUID/auth reais e ensaio de rollback são pendências de liberação.
+Readiness não aprova políticas: verifica registros aprovados existentes. Um deploy
+de código pode ocorrer com mídia fechada; a reserva transacional D1 continua negando
+uploads não aprovados. Ver [runbook de mídia](04-infrastructure/media-release-runbook.md).
+O primeiro administrador continua sendo provisionado por procedimento administrativo
+revisado: identidade Supabase e tenant existentes, permissões explicitamente aprovadas,
+auditoria e nenhuma concessão implícita ou endpoint público de bootstrap.
 
-Novas evidências de testes devem ser registradas no relatório de implementação.
+Dry-runs e testes locais não comprovam permissões remotas, retenção, carga ou custos.
+Nenhum deploy, inventário real ou homologação remota foi executado por este PR.
