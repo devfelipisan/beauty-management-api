@@ -9,6 +9,23 @@ por CI → verify → workflow reutilizável → aprovação production → publ
 Preservar dispatch manual para recuperação. A elegibilidade comum comprova o job
 verify sem depender do término global do CI, eliminando a dependência circular.
 
+## Solicitação de publicação
+
+O release lê `.github/deploy/request.json` no SHA aprovado pelo CI. `mode: validate`
+encerra a preparação sem executar o job de publicação; esse job aparece como
+`skipped`, mesmo com CI aprovado. `mode: deploy` habilita a publicação do alvo
+`worker`, após os controles de elegibilidade, proteção de production e preflight.
+A solicitação atual seleciona os três Workers (`worker: all`).
+
+Para publicar esta alteração, ela precisa integrar `feature/microsservices` e
+passar por uma nova execução de push. Reexecutar a run 41332401207 reutiliza o SHA
+99c999e e sua solicitação em modo validate; não incorpora esta mudança.
+Pull requests e pushes em main continuam sem publicação automática.
+O Environment production deve disponibilizar `CLOUDFLARE_API_TOKEN` e
+`CLOUDFLARE_ACCOUNT_ID`, além das proteções exigidas. A baseline vazia não deve
+ser preenchida sem evidência real: inventário e readiness continuam necessários
+para comprovar a proveniência de versões existentes.
+
 ## Separação dos fluxos
 
 | Fluxo      | Entrada                                              | Credencial Cloudflare               | Efeito                                 |
