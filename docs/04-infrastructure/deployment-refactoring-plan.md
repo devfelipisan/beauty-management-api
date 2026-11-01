@@ -11,7 +11,8 @@ verify sem depender do término global do CI, eliminando a dependência circular
 
 ## Adoção inicial de proveniência
 
-A solicitação retorna temporariamente a mode=validate até a homologação real.
+A solicitação permanece em mode=deploy por solicitação do usuário; o preflight
+normal continua bloqueando qualquer versão ativa sem proveniência aceita.
 Initial infrastructure adoption é um workflow manual separado, protegido por
 production. Verifica artefatos históricos de Actions, CI e manifestos recalculados
 sem chamar provenanceByVersion como pré-condição. Somente após conferir todas as
@@ -22,8 +23,10 @@ O release normal mantém provenanceByVersion e não possui opção de bypass.
 O procedimento e os limites da evidência aceita estão no
 [runbook](../worker-release-runbook.md#qualificação-inicial-independente).
 A baseline continua vazia; não foram fornecidos version IDs e artefatos históricos
-homologados. Sem evidência compatível, a primeira publicação controlada exige
-procedimento e autorização separados. Não foi feita homologação ou publicação remota.
+homologados. Sem evidência compatível, Controlled first publication implementa a
+publicação extraordinária das três novas versões, com autorização versionada,
+snapshot de recuperação, CI/RPC e readiness. Não confere proveniência ao código
+antigo nem é chamado pelo release normal. Não foi feita publicação remota.
 
 ## Solicitação de publicação
 
@@ -31,7 +34,7 @@ O release lê `.github/deploy/request.json` no SHA aprovado pelo CI. `mode: vali
 encerra a preparação sem executar o job de publicação; esse job aparece como
 `skipped`, mesmo com CI aprovado. `mode: deploy` habilita a publicação do alvo
 `worker`, após os controles de elegibilidade, proteção de production e preflight.
-A solicitação atual seleciona os três Workers (`worker: all`) em modo validate.
+A solicitação atual seleciona os três Workers (`worker: all`) em modo deploy.
 
 Para publicar esta alteração, ela precisa integrar `feature/microsservices` e
 passar por uma nova execução de push. Reexecutar a run 41332401207 reutiliza o SHA

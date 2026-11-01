@@ -4,6 +4,12 @@ import { deploymentRequest } from './validate-local.mjs';
 import { digest } from './manifest.mjs';
 import { load } from 'js-yaml';
 import { readEvidenceArtifact } from '../infra/evidence-artifact.mjs';
+import {
+  firstPublicationRequest,
+  firstPublicationRequestPath,
+  firstPublicationWorkflow,
+  versionId as validVersionId,
+} from '../infra/first-publication-request.mjs';
 export function runnerExecution(env = process.env) {
   return {
     event: env.GITHUB_EVENT_NAME,
@@ -251,6 +257,79 @@ export function githubClient({
       controlSha: execution.controlSha,
     };
   }
+  async function firstPublicationEligible(commitSha) {
+    const scope = {
+      ...context,
+      commitSha,
+      phase: 'eligibility',
+      operation: 'github.ci',
+    };
+    if (
+      !/^[0-9a-f]{40}$/.test(commitSha ?? '') ||
+      execution.event !== 'workflow_dispatch' ||
+      execution.repository !== repository ||
+      execution.ref !== `refs/heads/${releaseBranch}` ||
+      !positive(execution.runId) ||
+      !positive(execution.runAttempt) ||
+      !/^[0-9a-f]{40}$/.test(execution.controlSha ?? '')
+    )
+      fail('FIRST_PUBLICATION_NOT_APPROVED', scope);
+    const own = await request(`/actions/runs/${execution.runId}`, {
+      operation: 'github.ci',
+    });
+    if (
+      String(own.id) !== String(execution.runId) ||
+      own.run_attempt !== Number(execution.runAttempt) ||
+      own.event !== 'workflow_dispatch' ||
+      own.path !== firstPublicationWorkflow ||
+      own.head_sha !== execution.controlSha ||
+      own.head_branch !== releaseBranch ||
+      own.repository?.full_name !== repository
+    )
+      fail('FIRST_PUBLICATION_NOT_APPROVED', scope);
+    const comparison = await request(
+      `/compare/${commitSha}...${encodeURIComponent(releaseBranch)}`,
+    );
+    if (
+      !['ahead', 'identical'].includes(comparison.status) ||
+      comparison.merge_base_commit?.sha !== commitSha
+    )
+      fail('SHA_INELIGIBLE', scope);
+    const requested = firstPublicationRequest(
+      await content(firstPublicationRequestPath, execution.controlSha),
+      commitSha,
+    );
+    const runs = await pages(
+      `/actions/workflows/ci.yml/runs?head_sha=${commitSha}&event=push&branch=${encodeURIComponent(releaseBranch)}`,
+      'workflow_runs',
+      'github.ci',
+    );
+    if (
+      runs.some(
+        (run) =>
+          ciIdentity(run, commitSha) &&
+          (!trustedCi(run, commitSha) || !positive(run.run_number)),
+      )
+    )
+      fail('CI_NOT_APPROVED', scope);
+    const candidates = runs
+      .filter((run) => trustedCi(run, commitSha))
+      .sort(
+        (a, b) => b.run_number - a.run_number || b.run_attempt - a.run_attempt,
+      );
+    const ci = candidates[0];
+    if (ci?.status !== 'completed') fail('CI_NOT_APPROVED', scope);
+    const proof = await approvedVerify(ci, ci.run_attempt, scope);
+    return {
+      commitSha,
+      ...proof,
+      releaseOrigin: 'first-publication',
+      releaseRunAttempt: Number(execution.runAttempt),
+      controlSha: execution.controlSha,
+      runId: String(execution.runId),
+      requested,
+    };
+  }
   async function provenanceByVersion(worker, versionId) {
     const scope = {
       ...context,
@@ -283,13 +362,16 @@ export function githubClient({
         operation: 'github.ci',
       });
       const automatic = record.payload.releaseOrigin === 'ci';
+      const first = record.payload.releaseOrigin === 'first-publication';
       const allowedPath = record.payload.baseline
         ? record.payload.adoptionEvidence
           ? '.github/workflows/infrastructure-initial-adoption.yml'
           : '.github/workflows/infrastructure-readiness.yml'
-        : automatic
-          ? '.github/workflows/ci.yml'
-          : '.github/workflows/deploy-workers.yml';
+        : first
+          ? firstPublicationWorkflow
+          : automatic
+            ? '.github/workflows/ci.yml'
+            : '.github/workflows/deploy-workers.yml';
       if (
         run.event !== (automatic ? 'push' : 'workflow_dispatch') ||
         run.head_branch !== releaseBranch ||
@@ -300,7 +382,9 @@ export function githubClient({
       if (record.payload.releaseOrigin !== undefined) {
         const proof = record.payload;
         if (
-          !['ci', 'manual'].includes(proof.releaseOrigin) ||
+          !['ci', 'manual', 'first-publication'].includes(
+            proof.releaseOrigin,
+          ) ||
           proof.baseline ||
           !positive(proof.releaseRunAttempt) ||
           !positive(proof.ciRunId) ||
@@ -348,6 +432,26 @@ export function githubClient({
         )
           continue;
         if (automatic) await authorizedCaller(commitSha, scope);
+        if (first) {
+          if (
+            run.status !== 'completed' ||
+            run.conclusion !== 'success' ||
+            releaseAttempt.status !== 'completed' ||
+            releaseAttempt.conclusion !== 'success'
+          )
+            continue;
+          const approved = firstPublicationRequest(
+            await content(firstPublicationRequestPath, proof.controlSha),
+            commitSha,
+          );
+          if (
+            !validVersionId(proof.firstPublication?.previousVersionId) ||
+            proof.firstPublication.previousVersionId !==
+              approved.workers[worker].versionId ||
+            proof.firstPublication.requestDigest !== digest(approved)
+          )
+            continue;
+        }
       }
       if (record.payload.baseline) {
         if (
@@ -558,6 +662,23 @@ export function githubClient({
       artifactDigest: evidence.artifactDigest,
     };
   }
+  async function assertFirstPublicationNeeded(versions) {
+    let missing = false;
+    for (const [worker, version] of Object.entries(versions)) {
+      try {
+        await provenanceByVersion(worker, version);
+      } catch (error) {
+        if (error.code !== 'PROVENANCE_UNAVAILABLE') throw error;
+        missing = true;
+      }
+    }
+    if (!missing)
+      fail('FIRST_PUBLICATION_NOT_APPROVED', {
+        ...context,
+        phase: 'eligibility',
+        operation: 'github.deployment',
+      });
+  }
   async function recordPublished({
     worker,
     commitSha,
@@ -574,15 +695,23 @@ export function githubClient({
     verifyJobId,
     controlSha,
     adoptionEvidence: initialEvidence,
+    firstPublication,
   }) {
     if (
       !baseline &&
-      (!['ci', 'manual'].includes(releaseOrigin) ||
+      (!['ci', 'manual', 'first-publication'].includes(releaseOrigin) ||
         !positive(releaseRunAttempt) ||
         !positive(ciRunId) ||
         !positive(ciRunAttempt) ||
         !positive(verifyJobId) ||
         !/^[0-9a-f]{40}$/.test(controlSha ?? ''))
+    )
+      fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
+    if (
+      releaseOrigin === 'first-publication' &&
+      (baseline ||
+        !validVersionId(firstPublication?.previousVersionId) ||
+        !/^[0-9a-f]{64}$/.test(firstPublication?.requestDigest ?? ''))
     )
       fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
     if (
@@ -609,6 +738,9 @@ export function githubClient({
           manifestDigest: digest(manifest),
           runId: String(runId),
           baseline,
+          ...(releaseOrigin === 'first-publication'
+            ? { firstPublication }
+            : {}),
           ...(!baseline
             ? {
                 releaseOrigin,
@@ -650,6 +782,8 @@ export function githubClient({
     provenanceByVersion,
     recordPublished,
     adoptionEvidence,
+    firstPublicationEligible,
+    assertFirstPublicationNeeded,
     metrics,
   };
 }

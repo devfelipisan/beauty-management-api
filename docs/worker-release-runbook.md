@@ -117,9 +117,9 @@ nas capturas precisa de inventário e revisão, não de aceitação automática.
    ilustrativas. Revisar/commitar e executar Initial infrastructure adoption na
    feature/microsservices, com aprovação production. Infrastructure readiness,
    action=baseline, passa a somente revalidar uma baseline já registrada.
-7. A solicitação atual permanece em mode=validate. Ela valida a configuração local,
-   mas não executa o preflight remoto completo. A retomada do deploy normal exige
-   uma alteração revisada posterior que restaure mode=deploy após a adoção.
+7. A solicitação permanece em mode=deploy por solicitação do usuário. O preflight
+   bloqueia versões sem proveniência até a conclusão da adoção histórica ou da
+   primeira publicação controlada; não é necessário alterar mode depois disso.
 
 ### Qualificação inicial independente
 
@@ -175,10 +175,86 @@ requer que o artefato original permaneça disponível indefinidamente. Versões 
 ou modificadas manualmente sem associação válida continuam bloqueadas.
 
 Se não houver artefato histórico íntegro e compatível, a adoção permanece bloqueada.
-Nesse caso é necessária uma primeira publicação controlada, com autorização
-específica, compatibilidade e recuperação revisadas em procedimento separado.
-Este workflow não oferece skipProvenance nem implementa essa publicação extraordinária.
+Usar o procedimento de primeira publicação controlada descrito abaixo, com
+autorização específica, compatibilidade e recuperação revisadas.
+O workflow de adoção histórica não publica Workers e não oferece skipProvenance.
 Preencher a baseline sozinho ou executar novamente a run antiga não libera o deploy.
+
+### Primeira publicação controlada quando não existe histórico
+
+Controlled first publication (`infrastructure-first-publication.yml`) é um workflow
+exclusivamente manual. Não é fallback do CI nem do preflight normal. O descritor
+deve estar aprovado na branch padrão para disponibilizar Run workflow; executar
+selecionando feature/microsservices. Compartilha beauty-production, não cancela
+publicações em andamento e exige aprovação pelo Environment production.
+
+1. Executar Infrastructure inventory e preservar os version IDs/deployment IDs e
+   percentuais ativos dos três Workers. O procedimento só aceita uma versão a 100%
+   por Worker. Não atribuir um SHA às versões antigas sem evidência.
+2. Se houver artefato histórico compatível, preferir a adoção histórica. Caso não
+   exista, revisar uma publicação nova do conjunto completo e os contratos RPC
+   durante a troca Billing → Clinical → Operations. Revisar também efeitos de D1,
+   R2 e Outbox: rollback de código não desfaz dados, eventos ou objetos persistidos.
+3. Preparar e comprovar uma janela operacional sem tráfego de aplicação conflitante,
+   com ingresso, chamadas entre serviços e escritores/agendamentos coordenados.
+   Essa é uma exigência operacional revisada por humanos; o script não desliga
+   automaticamente ingressos ou crons e não consegue comprovar essa janela pela API.
+   Testes RPC físicos validam o conjunto candidato, não o código antigo desconhecido.
+4. Aprovar um plano de recuperação para as versões antigas inventariadas, incluindo
+   a disponibilidade dessas versões na Cloudflare e a compatibilidade com dados já
+   gravados. A recuperação é uma operação administrativa intencional; não há rollback
+   automático nem promessa de restauração transacional entre três Workers.
+5. Registrar os dados reais em `.github/deploy/first-publication.json`, em um novo
+   commit de controle revisado. O arquivo inicial workers={} é intencional e bloqueia
+   publicação. Campos obrigatórios:
+
+   | Campo                        | Conteúdo revisado                                               |
+   | ---------------------------- | --------------------------------------------------------------- |
+   | commitSha                    | SHA completo do candidato já aprovado pelo verify do CI de push |
+   | authorizationReference       | Referência da autorização dessa primeira publicação             |
+   | compatibilityReference       | Evidência da revisão de compatibilidade RPC e esquema           |
+   | recoveryReference            | Plano de recuperação e disponibilidade das versões antigas      |
+   | maintenanceReference         | Evidência da janela e coordenação operacional                   |
+   | workers.billing.versionId    | Version ID ativo coletado do Billing                            |
+   | workers.clinical.versionId   | Version ID ativo coletado do Clinical                           |
+   | workers.operations.versionId | Version ID ativo coletado do Operations                         |
+
+6. Disparar Controlled first publication na feature com commit_sha exatamente igual
+   ao candidato declarado. O SHA de controle é o SHA da execução e pode ser posterior
+   ao candidato: o arquivo de autorização não precisa referenciar o próprio commit.
+   O CI de push confiável mais recente do candidato precisa estar encerrado e com
+   verify aprovado; uma publicação normal falha por NO_RECORDS não invalida verify.
+   O workflow valida branch, ancestralidade, execução, solicitação imutável, manifesto,
+   testes completos e RPC/dry-runs antes da aprovação de produção.
+7. Depois da aprovação, ele revalida as permissões de production e a solicitação,
+   confere readiness, migrations existentes, privacidade e capacidade/aprovações R2.
+   Preserva o snapshot antigo como proveniência desconhecida.
+   Se todas as versões ativas já têm proveniência aceita, rejeita o fluxo
+   extraordinário e exige o release normal. Falhas de acesso/transporte GitHub
+   também bloqueiam; não são interpretadas como ausência de proveniência.
+   Reconsulta as versões
+   antes de cada publicação, publica o SHA exato com provisionamento desativado,
+   executa pós-check por destino e readiness do conjunto final.
+8. Só então registra as três versões novas no GitHub, com origem first-publication,
+   SHA candidato, tentativa/verify do CI, SHA de controle e digest da autorização.
+   Esses registros só são aceitos quando a execução e sua tentativa terminarem com
+   success. Não homologa retroativamente versões antigas e não preenche baseline
+   com valores presumidos. A baseline histórica pode continuar vazia: os registros
+   das novas versões constituem a primeira proveniência gerenciada.
+
+Em falha, consultar o artefato first-publication-<run>-<attempt> e o inventário atual.
+O relatório conserva snapshot e versões novas já publicadas; não declara sucesso
+parcial como conjunto homologado. Interromper a janela e executar a recuperação
+revisada ou revisar uma nova solicitação com o snapshot atual, conforme a decisão
+operacional. Não reexecutar cegamente: a solicitação antiga será rejeitada quando
+as versões ativas tiverem mudado. Falha na escrita GitHub pode deixar registros
+parciais; uma execução falha não os torna confiáveis.
+
+O request.json normal permanece mode=deploy por solicitação do usuário. Isso não
+dispensa a primeira publicação manual: pushes normais continuam bloqueados enquanto
+não houver proveniência. Depois de concluído o fluxo extraordinário, um release
+normal poderá utilizar os registros novos, sujeito aos demais gates. Os testes
+locais não comprovam versões, manutenção, permissões ou publicação na conta real.
 
 Um placeholder de bootstrap não é baseline de aplicação homologada. A remoção
 administrativa de SERVICE_VERSION deve ocorrer somente após código sem dependência

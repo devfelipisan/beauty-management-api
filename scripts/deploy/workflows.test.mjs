@@ -164,3 +164,48 @@ test('initial adoption is manual, protected, serialized and separate from releas
     !readFileSync('scripts/infra/run.mjs', 'utf8').includes('recordPublished'),
   );
 });
+test('controlled first publication is an explicit protected workflow with immutable code and recovery artifacts', () => {
+  const first = workflow('infrastructure-first-publication');
+  assert.deepEqual(Object.keys(first.on), ['workflow_dispatch']);
+  assert.equal(first.on.workflow_dispatch.inputs.commit_sha.required, true);
+  assert.equal(first.concurrency.group, 'beauty-production');
+  assert.equal(first.concurrency['cancel-in-progress'], false);
+  assert.equal(first.jobs.publish.needs, 'validate');
+  assert.equal(first.jobs.publish.environment, 'production');
+  assert.equal(first.jobs.publish.permissions.deployments, 'write');
+  assert.ok(
+    !JSON.stringify(first.jobs.validate).includes('CLOUDFLARE_API_TOKEN'),
+  );
+  assert.ok(JSON.stringify(first.jobs.validate).includes('npm run check'));
+  assert.ok(JSON.stringify(first.jobs.validate).includes('--check'));
+  // The candidate's broad Vitest globs must not discover a nested control checkout.
+  const validation = first.jobs.validate.steps;
+  assert.ok(
+    validation.findIndex((step) => step.run?.includes('npm run check')) <
+      validation.findIndex((step) => step.with?.path === '.release-control'),
+  );
+  const steps = first.jobs.publish.steps;
+  assert.ok(
+    steps.some(
+      (step) =>
+        step.with?.path === '.release-control' &&
+        step.with.ref === '${{ github.sha }}',
+    ),
+  );
+  assert.ok(
+    steps.some((step) => step.with?.ref === '${{ inputs.commit_sha }}'),
+  );
+  assert.ok(
+    steps.some(
+      (step) =>
+        step.if === 'always()' &&
+        step.with?.path === '.cache/first-publication/result.json',
+    ),
+  );
+  assert.ok(!JSON.stringify(workflow('ci')).includes('first-publication'));
+  assert.ok(
+    !readFileSync('scripts/deploy/preflight.mjs', 'utf8').includes(
+      'firstPublication',
+    ),
+  );
+});
