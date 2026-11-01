@@ -74,6 +74,33 @@ test('complete release has one preflight, directed postchecks and per-Worker pro
     ),
   );
 });
+test('complete release accepts Cloudflare production selectors with unchanged metadata call count', async () => {
+  const f = fixture((path) => {
+    if (!path.endsWith('/settings')) return;
+    const name = path.match(/beauty-(operations|billing|clinical)-worker/)[1];
+    const value = settings(name);
+    value.bindings = value.bindings.map((binding) =>
+      binding.type === 'service'
+        ? { ...binding, environment: 'production' }
+        : binding,
+    );
+    return response(value);
+  });
+  const order = [];
+  const result = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    publish: (name) => {
+      order.push(name);
+      return published();
+    },
+  });
+  assert.equal(result.status, 'success');
+  assert.deepEqual(order, ['billing', 'clinical', 'operations']);
+  assert.equal(f.client.metrics.calls, 20);
+});
 test('failed second publication retains first proof and stops Operations', async () => {
   const f = fixture(),
     order = [],

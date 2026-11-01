@@ -72,6 +72,7 @@ test('compares service target and selectors independently of undocumented props 
   for (const patch of [
     {},
     { entrypoint: null, environment: null },
+    { environment: 'production' },
     { props: { caller: 'beauty-billing-worker' } },
   ])
     assert.doesNotThrow(() =>
@@ -84,7 +85,7 @@ test('compares service target and selectors independently of undocumented props 
   for (const patch of [
     { service: 'other-worker' },
     { entrypoint: 'OtherEntrypoint' },
-    { environment: 'production' },
+    { environment: 'staging' },
     { props: { caller: 'browser' } },
     { props: null },
     { props: [] },
@@ -111,6 +112,45 @@ test('compares service target and selectors independently of undocumented props 
       config,
     ),
   );
+});
+test('normalizes the production default in all phases without accepting other targets or named environments', () => {
+  for (const phase of ['preflight', 'postcheck', 'readiness', 'audit']) {
+    validateSettings(
+      changed('OPERATIONS_SERVICE', { environment: 'production' }),
+      'billing',
+      configurations.billing,
+      { phase },
+    );
+    for (const patch of [
+      { environment: 'staging' },
+      { environment: 'default' },
+      { environment: 'production', service: 'other-worker' },
+      { environment: 'production', entrypoint: 'OtherApi' },
+      { environment: 'production', props: { caller: 'browser' } },
+    ])
+      assert.throws(
+        () =>
+          validateSettings(
+            changed('OPERATIONS_SERVICE', patch),
+            'billing',
+            configurations.billing,
+            { phase },
+          ),
+        { code: 'BINDING_MISMATCH' },
+      );
+  }
+  const config = structuredClone(configurations.billing);
+  config.services[0].environment = 'staging';
+  for (const environment of [undefined, null, 'production'])
+    assert.throws(
+      () =>
+        validateSettings(
+          changed('OPERATIONS_SERVICE', { environment }),
+          'billing',
+          config,
+        ),
+      { code: 'BINDING_MISMATCH' },
+    );
 });
 test('blocks missing, duplicate, mistyped and unknown bindings; unknown names never reach diagnostics', () => {
   assert.throws(

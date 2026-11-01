@@ -62,8 +62,14 @@ como não verificados. O coletor não aprova baselines, cria registros de deploy
 inspeciona D1/R2, modifica recursos ou altera capacidade. Erros de acesso/transporte
 e respostas inválidas causam falha operacional com artefato parcial preservado.
 
-Equivalência entre environment production e Worker raiz permanece não comprovada;
-nenhuma normalização nova foi adicionada. Configuração histórica, contratos, versão
+O seletor de Service Binding `environment: production` equivale à ausência do
+seletor: o schema oficial `workers_binding_kind_service` da
+[API Cloudflare](https://github.com/cloudflare/api-schemas/blob/main/openapi.yaml)
+declara `production` como default. Ambos são normalizados para a mesma representação
+em preflight, pós-check, readiness e auditoria. Ambientes nomeados como `staging`
+e `default` continuam distintos, assim como service, entrypoint e props.caller.
+Essa equivalência corrige o bloqueio observado na run 41334827366 sem alterar
+destinos, Wranglers ou manifesto. Configuração histórica, contratos, versão
 real e proveniência exigem homologação administrativa separada. Text extras não
 declarados continuam rejeitados, corrigindo a interpretação anterior das capturas.
 
@@ -121,8 +127,9 @@ Revisão sobre `19b1af6`: comparar bindings por representação canônica, não 
 objeto bruto da API. D1 usa database_id e aceita id legado quando o campo moderno
 está ausente; aliases simultâneos precisam coincidir. Campos malformados são
 rejeitados sem coerção. Service Bindings comparam service, entrypoint e environment,
-equiparando apenas ausência e null nos seletores opcionais. Não presumir ambiente
-production nem entrypoint padrão quando um valor diferente foi retornado.
+equiparando ausência, null e o default documentado production no environment.
+Entrypoint equipara apenas ausência e null; nenhum ambiente nomeado ou entrypoint
+diferente é aceito implicitamente.
 
 Settings não é prova documental de props.caller: a propriedade pode estar ausente.
 Quando retornada, props precisa ter formato válido e corresponder ao contrato
