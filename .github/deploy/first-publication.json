@@ -1,3 +1,7 @@
 {
+  "authorizationReference": "docs/first-managed-publication.md#autorizacao",
+  "compatibilityReference": "docs/first-managed-publication.md#ci",
+  "recoveryReference": "docs/first-managed-publication.md#recuperacao",
+  "maintenanceReference": "docs/first-managed-publication.md#janela",
   "workers": {}
 }

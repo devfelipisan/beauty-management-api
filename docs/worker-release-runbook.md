@@ -214,6 +214,11 @@ Preencher a baseline sozinho ou executar novamente a run antiga não libera o de
 
 ### Primeira publicação controlada quando não existe histórico
 
+A autorização documental da primeira implantação está em
+[Primeira publicacao gerenciada](first-managed-publication.md). Ela reúne as
+referências de CI/RPC, recuperação e janela usadas pelo pedido versionado, sem
+substituir o snapshot remoto nem a aprovação efetiva no Environment production.
+
 Controlled first publication (`infrastructure-first-publication.yml`) é um workflow
 exclusivamente manual. Não é fallback do CI nem do preflight normal. O descritor
 deve estar aprovado na branch padrão para disponibilizar Run workflow; executar
