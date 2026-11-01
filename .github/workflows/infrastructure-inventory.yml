@@ -1,0 +1,64 @@
+name: Infrastructure inventory
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Validate immutable inventory control
+        run: |
+          test "$GITHUB_REF" = 'refs/heads/feature/microsservices'
+          node --input-type=module <<'NODE'
+          import {workerConfigurations,readConfiguration,validateWorkerConfigurations} from './scripts/worker-deployment-config.mjs';
+          validateWorkerConfigurations(Object.fromEntries(Object.entries(workerConfigurations).map(([name,path])=>[name,readConfiguration(path)])),true);
+          NODE
+          node scripts/deploy/manifest-check.mjs
+      - name: Verify inventory approval policy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs infrastructure-inventory
+  collect:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: infrastructure-inventory
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Recheck inventory environment policy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs infrastructure-inventory
+      - name: Collect read-only metadata independently of release readiness
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_INVENTORY_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/infra/inventory.mjs
+      - name: Preserve sanitized inventory including partial failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-inventory-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/infrastructure-inventory/result.json
+          if-no-files-found: ignore

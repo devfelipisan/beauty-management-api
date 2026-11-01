@@ -114,6 +114,18 @@ da primeira homologação manual. Sem staging remoto ou Wrangler raiz no deploy.
 Detalhes e adoção: [PR-DEPLOY](../04-infrastructure/deployment-refactoring-plan.md)
 e [runbook](../worker-release-runbook.md).
 
+## Inventário administrativo
+
+O inventário administrativo é separado do release e da auditoria: Environment
+infrastructure-inventory, branch feature/microsservices, reviewers obrigatórios e
+token exclusivo de metadados somente leitura. Funciona sem versão declarada ou
+baseline; observa configurações e versões, sem homologá-las ou corrigir produção.
+Os gates do release permanecem obrigatórios. A infraestrutura pode ser inventariada
+quando incompleta, mas isso nunca constitui autorização de publicação. Descritor de
+workflow_dispatch na main é pré-requisito de ativação do GitHub, sem mudar a branch
+de execução nem a política de infrastructure-audit. Não há novas equivalências de
+seletores, grants, regras de negócio ou mudanças de retenção.
+
 ## Web
 
 Login aprovado: e-mail/senha Supabase. GET /v1/me/tenants e GET /v1/me/context são

@@ -31,7 +31,11 @@ const options = (environment = 'production', overrides = {}) => ({
   }),
 });
 test('mutable environments require actual reviewers and a single explicit authorized branch', async () => {
-  for (const environment of ['production', 'production-migrations']) {
+  for (const environment of [
+    'production',
+    'production-migrations',
+    'infrastructure-inventory',
+  ]) {
     await checkProtection(options(environment));
     await assert.rejects(
       checkProtection(options(environment, { protection_rules: [] })),

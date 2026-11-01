@@ -11,9 +11,12 @@ export async function checkProtection({
 }) {
   const context = { phase: 'eligibility', operation: 'github.request' };
   if (
-    !['production', 'production-migrations', 'infrastructure-audit'].includes(
-      environment,
-    )
+    ![
+      'production',
+      'production-migrations',
+      'infrastructure-audit',
+      'infrastructure-inventory',
+    ].includes(environment)
   )
     fail('INVALID_REQUEST', context);
   const github = githubClient({ repository, token, fetchImpl, context });

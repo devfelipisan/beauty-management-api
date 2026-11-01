@@ -1,5 +1,34 @@
 # Evidências locais — PR-DEPLOY
 
+## Inventário independente — revisão 0ac259e
+
+Implementado workflow manual Infrastructure inventory e coletor separado de release,
+readiness, auditoria e homologação. O cliente admite exclusivamente seis GETs de
+metadados; não oferece operações de banco, objetos R2, publicação ou escrita.
+
+`npm run check` aprovado: lint, build/typecheck, 477 testes unitários/arquiteturais,
+77 testes físicos de Workers, 4 E2E e três dry-runs. Os 96 testes dos scripts incluem
+coleta incompleta, múltiplos achados, versões ausentes, recursos não encontrados,
+erros de permissão/transporte/formato, cache, capacidade GET restrita, sanitização,
+credencial ausente e isolamento do workflow. Dados de teste são simulados; não houve
+consulta à conta ou comprovação de estado remoto.
+
+O teste de regressão recupera o validador do commit-base e compara primeira falha,
+códigos e ordem de reprovação nas fases do release, incluindo transições. A análise
+do inventário acumula achados sem modificar os critérios do validador. O cenário
+completo observa seis consultas simuladas; o release integral mantém vinte.
+
+Ambiente infrastructure-inventory, reviewers, branch protegida, token somente
+leitura e variável de conta precisam ser cadastrados manualmente. O GitHub também
+exige o descritor de workflow_dispatch na branch padrão antes da ativação; origin/main
+local continha somente ci.yml durante a inspeção. Nenhum push, merge, Environment,
+token ou registro de baseline foi criado por esta implementação.
+
+Infraestrutura inventariada não equivale a infraestrutura homologada. Não houve
+conversão de environment production em seletor ausente ou preenchimento artificial
+de SERVICE_VERSION. Contratos, esquema, proveniência, capacidade e autorização RPC
+continuam sujeitos aos gates e procedimentos anteriores.
+
 ## Normalização de bindings e diagnóstico
 
 Base: `19b1af69bcb8d42fa26671631a2a61f8bf24c0fa`. Ajustes exclusivamente em

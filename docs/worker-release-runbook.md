@@ -4,11 +4,12 @@
 
 O código deste PR não executa mudanças remotas. Configurar manualmente:
 
-| Environment           | Branch exclusiva       | Secret Cloudflare           | Capacidade                                                              |
-| --------------------- | ---------------------- | --------------------------- | ----------------------------------------------------------------------- |
-| production            | feature/microsservices | CLOUDFLARE_API_TOKEN        | Workers autorizados; leituras necessárias de Workers, D1 e metadados R2 |
-| production-migrations | feature/microsservices | CLOUDFLARE_MIGRATIONS_TOKEN | D1 Read/Write                                                           |
-| infrastructure-audit  | main                   | CLOUDFLARE_AUDIT_TOKEN      | Workers Metadata, D1 e R2 somente leitura                               |
+| Environment              | Branch exclusiva       | Secret Cloudflare           | Capacidade                                                              |
+| ------------------------ | ---------------------- | --------------------------- | ----------------------------------------------------------------------- |
+| production               | feature/microsservices | CLOUDFLARE_API_TOKEN        | Workers autorizados; leituras necessárias de Workers, D1 e metadados R2 |
+| production-migrations    | feature/microsservices | CLOUDFLARE_MIGRATIONS_TOKEN | D1 Read/Write                                                           |
+| infrastructure-audit     | main                   | CLOUDFLARE_AUDIT_TOKEN      | Workers Metadata, D1 e R2 somente leitura                               |
+| infrastructure-inventory | feature/microsservices | CLOUDFLARE_INVENTORY_TOKEN  | Somente leitura de settings e deployments dos três Workers              |
 
 Ambientes mutáveis exigem required reviewers e política customizada de branch
 exata; não basta criar o environment com esse nome. Cadastrar também
@@ -24,6 +25,70 @@ nomes AUTH_ISSUER, AUTH_AUDIENCE, AUTH_JWKS_URL e AUTH_ALGORITHM permanecem em
 secrets.required; cadastrar valores reais manualmente em cada Worker. Não colocar
 valores em repositório, comandos, logs ou artefatos. Supabase é a arquitetura de
 identidade aprovada; nenhum endpoint ou algoritmo é presumido.
+
+## Inventário independente de homologação
+
+O workflow Infrastructure inventory é manual, sem dependência de CI aprovado,
+elegibilidade de release, readiness ou baseline. Configurar manualmente o Environment
+infrastructure-inventory com required reviewers, uma política customizada de branch
+exatamente feature/microsservices e a branch protegida contra alterações não revisadas.
+Cadastrar CLOUDFLARE_INVENTORY_TOKEN exclusivamente nesse Environment e
+CLOUDFLARE_ACCOUNT_ID como variável. O token não é compartilhado com jobs de CI.
+
+Usar escopo Workers Metadata Read-Only (ou escopo individual equivalente para os
+três Workers), verificando manualmente as capacidades nos endpoints GET de settings
+e deployments. Não conceder escrita nem permissões D1, R2 ou de objetos. Não testar
+permissões por tentativa de mutação. A API de
+[settings](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/script_and_version_settings/methods/get/)
+documenta os escopos de leitura aceitos. O coletor também restringe o transporte
+a esses seis caminhos e rejeita corpos, SQL, métodos e endpoints arbitrários.
+
+Pré-requisito do GitHub: workflow_dispatch exige o arquivo do workflow na branch
+padrão para disponibilizar o disparo manual. A referência local de origin/main
+inspecionada nesta entrega não contém o novo workflow. Registrar o descritor por
+mudança revisada na main antes da ativação e selecionar feature/microsservices no
+dispatch. Isso não migra a coleta nem as credenciais para main: o guard do workflow
+e a política do Environment continuam exigindo a feature; o código inspecionado é
+o SHA imutável do dispatch. Não remover a restrição de infrastructure-audit à main.
+Nenhum push, merge ou registro remoto é executado por este código. Referência:
+[eventos do GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).
+
+O inventário lê settings e deployments independentemente para cada Worker, mesmo
+com configuração divergente, SERVICE_VERSION ausente e baseline vazia. O relatório
+.cache/infrastructure-inventory/result.json e o resumo usam o mesmo JSON sanitizado:
+nomes de bindings conhecidos, categorias de divergência, contagem de nomes
+desconhecidos, estado de SERVICE_VERSION e IDs/percentuais observados de versões.
+Valores Text, seletores, props, nomes desconhecidos, UUIDs de bancos, secrets e
+respostas brutas não são registrados. Presença em metadados não comprova disponibilidade
+de secrets. SHA declarado com formato válido é sempre marcado como não homologado.
+
+complete significa coleta concluída, não infraestrutura pronta. Divergências e 404
+são achados; acesso negado, transporte e metadados inválidos tornam a coleta partial
+ou failed e o job falha, preservando o artefato com always(). Distribuições com
+múltiplas versões são registradas sem eleger uma versão única. Leitura de settings
+e deployments não é snapshot atômico: mudanças concorrentes exigem nova conferência
+durante homologação. Não usar beauty-production como exclusão do inventário.
+
+O cenário normal usa seis consultas Cloudflare, com cache apenas dentro da execução.
+Não inspeciona schema, disponibilidade D1/R2, capacidade, objetos, autoridade RPC ou
+valores de secrets, explicitamente listados como não verificados. Não executa Wrangler,
+migrations, dispatchers, bootstrap, criação de GitHub Deployments ou escrita de baseline.
+Nada no relatório autoriza uma publicação, altera aprovações ou aprova compatibilidade.
+
+Usar os achados para conferir privadamente environment do OPERATIONS_SERVICE,
+distinguindo-o de APP_ENV e do rótulo Produção do Dashboard. Comprovar se o vínculo
+resolve para o Worker raiz ou ambiente nomeado. Não converter production em null:
+uma equivalência exige prova documental/técnica e mudança independente, revisada e
+testada. Alternativas são correção administrativa controlada ou transição exata
+aprovada, sempre com pós-check rigoroso e autorização RPC preservada.
+
+Se SERVICE_VERSION estiver ausente/inválido, comprovar o código realmente implantado
+antes de qualquer correção administrativa desse metadado. Conferir novamente a versão
+ativa após a mudança antes de registrar baseline. Não usar o SHA atual por conveniência.
+Somente a homologação explícita de versões e contratos comprovados alimenta o procedimento
+de baseline existente; o inventário não faz essa associação automaticamente. Bindings
+Text extras não declarados também são divergências: a variável adicional mencionada
+nas capturas precisa de inventário e revisão, não de aceitação automática.
 
 ## Primeira adoção
 

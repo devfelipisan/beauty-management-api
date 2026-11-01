@@ -38,6 +38,7 @@ const phases = new Set([
   'postcheck',
   'readiness',
   'audit',
+  'inventory',
   'eligibility',
   'provenance',
 ]);

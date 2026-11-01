@@ -11,18 +11,44 @@ verify sem depender do término global do CI, eliminando a dependência circular
 
 ## Separação dos fluxos
 
-| Fluxo      | Entrada                                              | Credencial Cloudflare             | Efeito                                 |
-| ---------- | ---------------------------------------------------- | --------------------------------- | -------------------------------------- |
-| CI         | Push/PR em main e feature/microsservices             | Nenhuma                           | Gates locais                           |
-| Release    | CI push aprovado ou dispatch; request.json do SHA    | Deploy, production                | Publica destinos selecionados          |
-| Migrations | Inspeção; aplicação com execução anterior comprovada | Migrations, production-migrations | Histórico D1 sequencial                |
-| Readiness  | Dispatch protegido                                   | Deploy, production                | Inspeção; baseline explícita no GitHub |
-| Bootstrap  | Dispatch protegido com apply explícito               | Deploy, production                | Cria somente Workers privados ausentes |
-| Auditoria  | Dispatch em main                                     | Audit, infrastructure-audit       | Somente leitura                        |
+| Fluxo      | Entrada                                              | Credencial Cloudflare               | Efeito                                 |
+| ---------- | ---------------------------------------------------- | ----------------------------------- | -------------------------------------- |
+| CI         | Push/PR em main e feature/microsservices             | Nenhuma                             | Gates locais                           |
+| Release    | CI push aprovado ou dispatch; request.json do SHA    | Deploy, production                  | Publica destinos selecionados          |
+| Migrations | Inspeção; aplicação com execução anterior comprovada | Migrations, production-migrations   | Histórico D1 sequencial                |
+| Readiness  | Dispatch protegido                                   | Deploy, production                  | Inspeção; baseline explícita no GitHub |
+| Bootstrap  | Dispatch protegido com apply explícito               | Deploy, production                  | Cria somente Workers privados ausentes |
+| Auditoria  | Dispatch em main                                     | Audit, infrastructure-audit         | Somente leitura                        |
+| Inventário | Dispatch na feature/microsservices                   | Inventory, infrastructure-inventory | Observação sem autorização de release  |
 
 Os fluxos mutáveis compartilham `beauty-production`. O release não provisiona
 recursos, aplica migrations ou habilita mídia. A ativação semanal da auditoria
 permanece pendente de homologação manual e publicação do controle na main.
+
+## Inventário independente — revisão 0ac259e
+
+Infrastructure inventory usa Environment próprio na feature, required reviewers e
+CLOUDFLARE_INVENTORY_TOKEN somente leitura. Não depende de CI aprovado, SERVICE_VERSION,
+bindings compatíveis, baseline ou readiness. Requer o descritor do workflow na main
+para disponibilizar workflow_dispatch, mas executa exclusivamente no SHA selecionado
+da feature, sem migrar infraestrutura-audit ou suas credenciais.
+
+O coletor observa seis endpoints (settings e deployments por Worker), acumula achados
+sanitizados e preserva falhas parciais. A análise usa as mesmas regras do release;
+o validador continua lançando a primeira falha, na ordem anterior. Testes de regressão
+comparam o comportamento contra o código do commit-base. Não há tolerância selecionável
+por variável de ambiente que libere uma publicação.
+
+Inventário completo não significa infraestrutura pronta. IDs e tráfego das versões
+são observações; SHA declarado é não homologado. Recursos não consultados são listados
+como não verificados. O coletor não aprova baselines, cria registros de deployment,
+inspeciona D1/R2, modifica recursos ou altera capacidade. Erros de acesso/transporte
+e respostas inválidas causam falha operacional com artefato parcial preservado.
+
+Equivalência entre environment production e Worker raiz permanece não comprovada;
+nenhuma normalização nova foi adicionada. Configuração histórica, contratos, versão
+real e proveniência exigem homologação administrativa separada. Text extras não
+declarados continuam rejeitados, corrigindo a interpretação anterior das capturas.
 
 ## Organização e contratos
 
