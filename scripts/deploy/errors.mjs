@@ -66,6 +66,7 @@ const serviceMismatchReasons = new Set([
   'SELECTOR_MISMATCH',
   'PROPS_MISMATCH',
 ]);
+const serviceSelectors = new Set(['ENTRYPOINT', 'ENVIRONMENT', 'BOTH']);
 export const requiredBindingsFailure =
   'Required production bindings unavailable; deployment blocked.';
 export class DeploymentValidationError extends Error {
@@ -92,6 +93,11 @@ export class DeploymentValidationError extends Error {
       serviceMismatchReasons.has(context.reason)
     )
       this.reason = context.reason;
+    if (
+      this.reason === 'SELECTOR_MISMATCH' &&
+      serviceSelectors.has(context.selector)
+    )
+      this.selector = context.selector;
     if (
       Number.isInteger(context.status) &&
       context.status >= 100 &&
@@ -120,15 +126,19 @@ export function diagnostic(error, context = {}) {
       'commitSha',
       'binding',
       'reason',
+      'selector',
     ]
       .filter(
         (key) =>
           safe[key] !== undefined &&
-          (key !== 'reason' ||
+          (!['reason', 'selector'].includes(key) ||
             (safe.code === 'BINDING_MISMATCH' &&
               safe.operation === 'worker.settings' &&
               safe.binding !== undefined &&
-              serviceMismatchReasons.has(safe.reason))),
+              serviceMismatchReasons.has(safe.reason))) &&
+          (key !== 'selector' ||
+            (safe.reason === 'SELECTOR_MISMATCH' &&
+              serviceSelectors.has(safe.selector))),
       )
       .map((key) => [key, safe[key]]),
   );

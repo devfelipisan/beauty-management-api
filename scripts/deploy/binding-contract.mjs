@@ -72,16 +72,30 @@ export function expectedBindings(config) {
   ].map(normalizeBinding);
 }
 // undefined means there is no service comparison to classify.
+export function serviceSelectorMismatch(actual, expected) {
+  if (
+    !actual ||
+    actual.type !== 'service' ||
+    expected?.type !== 'service' ||
+    actual.name !== expected.name
+  )
+    return undefined;
+  const entrypoint = actual.entrypoint !== expected.entrypoint;
+  const environment = actual.environment !== expected.environment;
+  return entrypoint
+    ? environment
+      ? 'BOTH'
+      : 'ENTRYPOINT'
+    : environment
+      ? 'ENVIRONMENT'
+      : null;
+}
 export function serviceMismatchReason(actual, expected) {
   if (!actual || expected?.type !== 'service' || actual.name !== expected.name)
     return undefined;
   if (actual.type !== expected.type) return 'TYPE_MISMATCH';
   if (actual.service !== expected.service) return 'DESTINATION_MISMATCH';
-  if (
-    actual.entrypoint !== expected.entrypoint ||
-    actual.environment !== expected.environment
-  )
-    return 'SELECTOR_MISMATCH';
+  if (serviceSelectorMismatch(actual, expected)) return 'SELECTOR_MISMATCH';
   if (
     actual.props !== undefined &&
     expected.props !== undefined &&

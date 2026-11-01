@@ -120,6 +120,33 @@ calculado localmente, nunca copiado da API ou de transition.reason, que continua
 sendo uma justificativa documental livre. CLI, resumo e artefato usam a mesma
 sanitização, sem consultas adicionais à Cloudflare.
 
+Quando reason=SELECTOR_MISMATCH, selector identifica o atributo afetado sem
+divulgar seu valor:
+
+| selector    | Conferência privada necessária              |
+| ----------- | ------------------------------------------- |
+| ENTRYPOINT  | Entrypoint do Service Binding               |
+| ENVIRONMENT | Environment do Service Binding              |
+| BOTH        | Entrypoint e environment do Service Binding |
+
+O campo é opcional e aceito somente para binding conhecido, code=BINDING_MISMATCH
+e operation=worker.settings, com reason=SELECTOR_MISMATCH. A allowlist é aplicada
+na construção e na serialização: razões diferentes, bindings ausentes,
+desconhecidos ou malformados não recebem selector. Nunca copiar esse campo da API,
+do payload ou do manifesto. As regras de comparação permanecem inalteradas.
+
+Depois de uma execução autorizada, consultar selector e conferir privadamente no
+Dashboard os campos indicados de OPERATIONS_SERVICE. Registrar evidência pelo
+procedimento administrativo aprovado, sem publicar valores nos logs do CI. Se a
+configuração histórica estiver incorreta, preparar uma correção administrativa
+revisada. Se for um estado anterior legítimo, preparar uma transição versionada
+com valores exatos comprovados, justificativa e testes de interoperabilidade.
+Submeter essa alteração a revisão independente; este diagnóstico não a aprova.
+O pós-check exige o estado final e a autorização de props.caller permanece intacta.
+Também não presumir equivalência entre seletor ausente e production ou default.
+Resolver seletores não comprova props.caller nem elimina gates de proveniência
+e migrations; a baseline depende da homologação real das versões publicadas.
+
 Depois de uma execução autorizada, usar a razão para conferir o atributo afetado
 privadamente no Dashboard. Não remover bindings nem presumir que environment
 production equivale à ausência de seletor. Uma diferença real exige correção

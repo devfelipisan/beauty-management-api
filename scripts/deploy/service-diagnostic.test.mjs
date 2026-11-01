@@ -164,6 +164,7 @@ test('sanitizer excludes arbitrary reasons, unknown bindings and unrelated opera
     binding: expected.name,
     allowedBindings: new Set([expected.name]),
     reason: 'SELECTOR_MISMATCH',
+    selector: 'ENVIRONMENT',
   };
   assert.equal(
     diagnostic(new DeploymentValidationError('BINDING_MISMATCH', scope)).reason,
@@ -219,6 +220,7 @@ test('Billing failure preserves identical sanitized CLI, artifact and summary di
     commitSha: sha,
     binding: 'OPERATIONS_SERVICE',
     reason: 'SELECTOR_MISMATCH',
+    selector: 'ENVIRONMENT',
   };
   assert.deepEqual(report.failure, expectedDiagnostic);
   assert.deepEqual(snapshots.at(-1).failure, expectedDiagnostic);

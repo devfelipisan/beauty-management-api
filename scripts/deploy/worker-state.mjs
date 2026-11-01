@@ -9,6 +9,7 @@ import {
   expectedBindings,
   matchesBinding,
   serviceMismatchReason,
+  serviceSelectorMismatch,
 } from './binding-contract.mjs';
 export const workerPath = (name) => `/workers/scripts/beauty-${name}-worker`;
 export function validateRuntimeText(settings, name, context = {}) {
@@ -77,8 +78,8 @@ export function validateSettings(
     'SERVICE_VERSION',
     ...transitions.map((transition) => transition.name),
   ]);
-  const problem = (code, binding, reason) =>
-    fail(code, { ...scope, binding, reason });
+  const problem = (code, binding, reason, selector) =>
+    fail(code, { ...scope, binding, reason, selector });
   if (!Array.isArray(settings?.bindings)) problem('REMOTE_RESPONSE_INVALID');
   const seen = new Set();
   for (const binding of settings.bindings) {
@@ -131,12 +132,17 @@ export function validateSettings(
           ? !binding
           : matchesBinding(binding, transition.previous))
       )
-    )
+    ) {
+      const reason = serviceMismatchReason(binding, wanted);
       problem(
         binding ? 'BINDING_MISMATCH' : 'BINDING_MISSING',
         wanted.name,
-        serviceMismatchReason(binding, wanted),
+        reason,
+        reason === 'SELECTOR_MISMATCH'
+          ? serviceSelectorMismatch(binding, wanted)
+          : undefined,
       );
+    }
   }
   for (const binding of actual) {
     if (['plain_text', 'secret_text'].includes(binding.type)) continue;
