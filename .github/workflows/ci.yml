@@ -58,4 +58,4 @@ jobs:
     with:
       commit_sha: ${{ github.sha }}
     secrets:
-      CLOUDFLARE_DEPLOY_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

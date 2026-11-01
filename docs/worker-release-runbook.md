@@ -6,7 +6,7 @@ O código deste PR não executa mudanças remotas. Configurar manualmente:
 
 | Environment           | Branch exclusiva       | Secret Cloudflare           | Capacidade                                                              |
 | --------------------- | ---------------------- | --------------------------- | ----------------------------------------------------------------------- |
-| production            | feature/microsservices | CLOUDFLARE_DEPLOY_TOKEN     | Workers autorizados; leituras necessárias de Workers, D1 e metadados R2 |
+| production            | feature/microsservices | CLOUDFLARE_API_TOKEN        | Workers autorizados; leituras necessárias de Workers, D1 e metadados R2 |
 | production-migrations | feature/microsservices | CLOUDFLARE_MIGRATIONS_TOKEN | D1 Read/Write                                                           |
 | infrastructure-audit  | main                   | CLOUDFLARE_AUDIT_TOKEN      | Workers Metadata, D1 e R2 somente leitura                               |
 
@@ -81,10 +81,16 @@ O orquestrador realiza um preflight remoto e publica Billing → Clinical → Op
 para all. Cada publicação passa por pós-check dirigido e registro de proveniência.
 Não há aplicação implícita de migrations, bootstrap ou aprovação de mídia.
 
-O chamador passa nominalmente somente CLOUDFLARE_DEPLOY_TOKEN, sem secrets: inherit.
+O chamador passa nominalmente somente CLOUDFLARE_API_TOKEN, sem secrets: inherit.
 O secret real pertence a production e é usado apenas pelo job protegido; verify e
 prepare têm token GitHub de leitura e não recebem credenciais Cloudflare em seus
 steps. Ausência de valor bloqueia a publicação com diagnóstico sanitizado.
+
+Antes da publicação, um step local verifica presença do secret CLOUDFLARE_API_TOKEN
+e da variável CLOUDFLARE_ACCOUNT_ID. Valores ausentes ou compostos somente de espaços
+bloqueiam o job sem chamadas Cloudflare e sem exibir os valores. Não recriar tokens
+para corrigir divergência de nome: o release, readiness e bootstrap usam o nome
+já cadastrado em production. Migrations e auditoria preservam suas credenciais próprias.
 
 A exclusão beauty-production pertence ao job de publicação, não ao CI ou preparo.
 Ela continua compartilhada com migrations, bootstrap e readiness, sem cancelar

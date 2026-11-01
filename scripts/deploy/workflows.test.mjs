@@ -26,9 +26,13 @@ test('quality gate covers both branches without credentials and chains only auth
     "github.event_name == 'push' && github.ref == 'refs/heads/feature/microsservices' && needs.verify.result == 'success'",
   );
   assert.deepEqual(Object.keys(ci.jobs.publish.secrets), [
-    'CLOUDFLARE_DEPLOY_TOKEN',
+    'CLOUDFLARE_API_TOKEN',
   ]);
   assert.equal(ci.concurrency, undefined);
+  assert.equal(
+    ci.jobs.publish.secrets.CLOUDFLARE_API_TOKEN,
+    '${{ secrets.CLOUDFLARE_API_TOKEN }}',
+  );
   assert.ok(JSON.stringify(ci).includes('scripts/test-deployment.mjs'));
   assert.ok(JSON.stringify(ci).includes('git diff --exit-code'));
 });
@@ -39,6 +43,9 @@ test('release supports call and dispatch with a protected publication and read-o
     'workflow_dispatch',
   ]);
   assert.equal(release.on.workflow_call.inputs.commit_sha.required, true);
+  assert.deepEqual(release.on.workflow_call.secrets, {
+    CLOUDFLARE_API_TOKEN: { required: true },
+  });
   assert.deepEqual(release.jobs.prepare.permissions, {
     contents: 'read',
     actions: 'read',
@@ -66,6 +73,28 @@ test('release supports call and dispatch with a protected publication and read-o
     ),
   );
   const commands = steps.map((s) => s.run ?? '').join('\n');
+  const availability = steps.findIndex(
+    (step) => step.name === 'Validate Cloudflare credentials availability',
+  );
+  const publication = steps.findIndex(
+    (step) =>
+      step.name === 'Release with one preflight and directed postchecks',
+  );
+  assert.ok(availability >= 0 && availability < publication);
+  assert.deepEqual(steps[availability].env, {
+    CF_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}',
+    CF_ACCOUNT_ID: '${{ vars.CLOUDFLARE_ACCOUNT_ID }}',
+  });
+  assert.equal(steps[availability].shell, 'bash');
+  assert.ok(!steps[availability].run.includes('curl'));
+  assert.equal(
+    steps[publication].env.CLOUDFLARE_API_TOKEN,
+    '${{ secrets.CLOUDFLARE_API_TOKEN }}',
+  );
+  assert.equal(
+    steps[publication].env.CLOUDFLARE_ACCOUNT_ID,
+    '${{ vars.CLOUDFLARE_ACCOUNT_ID }}',
+  );
   assert.ok(!commands.includes('preflight'));
   assert.ok(!commands.includes('bootstrap'));
   assert.ok(!commands.includes('migrations'));
@@ -81,6 +110,7 @@ test('audit is initially manual and isolated from mutable environments and crede
   const text = JSON.stringify(audit);
   assert.ok(text.includes('CLOUDFLARE_AUDIT_TOKEN'));
   assert.ok(!text.includes('CLOUDFLARE_DEPLOY_TOKEN'));
+  assert.ok(!text.includes('secrets.CLOUDFLARE_API_TOKEN'));
   assert.ok(!text.includes('CLOUDFLARE_MIGRATIONS_TOKEN'));
   assert.ok(
     readFileSync('.github/workflows/infrastructure-audit.yml', 'utf8').includes(
@@ -97,4 +127,17 @@ test('migration and bootstrap flows share exclusion but have separate protected 
   assert.ok(JSON.stringify(migration).includes('CLOUDFLARE_MIGRATIONS_TOKEN'));
   assert.ok(!JSON.stringify(migration).includes('CLOUDFLARE_DEPLOY_TOKEN'));
   assert.ok(JSON.stringify(migration).includes('INSPECTION_RUN_ID'));
+  for (const name of ['bootstrap-workers', 'infrastructure-readiness']) {
+    const config = workflow(name);
+    const steps = Object.values(config.jobs).flatMap((job) => job.steps ?? []);
+    const credentialStep = steps.find((step) => step.env?.CLOUDFLARE_API_TOKEN);
+    assert.equal(
+      credentialStep.env.CLOUDFLARE_API_TOKEN,
+      '${{ secrets.CLOUDFLARE_API_TOKEN }}',
+    );
+    assert.equal(
+      credentialStep.env.CLOUDFLARE_ACCOUNT_ID,
+      '${{ vars.CLOUDFLARE_ACCOUNT_ID }}',
+    );
+  }
 });
