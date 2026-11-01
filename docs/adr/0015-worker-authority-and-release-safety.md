@@ -83,8 +83,9 @@ snapshot inválido representa ausência de evidência, não igualdade de estado.
 
 ## Configuração, execução e implantação
 
-Text pertence ao Dashboard; SERVICE_VERSION pertence ao pipeline. Wrangler
-preserva Text e define bindings, secrets obrigatórios e perfil estático de build.
+Text pertence ao Dashboard; identidade de release pertence às evidências externas
+do GitHub vinculadas ao versionId Cloudflare. SERVICE_VERSION não integra o runtime.
+Wrangler preserva Text e define bindings, secrets obrigatórios e perfil estático de build.
 Mudar Text não habilita mocks no artefato de produção.
 
 Cinco operações D1 simultâneas por invocação abrangem segurança, repositories e

@@ -65,7 +65,6 @@ if (
     const request = deploymentRequest(
       JSON.parse(readFileSync('.github/deploy/request.json', 'utf8')),
     );
-    if (request.mode !== 'deploy') throw new Error();
     await requireRemoteSecrets(
       Object.fromEntries(
         Object.entries(workerConfigurations).map(([name, path]) => [

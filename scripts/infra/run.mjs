@@ -116,10 +116,8 @@ export async function infrastructureMain(args = process.argv.slice(2)) {
             context,
             phase,
           });
-          if (
-            actual.commitSha !== entry.commitSha ||
-            actual.versionId !== entry.versionId
-          )
+          const proof = await github.provenanceByVersion(worker, actual.versionId);
+          if (actual.versionId !== entry.versionId || proof.commitSha !== entry.commitSha)
             fail('PUBLISHED_VERSION_MISMATCH', {
               ...context,
               worker,
@@ -128,7 +126,7 @@ export async function infrastructureMain(args = process.argv.slice(2)) {
           qualified.push({
             worker,
             ...entry,
-            manifest: manifestAtCommit(entry.commitSha),
+            manifest: proof.manifest ?? manifestAtCommit(entry.commitSha),
           });
         }
         // Nothing is attested until every baseline entry is checked.

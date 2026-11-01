@@ -67,6 +67,9 @@ export async function release({
       const outcome = deploymentOutcome(result);
       const record = {
         worker,
+        commitSha: context.commitSha,
+        packageVersion: manifest.workers[worker].packageVersion,
+        manifestDigest: report.manifestDigest,
         ...outcome,
         publishDurationMs: performance.now() - at,
         verification: 'pending',
@@ -97,6 +100,7 @@ export async function release({
           worker,
           versionId: outcome.version,
           commitSha: context.commitSha,
+          packageVersion: manifest.workers[worker].packageVersion,
           manifest,
           runId: context.runId,
           releaseOrigin: context.releaseOrigin,
@@ -107,15 +111,18 @@ export async function release({
           controlSha: context.controlSha,
         });
       } catch (error) {
-        record.verification =
-          record.verification === 'passed' ? 'passed_record_failed' : 'failed';
+        record.verification = record.verification === 'passed'
+          ? 'published_unverified'
+          : 'failed';
+        if (record.verification === 'published_unverified')
+          report.status = 'published_unverified';
         throw error;
       }
       persist(report);
     }
     report.status = 'success';
   } catch (error) {
-    report.status = 'failed';
+    if (report.status !== 'published_unverified') report.status = 'failed';
     report.failure = diagnostic(error, context);
   } finally {
     report.durationsMs.total = performance.now() - started;
@@ -201,8 +208,10 @@ export async function releaseMain(args = process.argv.slice(2)) {
           '',
           '--config',
           workerConfigurations[worker],
-          '--var',
-          `SERVICE_VERSION:${sha}`,
+          '--tag',
+          `git-${sha}`,
+          '--message',
+          `beauty-release ${worker}`,
         ],
         { encoding: 'utf8' },
       );

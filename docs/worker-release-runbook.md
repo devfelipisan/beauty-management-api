@@ -20,7 +20,8 @@ o token independente de migrations estiver operacional.
 
 Text de produção pertence ao Dashboard: APP_ENV=production, AUTH_PROVIDER=jwt,
 OBSERVE_ENABLED=true, OUTBOX_BATCH_SIZE=5, OUTBOX_LEASE_SECONDS=60 e, em Operations,
-MAX_PROFILE_IMAGE_BYTES=300000. SERVICE_VERSION pertence ao pipeline. Os quatro
+MAX_PROFILE_IMAGE_BYTES=300000. Identidade da versão é comprovada por evidência GitHub
+associada ao versionId Cloudflare; SERVICE_VERSION não é binding de runtime. Os quatro
 nomes AUTH_ISSUER, AUTH_AUDIENCE, AUTH_JWKS_URL e AUTH_ALGORITHM permanecem em
 secrets.required; cadastrar valores reais manualmente em cada Worker. Não colocar
 valores em repositório, comandos, logs ou artefatos. Supabase é a arquitetura de
@@ -114,14 +115,16 @@ nas capturas precisa de inventário e revisão, não de aceitação automática.
    operations/billing/clinical, commitSha, versionId e qualificationReference.
    Não preencher com versões ilustrativas. Revisar/commitar e executar readiness
    baseline. Estados ativos precisam corresponder exatamente à declaração.
-7. Homologar primeiro um commit com mode=validate. Depois selecionar mode=deploy
-   e all em request.json de novo commit revisado. O push aprovado solicitará
-   produção; conferir a baseline e o escopo antes da aprovação operacional.
+7. A solicitação atual permanece em mode=validate. Ela valida a configuração local,
+   mas não executa o preflight remoto completo. A retomada do deploy normal exige
+   uma alteração revisada posterior que restaure mode=deploy após a adoção.
 
-Um placeholder de bootstrap não é baseline de aplicação homologada. Se não há
-aplicação com contratos comprovados, o primeiro provisionamento funcional precisa
-de uma migração de topologia explicitamente revisada; o release normal permanece
-bloqueado. Não falsificar SERVICE_VERSION ou proveniência para passar pelo gate.
+Um placeholder de bootstrap não é baseline de aplicação homologada. A remoção
+administrativa de SERVICE_VERSION deve ocorrer somente após código sem dependência
+estar aprovado. Como os três Wranglers usam keep_vars=true, a ausência de --var
+não remove a variável do Dashboard. Removê-la explicitamente no cutover, registrar
+os version IDs resultantes e confirmar ausência novamente após a adoção. Não
+reutilizar proveniência de versões substituídas.
 
 ## Release normal
 

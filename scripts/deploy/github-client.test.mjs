@@ -159,6 +159,7 @@ function provenanceFixture({
     worker: 'billing',
     commitSha: sha,
     versionId: version,
+    packageVersion: manifest.workers.billing.packageVersion,
     manifestDigest: hash,
     runId: '99',
     baseline,
@@ -212,24 +213,20 @@ function provenanceFixture({
 test('verified destination in a partially failed run retains independent provenance', async () => {
   const { client } = provenanceFixture();
   assert.deepEqual(
-    await client.provenance('billing', sha, version),
+    (await client.provenanceByVersion('billing', version)).workerManifest,
     manifest.workers.billing,
   );
 });
 test('baseline qualification is bound to a versioned reviewed inventory', async () => {
   assert.deepEqual(
-    await provenanceFixture({ baseline: true }).client.provenance(
-      'billing',
-      sha,
-      version,
-    ),
+    (await provenanceFixture({ baseline: true }).client.provenanceByVersion('billing', version)).workerManifest,
     manifest.workers.billing,
   );
   await assert.rejects(
     provenanceFixture({
       baseline: true,
       reference: 'different-record',
-    }).client.provenance('billing', sha, version),
+    }).client.provenanceByVersion('billing', version),
     { code: 'PROVENANCE_UNAVAILABLE' },
   );
 });
@@ -241,7 +238,7 @@ test('unassociated versions, altered manifests and unrelated workflows fail clos
     { runPath: '.github/workflows/ci.yml' },
   ])
     await assert.rejects(
-      provenanceFixture(options).client.provenance('billing', sha, version),
+      provenanceFixture(options).client.provenanceByVersion('billing', version),
       { code: 'PROVENANCE_UNAVAILABLE' },
     );
 });

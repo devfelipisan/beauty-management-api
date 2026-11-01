@@ -17,7 +17,10 @@ export function activeVersion(deployments, scope) {
       ...scope,
       operation: 'worker.deployments',
     });
-  return current.versions[0].version_id;
+  return {
+    versionId: current.versions[0].version_id,
+    deploymentId: current.id,
+  };
 }
 export async function publishedWorker(
   client,
@@ -31,24 +34,11 @@ export async function publishedWorker(
       operation: 'worker.settings',
       worker: name,
     }));
-  const commitSha = state?.bindings?.find(
-    (b) => b.name === 'SERVICE_VERSION' && b.type === 'plain_text',
-  )?.text;
-  if (!/^[0-9a-f]{40}$/.test(commitSha ?? ''))
-    fail('PROVENANCE_UNAVAILABLE', {
-      ...context,
-      phase,
-      worker: name,
-      operation: 'worker.settings',
-    });
   const deployments = await client.request(`${workerPath(name)}/deployments`, {
     phase,
     operation: 'worker.deployments',
     worker: name,
   });
-  return {
-    commitSha,
-    versionId: activeVersion(deployments, { ...context, phase, worker: name }),
-    settings: state,
-  };
+  const active = activeVersion(deployments, { ...context, phase, worker: name });
+  return { worker: name, ...active, settings: state };
 }

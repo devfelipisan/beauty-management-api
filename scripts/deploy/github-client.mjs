@@ -249,7 +249,7 @@ export function githubClient({
       controlSha: execution.controlSha,
     };
   }
-  async function provenance(worker, commitSha, versionId) {
+  async function provenanceByVersion(worker, versionId) {
     const scope = {
       ...context,
       phase: 'provenance',
@@ -257,12 +257,14 @@ export function githubClient({
       operation: 'github.deployment',
     };
     const records = await pages(
-      `/deployments?environment=production&task=beauty-release-${worker}&sha=${commitSha}`,
+      `/deployments?environment=production&task=beauty-release-${worker}`,
       null,
       'github.deployment',
     );
     for (const record of records) {
+      const commitSha = record.payload?.commitSha;
       if (
+        !/^[0-9a-f]{40}$/.test(commitSha ?? '') ||
         record.creator?.login !== 'github-actions[bot]' ||
         record.sha !== commitSha ||
         record.payload?.worker !== worker ||
@@ -363,10 +365,25 @@ export function githubClient({
       if (
         digest(manifest) !== record.payload.manifestDigest ||
         manifest?.formatVersion !== 1 ||
-        !manifest.workers?.[worker]
+        !manifest.workers?.[worker] ||
+        (record.payload.packageVersion !== undefined &&
+          record.payload.packageVersion !== manifest.workers[worker].packageVersion)
       )
         continue;
-      return manifest.workers[worker];
+      return {
+        worker,
+        commitSha,
+        versionId,
+        manifest,
+        workerManifest: manifest.workers[worker],
+        evidence: {
+          runId: String(record.payload.runId),
+          runAttempt: Number(record.payload.releaseRunAttempt ?? 1),
+          verification: 'passed',
+          deploymentId: record.id,
+          manifestDigest: record.payload.manifestDigest,
+        },
+      };
     }
     fail('PROVENANCE_UNAVAILABLE', scope);
   }
@@ -374,6 +391,7 @@ export function githubClient({
     worker,
     commitSha,
     versionId,
+    packageVersion,
     manifest,
     runId,
     baseline = false,
@@ -415,6 +433,7 @@ export function githubClient({
           worker,
           commitSha,
           versionId,
+          packageVersion,
           manifestDigest: digest(manifest),
           runId: String(runId),
           baseline,
@@ -448,7 +467,7 @@ export function githubClient({
     file,
     content,
     eligible,
-    provenance,
+    provenanceByVersion,
     recordPublished,
     metrics,
   };

@@ -14,13 +14,10 @@ export async function auditInfrastructure({ client, github, context = {} }) {
       context,
       phase: 'audit',
     });
-    const manifest = await github.provenance(
-      name,
-      state.commitSha,
-      state.versionId,
-    );
+    const provenance = await github.provenanceByVersion(name, state.versionId);
+    const manifest = provenance.workerManifest;
     const path = workerConfigurations[name],
-      text = await github.file(path, state.commitSha);
+      text = await github.file(path, provenance.commitSha);
     const parsed = ts.parseConfigFileTextToJson(path, text);
     if (parsed.error)
       fail('MANIFEST_INVALID', {
@@ -69,8 +66,9 @@ export async function auditInfrastructure({ client, github, context = {} }) {
     });
     published.push({
       worker: name,
-      commitSha: state.commitSha,
+      commitSha: provenance.commitSha,
       versionId: state.versionId,
+      deploymentId: state.deploymentId,
     });
   }
   // Cached reads avoid re-inspecting settings/deployments while sharing the same

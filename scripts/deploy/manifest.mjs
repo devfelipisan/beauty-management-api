@@ -120,7 +120,9 @@ export function manifestFromSources(read, files, configs) {
     }
     comp(compAst);
     const config = configs[name];
+    const packageVersion = JSON.parse(read(`apps/${name}-worker/package.json`)).version;
     workers[name] = {
+      packageVersion,
       provided: {
         revision: digest({ shared, methods, signatures, events: events[name] }),
         rpcMethods: methods.map((method) => method.name),
@@ -229,6 +231,7 @@ export function validateManifest(value, computed) {
       expected = computed.workers[name];
     if (
       !worker ||
+      worker.packageVersion !== expected.packageVersion ||
       JSON.stringify(worker.provided) !== JSON.stringify(expected.provided) ||
       worker.configurationHash !== expected.configurationHash ||
       worker.minMigration !== expected.minMigration ||

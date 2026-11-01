@@ -47,15 +47,14 @@ export async function preflight({
     else
       validateRuntimeText(settings, name, { ...context, phase: 'preflight' });
     const state = await publishedWorker(client, name, { settings, context });
+    const provenance = await github.provenanceByVersion(name, state.versionId);
     published[name] = {
-      commitSha: state.commitSha,
+      commitSha: provenance.commitSha,
       versionId: state.versionId,
+      deploymentId: state.deploymentId,
     };
-    topology[name] = await github.provenance(
-      name,
-      state.commitSha,
-      state.versionId,
-    );
+    topology[name] = provenance.workerManifest;
+    published[name].provenance = provenance.evidence;
     for (const dependency of Object.keys(topology[name].requires ?? {})) {
       if (!Object.hasOwn(workerConfigurations, dependency))
         fail('MANIFEST_INVALID', {

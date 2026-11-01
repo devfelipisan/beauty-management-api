@@ -23,7 +23,6 @@ export function settings(name) {
         type: 'plain_text',
         text,
       })),
-      { name: 'SERVICE_VERSION', type: 'plain_text', text: sha },
       ...config.d1_databases.map((db) => ({
         name: db.binding,
         type: 'd1',
@@ -97,7 +96,14 @@ export function fixture(override = () => undefined) {
   });
   const github = {
     metrics: { calls: 0 },
-    provenance: async (name) => structuredClone(manifest.workers[name]),
+    provenanceByVersion: async (name) => ({
+      worker: name,
+      commitSha: sha,
+      versionId: version,
+      manifest: structuredClone(manifest),
+      workerManifest: structuredClone(manifest.workers[name]),
+      evidence: { runId: '1', runAttempt: 1, verification: 'passed' },
+    }),
     recordPublished: async () => 42,
   };
   return { client, github, calls };

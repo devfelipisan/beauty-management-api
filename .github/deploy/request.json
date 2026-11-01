@@ -1,5 +1,5 @@
 {
-  "mode": "deploy",
+  "mode": "validate",
   "worker": "all",
-  "requestId": "continuous-deployment-feature"
+  "requestId": "release-refactoring-validation"
 }

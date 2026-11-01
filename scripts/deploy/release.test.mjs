@@ -211,9 +211,7 @@ test('postcheck reads only its Worker and rejects stale version or public exposu
       path.endsWith('/settings')
         ? response({
             ...settings('billing'),
-            bindings: settings('billing').bindings.map((b) =>
-              b.name === 'SERVICE_VERSION' ? { ...b, text: 'b'.repeat(40) } : b,
-            ),
+            bindings: [...settings('billing').bindings, { name: 'SERVICE_VERSION', type: 'plain_text', text: 'b'.repeat(40) }],
           })
         : undefined,
   ]) {
@@ -223,7 +221,6 @@ test('postcheck reads only its Worker and rejects stale version or public exposu
         client: f.client,
         worker: 'billing',
         versionId: version,
-        commitSha: sha,
         configuration: configurations.billing,
       }),
     );

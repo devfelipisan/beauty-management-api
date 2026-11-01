@@ -255,7 +255,7 @@ test('historical automatic and manual provenance survives later failed verify at
       jobs: { 1: [job()], 2: [job({ conclusion: 'failure' })] },
     });
     assert.deepEqual(
-      await f.client.provenance('billing', sha, version),
+      (await f.client.provenanceByVersion('billing', version)).workerManifest,
       manifest.workers.billing,
     );
   }
@@ -271,7 +271,7 @@ test('provenance rejects forged job, attempt, origin and control identity', asyn
       scenario({
         proof,
         jobs: { 2: [job({ conclusion: 'failure' })] },
-      }).client.provenance('billing', sha, version),
+      }).client.provenanceByVersion('billing', version),
     );
 });
 test('new deployment records include validated origin and verification evidence', async () => {

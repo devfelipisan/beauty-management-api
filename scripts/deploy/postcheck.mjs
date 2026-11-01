@@ -8,7 +8,6 @@ export async function postcheck({
   client,
   worker,
   versionId,
-  commitSha,
   configuration,
   context = {},
   transitions = [],
@@ -23,7 +22,7 @@ export async function postcheck({
     phase: 'postcheck',
     context,
   });
-  if (state.commitSha !== commitSha || state.versionId !== versionId)
+  if (state.versionId !== versionId)
     fail('PUBLISHED_VERSION_MISMATCH', {
       ...context,
       phase: 'postcheck',
@@ -37,7 +36,7 @@ export async function postcheck({
     context,
     'postcheck',
   );
-  return { worker, versionId, commitSha, verification: 'passed' };
+  return { worker, versionId, deploymentId: state.deploymentId, verification: 'passed' };
 }
 export async function checkWorkerControls(
   client,

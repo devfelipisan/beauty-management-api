@@ -29,7 +29,6 @@ function knownNames(name, config, expected, transitions, expectedText) {
     ...Object.keys(expectedText ?? requiredProductionText(name)),
     ...Object.keys(config.vars ?? {}),
     ...(config.secrets?.required ?? requiredJwtSecretNames),
-    'SERVICE_VERSION',
     ...transitions.map((t) => t.name),
   ]);
 }
@@ -49,7 +48,6 @@ function* runtimeChecks(settings, name, context = {}) {
   scope.allowedBindings = new Set([
     ...Object.keys(context.expectedText ?? requiredProductionText(name)),
     ...requiredJwtSecretNames,
-    'SERVICE_VERSION',
   ]);
   for (const [key, value] of Object.entries(
     context.expectedText ?? requiredProductionText(name),
