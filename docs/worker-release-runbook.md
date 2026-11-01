@@ -1,5 +1,37 @@
 # Operação protegida dos Workers
 
+## Diagnóstico local somente leitura (WSL/Bash)
+
+Quando o Bash enxerga variáveis mas Node não, exportar os valores no mesmo terminal.
+Se Account ID continuar inválido, informar novamente apenas o identificador da conta:
+
+```bash
+export CLOUDFLARE_API_TOKEN GITHUB_TOKEN
+read -r -p "Cloudflare Account ID: " CLOUDFLARE_ACCOUNT_ID
+export CLOUDFLARE_ACCOUNT_ID
+npm run infra:diagnose:readonly
+```
+
+Não incluir aspas, URL, prefixo CLOUDFLARE_ACCOUNT_ID= ou espaços no valor lido.
+O diagnóstico local exige 32 caracteres hexadecimais; a validação do cliente
+compartilhado permanece inalterada. Se os tokens ainda não estiverem definidos,
+capturá-los sem eco com read -rs e exportá-los, sem colocá-los em comandos literais,
+histórico Git ou chat. A sessão WSL e os secrets do GitHub Actions são configurações
+independentes. Não usar set -x para diagnosticar credenciais.
+
+O comando informa apenas visibilidade, presença e formato, sem imprimir valores.
+LOCAL_CONFIGURATION_INVALID encerra antes de qualquer acesso à rede. Com variáveis
+válidas, consulta os três Workers por GET, confere versões ativas e proveniência,
+e continua os demais quando um falha. Erros e metadados são sanitizados.
+PROVENANCE_CHECK_PASSED retorna zero; configuração inválida ou qualquer falha retorna
+um. Não publica Workers, não registra Deployments, não executa migrations e não
+carrega arquivos de credenciais automaticamente.
+
+Token presente não comprova autenticação ou permissão. Se retornar connected e
+PROVENANCE_UNAVAILABLE/NO_RECORDS, a configuração local foi ultrapassada, mas a
+adoção inicial continua pendente. Este diagnóstico não substitui readiness nem
+aprova publicação.
+
 ## Preparação administrativa
 
 O código deste PR não executa mudanças remotas. Configurar manualmente:
