@@ -1,5 +1,5 @@
 {
-  "mode": "validate",
+  "mode": "deploy",
   "worker": "all",
   "requestId": "microservices-workers-release"
 }
