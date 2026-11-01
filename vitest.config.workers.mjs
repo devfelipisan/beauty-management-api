@@ -15,6 +15,7 @@ async function auxiliaryWorker(
   name,
   serviceBindings = {},
   r2Buckets = [],
+  options = {},
 ) {
   const result = await build({
     entryPoints: [entryPoint],
@@ -23,7 +24,7 @@ async function auxiliaryWorker(
     platform: 'neutral',
     target: 'es2022',
     external: ['cloudflare:workers', 'node:async_hooks'],
-    define: { __BEAUTY_LOCAL__: 'true' },
+    define: { __BEAUTY_LOCAL__: options.production ? 'false' : 'true' },
     write: false,
     conditions: ['beauty'],
   });
@@ -37,16 +38,26 @@ async function auxiliaryWorker(
     modulesRoot: directory,
     compatibilityDate: '2026-08-30',
     compatibilityFlags: ['nodejs_compat'],
-    d1Databases: { ...testD1Databases },
+    d1Databases: options.d1Databases ?? { ...testD1Databases },
     r2Buckets,
     serviceBindings,
     bindings: {
-      APP_ENV: 'test',
-      AUTH_PROVIDER: 'mock',
+      APP_ENV: options.production ? 'production' : 'test',
+      AUTH_PROVIDER: options.production ? 'jwt' : 'mock',
+      ...(options.production
+        ? {
+            AUTH_ISSUER: 'https://identity.test',
+            AUTH_AUDIENCE: 'authenticated',
+            AUTH_JWKS_URL: 'https://identity.test/jwks',
+            AUTH_ALGORITHM: 'ES256',
+          }
+        : {}),
       OUTBOX_BATCH_SIZE: '5',
       OUTBOX_LEASE_SECONDS: '60',
       OBSERVE_ENABLED: 'false',
-      ...(name === 'beauty-operations-runtime' ? {MAX_PROFILE_IMAGE_BYTES:'300000'} : {}),
+      ...(name === 'beauty-operations-runtime'
+        ? { MAX_PROFILE_IMAGE_BYTES: '300000' }
+        : {}),
     },
     modules: [{ type: 'ESModule', path }],
   };
@@ -64,7 +75,18 @@ export default defineConfig({
         environment: 'local',
       },
       miniflare: {
-        d1Databases: { ...testD1Databases },
+        d1Databases: { ...testD1Databases, TEST_CALLER_DB: 'caller-proof-db' },
+        serviceBindings: {
+          TEST_CALLER_ALLOWED: {
+            name: 'beauty-billing-caller-proof',
+            props: { caller: 'beauty-operations-worker' },
+          },
+          TEST_CALLER_MISSING: { name: 'beauty-billing-caller-proof' },
+          TEST_CALLER_WRONG: {
+            name: 'beauty-billing-caller-proof',
+            props: { caller: 'browser' },
+          },
+        },
         bindings: {
           APP_ENV: 'test',
           AUTH_PROVIDER: 'mock',
@@ -75,6 +97,16 @@ export default defineConfig({
           MAX_PROFILE_IMAGE_BYTES: '300000',
         },
         workers: [
+          await auxiliaryWorker(
+            './apps/billing-worker/src/worker.ts',
+            'beauty-billing-caller-proof',
+            {},
+            [],
+            {
+              production: true,
+              d1Databases: { D1_DATABASE: 'caller-proof-db' },
+            },
+          ),
           await auxiliaryWorker(
             './apps/operations-worker/src/worker.ts',
             'beauty-operations-runtime',

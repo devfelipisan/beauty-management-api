@@ -26,6 +26,22 @@ payload não constituem autoridade. Membership profissional restringe recursos
 ao profissional vinculado. Efeitos de sistema exigem Outbox persistida e payload
 conferido no D1. Dispatchers usam propriedade do Service Binding chamador.
 
+A resposta administrativa de settings não precisa expor props. Sua ausência não
+comprova nem invalida a identidade de caller: Wrangler deve preservar props.caller
+na preparação do upload e o receiver continua avaliando this.ctx.props.caller.
+Testes físicos com build de produção, sem bypass mock, devem comprovar caller
+autorizado e negação de caller ausente, incorreto ou enviado apenas no payload.
+Quando props é retornado, formato inválido ou conteúdo divergente bloqueiam.
+
+A comparação administrativa usa D1 database_id canônico com compatibilidade para
+id legado, rejeitando aliases conflitantes. Service Bindings comparam destino,
+entrypoint e ambiente sem inferir valores padrão. Essa normalização não autoriza
+novos destinos ou transições; o estado anterior só é permitido no preflight.
+
+Diagnósticos preservam os campos existentes e acrescentam binding opcional,
+limitado aos nomes aprovados no contrato ou em transição. Nunca incluem valores,
+UUIDs de recursos ou nomes desconhecidos recebidos da API.
+
 ## Agenda
 
 A exclusão de RESCHEDULED nas consultas de disponibilidade contrariava a

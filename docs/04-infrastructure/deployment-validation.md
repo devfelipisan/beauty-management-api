@@ -1,5 +1,33 @@
 # Evidências locais — PR-DEPLOY
 
+## Normalização de bindings e diagnóstico
+
+Base: `19b1af69bcb8d42fa26671631a2a61f8bf24c0fa`. Ajustes exclusivamente em
+infraestrutura administrativa, fixtures e testes. Wranglers, migrations,
+manifesto versionado e código de negócio permanecem sem alteração.
+
+`npm run check` aprovado: lint, build/typecheck, 477 testes unitários/arquiteturais,
+77 testes físicos de Workers (incluindo duas provas novas de caller), 4 E2E e três
+dry-runs. Os 72 testes dos scripts incluem representação moderna/legada do D1,
+aliases conflitantes, seletores de serviço, props opcional, transições, nomes
+desconhecidos e sanitização de CLI/artefatos/resumos.
+
+A prova física usa o receiver Billing real, compilado com **BEAUTY_LOCAL**=false,
+APP_ENV=production e AUTH_PROVIDER=jwt, em D1 local isolado. O caller autorizado é
+transportado pelo Service Binding; ausente, incorreto ou somente no payload é
+negado. A captura explícita das rejeições RPC evita que o runner as interprete
+como promises não tratadas; não há supressão global de erros.
+
+Um teste executa o trecho de serialização do upload da versão instalada do
+Wrangler e comprova preservação de props.caller. Isso não substitui homologação
+remota: nenhuma consulta à conta ou publicação foi executada. Os valores JWT
+usados nessa fixture são locais, sem segredos ou contatos externos.
+
+O release simulado preserva 20 chamadas explícitas Cloudflare. Diagnósticos
+acrescentam apenas nomes aprovados de bindings, sem UUIDs de recursos, valores ou
+nomes desconhecidos. A baseline continua dependendo de inventário/homologação
+reais; passar no comparador não libera proveniência ou migrations pendentes.
+
 ## Correção CI → deploy protegido
 
 Revisão sobre `9a5ee2b0c4d7a888299d5d932bf396476d5d9d28`: CI chama release

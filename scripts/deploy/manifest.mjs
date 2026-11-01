@@ -10,6 +10,7 @@ import {
 } from './config-contract.mjs';
 import { readConfiguration } from './validate-local.mjs';
 import { fail } from './errors.mjs';
+import { normalizeBinding } from './binding-contract.mjs';
 export const digest = (value) =>
   createHash('sha256')
     .update(typeof value === 'string' ? value : JSON.stringify(value))
@@ -267,23 +268,22 @@ export function validateManifest(value, computed) {
               ![
                 'name',
                 'type',
-                'id',
-                'service',
-                'props',
-                'bucket_name',
+                ...({
+                  d1: ['database_id', 'id'],
+                  service: ['service', 'entrypoint', 'environment', 'props'],
+                  r2_bucket: ['bucket_name'],
+                }[previous.type] ?? []),
               ].includes(key),
           ))
       )
         fail('MANIFEST_INVALID', context);
-      if (
-        previous &&
-        typeof previous[
-          { d1: 'id', service: 'service', r2_bucket: 'bucket_name' }[
-            previous.type
-          ]
-        ] !== 'string'
-      )
-        fail('MANIFEST_INVALID', context);
+      if (previous) {
+        try {
+          normalizeBinding(previous);
+        } catch {
+          fail('MANIFEST_INVALID', context);
+        }
+      }
     }
     for (const revisions of Object.values(worker.requires))
       if (

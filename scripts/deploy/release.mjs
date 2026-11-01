@@ -88,6 +88,7 @@ export async function release({
           versionId: outcome.version,
           commitSha: context.commitSha,
           configuration: configurations[worker],
+          transitions: manifest.workers[worker].transitions,
           context,
         });
         record.verification = 'passed';

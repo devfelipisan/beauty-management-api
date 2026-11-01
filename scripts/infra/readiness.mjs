@@ -8,6 +8,7 @@ export async function infrastructureReadiness({
   phase = 'readiness',
   approveMedia = true,
   runtimeText = {},
+  bindingTransitions = {},
 }) {
   for (const [name, configuration] of Object.entries(configurations)) {
     const state = await publishedWorker(client, name, { context, phase });
@@ -15,6 +16,7 @@ export async function infrastructureReadiness({
       phase,
       context,
       expectedText: runtimeText[name],
+      transitions: bindingTransitions[name] ?? [],
     });
     await checkWorkerControls(client, name, configuration, context, phase);
   }

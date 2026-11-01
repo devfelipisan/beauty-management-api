@@ -12,7 +12,7 @@ import {
   readConfiguration,
   validateWorkerConfigurations,
 } from '../deploy/validate-local.mjs';
-import { manifestAtCommit } from '../deploy/manifest.mjs';
+import { manifestAtCommit, readManifest } from '../deploy/manifest.mjs';
 import { publishedWorker } from '../deploy/worker-state.mjs';
 import { diagnostic, fail } from '../deploy/errors.mjs';
 import { infrastructureReadiness } from './readiness.mjs';
@@ -63,11 +63,18 @@ export async function infrastructureMain(args = process.argv.slice(2)) {
         ]),
       );
       validateWorkerConfigurations(configurations, true);
+      const manifest = readManifest();
       await infrastructureReadiness({
         client,
         configurations,
         context,
         approveMedia: action === 'media',
+        bindingTransitions: Object.fromEntries(
+          Object.entries(manifest.workers).map(([name, worker]) => [
+            name,
+            worker.transitions,
+          ]),
+        ),
       });
       if (action === 'baseline') {
         const baseline = JSON.parse(

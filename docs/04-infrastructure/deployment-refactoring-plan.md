@@ -74,6 +74,30 @@ e sem escrita em deployments. O chamador passa apenas o secret nominal autorizad
 
 ## Preflight e pós-check
 
+Revisão sobre `19b1af6`: comparar bindings por representação canônica, não pelo
+objeto bruto da API. D1 usa database_id e aceita id legado quando o campo moderno
+está ausente; aliases simultâneos precisam coincidir. Campos malformados são
+rejeitados sem coerção. Service Bindings comparam service, entrypoint e environment,
+equiparando apenas ausência e null nos seletores opcionais. Não presumir ambiente
+production nem entrypoint padrão quando um valor diferente foi retornado.
+
+Settings não é prova documental de props.caller: a propriedade pode estar ausente.
+Quando retornada, props precisa ter formato válido e corresponder ao contrato
+declarado. A validação local continua exigindo caller; testes do serializador de
+upload do Wrangler e de RPC físico com build de produção comprovam sua passagem
+até o receiver. Caller ausente, incorreto ou recebido somente no payload é negado.
+
+Normalização é compartilhada por preflight, pós-check, readiness e auditoria.
+Transições aceitam database_id ou id legado sem converter manifestos históricos;
+somente preflight aceita o estado anterior aprovado. Nas demais fases, transições
+servem apenas para reconhecer nomes seguros de diagnóstico, nunca para aceitar
+infraestrutura antiga.
+
+O diagnóstico inclui binding opcional exclusivamente para nomes do contrato ou
+transições aprovadas, com a mesma sanitização em CLI, resumo e artefato. Bindings
+desconhecidos são rejeitados sem divulgar o nome recebido. Não registrar valores,
+UUIDs dos recursos ou respostas remotas. Não adicionar consultas Cloudflare.
+
 O preflight ocorre uma vez, comprova proveniência das dependências ativas, simula
 a sequência, verifica Text e bindings e consulta somente migrations exigidas.
 Operations consulta a existência do bucket; capacidade, inventário e aprovações
@@ -82,7 +106,8 @@ são exclusivos do readiness e dos gates transacionais de upload.
 Não há listagem explícita de secrets. Text JWT é rejeitado quando observado;
 a ausência de secrets obrigatórios é validada nativamente pelo Wrangler.
 O pós-check invalida cache, confere somente o destino publicado: SHA, versão ativa,
-bindings/caller, agendamento e exposição workers.dev/preview. Não reentra no preflight.
+bindings normalizados, agendamento e exposição workers.dev/preview. A autoridade de
+caller é comprovada separadamente pelos controles acima. Não reentra no preflight.
 
 ## Evidências e limites
 

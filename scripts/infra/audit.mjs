@@ -7,6 +7,7 @@ import { infrastructureReadiness } from './readiness.mjs';
 export async function auditInfrastructure({ client, github, context = {} }) {
   const configurations = {},
     runtimeText = {},
+    bindingTransitions = {},
     published = [];
   for (const name of Object.keys(workerConfigurations)) {
     const state = await publishedWorker(client, name, {
@@ -59,10 +60,12 @@ export async function auditInfrastructure({ client, github, context = {} }) {
         operation: 'github.manifest',
       });
     runtimeText[name] = manifest.productionText;
+    bindingTransitions[name] = manifest.transitions ?? [];
     validateSettings(state.settings, name, config, {
       phase: 'audit',
       context,
       expectedText: runtimeText[name],
+      transitions: bindingTransitions[name],
     });
     published.push({
       worker: name,
@@ -78,6 +81,7 @@ export async function auditInfrastructure({ client, github, context = {} }) {
     context,
     phase: 'audit',
     runtimeText,
+    bindingTransitions,
   });
   return { published };
 }

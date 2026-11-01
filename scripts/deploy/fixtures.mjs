@@ -27,13 +27,14 @@ export function settings(name) {
       ...config.d1_databases.map((db) => ({
         name: db.binding,
         type: 'd1',
-        id: db.database_id,
+        database_id: db.database_id,
       })),
       ...config.services.map((service) => ({
         name: service.binding,
         type: 'service',
         service: service.service,
-        props: service.props,
+        ...(service.entrypoint ? { entrypoint: service.entrypoint } : {}),
+        ...(service.environment ? { environment: service.environment } : {}),
       })),
       ...(config.r2_buckets ?? []).map((bucket) => ({
         name: bucket.binding,

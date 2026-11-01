@@ -3,8 +3,13 @@ import {
   requiredJwtSecretNames,
 } from './config-contract.mjs';
 import { fail } from './errors.mjs';
+import {
+  BindingShapeError,
+  normalizeBinding,
+  expectedBindings,
+  matchesBinding,
+} from './binding-contract.mjs';
 export const workerPath = (name) => `/workers/scripts/beauty-${name}-worker`;
-const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 export function validateRuntimeText(settings, name, context = {}) {
   const scope = {
     ...context,
@@ -14,18 +19,40 @@ export function validateRuntimeText(settings, name, context = {}) {
   };
   if (!Array.isArray(settings?.bindings))
     fail('REMOTE_RESPONSE_INVALID', scope);
+  if (
+    settings.bindings.some(
+      (binding) =>
+        !binding ||
+        typeof binding !== 'object' ||
+        Array.isArray(binding) ||
+        typeof binding.name !== 'string' ||
+        !binding.name ||
+        typeof binding.type !== 'string' ||
+        !binding.type,
+    ) ||
+    new Set(settings.bindings.map((binding) => binding.name)).size !==
+      settings.bindings.length
+  )
+    fail('REMOTE_RESPONSE_INVALID', scope);
+  scope.allowedBindings = new Set([
+    ...Object.keys(context.expectedText ?? requiredProductionText(name)),
+    ...requiredJwtSecretNames,
+    'SERVICE_VERSION',
+  ]);
   for (const [key, value] of Object.entries(
     context.expectedText ?? requiredProductionText(name),
   )) {
     const binding = settings.bindings.find((b) => b.name === key);
-    if (!binding) fail('BINDING_MISSING', scope);
-    if (binding.type !== 'plain_text') fail('BINDING_TYPE_INVALID', scope);
-    if (binding.text !== value) fail('BINDING_VALUE_INVALID', scope);
+    if (!binding) fail('BINDING_MISSING', { ...scope, binding: key });
+    if (binding.type !== 'plain_text')
+      fail('BINDING_TYPE_INVALID', { ...scope, binding: key });
+    if (binding.text !== value)
+      fail('BINDING_VALUE_INVALID', { ...scope, binding: key });
   }
   for (const key of requiredJwtSecretNames) {
     const binding = settings.bindings.find((b) => b.name === key);
     if (binding && binding.type !== 'secret_text')
-      fail('BINDING_TYPE_INVALID', scope);
+      fail('BINDING_TYPE_INVALID', { ...scope, binding: key });
   }
 }
 export function validateSettings(
@@ -40,60 +67,84 @@ export function validateSettings(
     worker: name,
     operation: 'worker.settings',
   };
-  if (
-    !Array.isArray(settings?.bindings) ||
-    new Set(settings.bindings.map((b) => b.name)).size !==
-      settings.bindings.length
-  )
-    fail('REMOTE_RESPONSE_INVALID', scope);
-  const expected = [
-    ...config.d1_databases.map((db) => ({
-      type: 'd1',
-      name: db.binding,
-      id: db.database_id,
-    })),
-    ...config.services.map((service) => ({
-      type: 'service',
-      name: service.binding,
-      service: service.service,
-      props: service.props,
-    })),
-    ...(config.r2_buckets ?? []).map((bucket) => ({
-      type: 'r2_bucket',
-      name: bucket.binding,
-      bucket_name: bucket.bucket_name,
-    })),
-  ];
-  const matches = (actual, wanted) =>
-    Object.entries(wanted).every(([key, value]) => equal(actual?.[key], value));
-  validateRuntimeText(settings, name, { ...scope, expectedText });
-  for (const wanted of expected) {
-    const actual = settings.bindings.find((b) => b.name === wanted.name);
-    const transition =
-      phase === 'preflight' && transitions.find((t) => t.name === wanted.name);
+  const expected = expectedBindings(config);
+  scope.allowedBindings = new Set([
+    ...expected.map((binding) => binding.name),
+    ...Object.keys(expectedText ?? requiredProductionText(name)),
+    ...Object.keys(config.vars ?? {}),
+    ...(config.secrets?.required ?? requiredJwtSecretNames),
+    'SERVICE_VERSION',
+    ...transitions.map((transition) => transition.name),
+  ]);
+  const problem = (code, binding) => fail(code, { ...scope, binding });
+  if (!Array.isArray(settings?.bindings)) problem('REMOTE_RESPONSE_INVALID');
+  const seen = new Set();
+  for (const binding of settings.bindings) {
     if (
-      !matches(actual, wanted) &&
+      !binding ||
+      typeof binding !== 'object' ||
+      Array.isArray(binding) ||
+      typeof binding.name !== 'string' ||
+      !binding.name ||
+      typeof binding.type !== 'string' ||
+      !binding.type
+    )
+      problem('REMOTE_RESPONSE_INVALID');
+    if (seen.has(binding.name))
+      problem('REMOTE_RESPONSE_INVALID', binding.name);
+    seen.add(binding.name);
+  }
+  validateRuntimeText(settings, name, { ...scope, expectedText });
+  const normalize = (binding) => {
+    try {
+      return normalizeBinding(binding);
+    } catch (error) {
+      if (error instanceof BindingShapeError)
+        problem(error.code, binding?.name);
+      throw error;
+    }
+  };
+  const actual = settings.bindings.map((binding) => {
+    if (!scope.allowedBindings.has(binding.name)) problem('BINDING_MISMATCH');
+    return normalize(binding);
+  });
+  const previous =
+    phase === 'preflight'
+      ? transitions.map((transition) => ({
+          ...transition,
+          previous:
+            transition.previous === null
+              ? null
+              : normalize(transition.previous),
+        }))
+      : [];
+  for (const wanted of expected) {
+    const binding = actual.find((item) => item.name === wanted.name);
+    const transition = previous.find((item) => item.name === wanted.name);
+    if (
+      !matchesBinding(binding, wanted) &&
       !(
         transition &&
         (transition.previous === null
-          ? !actual
-          : matches(actual, transition.previous))
+          ? !binding
+          : matchesBinding(binding, transition.previous))
       )
     )
-      fail(actual ? 'BINDING_MISMATCH' : 'BINDING_MISSING', scope);
+      problem(binding ? 'BINDING_MISMATCH' : 'BINDING_MISSING', wanted.name);
   }
-  for (const actual of settings.bindings) {
-    if (['plain_text', 'secret_text'].includes(actual.type)) continue;
-    if (expected.some((wanted) => matches(actual, wanted))) continue;
+  for (const binding of actual) {
+    if (['plain_text', 'secret_text'].includes(binding.type)) continue;
+    if (expected.some((wanted) => matchesBinding(binding, wanted))) continue;
     if (
-      phase === 'preflight' &&
-      transitions.some(
-        (t) =>
-          t.previous && t.name === actual.name && matches(actual, t.previous),
+      previous.some(
+        (transition) =>
+          transition.previous &&
+          transition.name === binding.name &&
+          matchesBinding(binding, transition.previous),
       )
     )
       continue;
-    fail('BINDING_MISMATCH', scope);
+    problem('BINDING_MISMATCH', binding.name);
   }
   return settings;
 }

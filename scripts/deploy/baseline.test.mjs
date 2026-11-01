@@ -33,7 +33,15 @@ test('legacy validator at the reviewed base reproduces 48 explicit calls without
       return response(
         requiredJwtSecretNames.map((name) => ({ name, type: 'secret_text' })),
       );
-    if (url.endsWith('/settings')) return response(settings(worker));
+    if (url.endsWith('/settings')) {
+      const legacySettings = settings(worker);
+      legacySettings.bindings = legacySettings.bindings.map((binding) =>
+        binding.type === 'd1'
+          ? { name: binding.name, type: 'd1', id: binding.database_id }
+          : binding,
+      );
+      return response(legacySettings);
+    }
     if (url.endsWith('/query'))
       return response([
         {

@@ -98,6 +98,25 @@ execução em andamento. O GitHub pode substituir trabalhos pendentes do mesmo g
 não existe garantia de fila FIFO. Não duplicar esse grupo no workflow chamador.
 
 Se houver erro, consultar código/fase/operation/worker/status no artefato sanitizado.
+
+Quando disponível, binding identifica exclusivamente um nome declarado no contrato
+ou em transição autorizada, como D1_DATABASE. O mesmo campo aparece no CLI, resumo
+e artefato. Um binding desconhecido resulta em BINDING_MISMATCH sem divulgar seu
+nome. Não registrar os valores comparados, UUIDs de recursos ou settings completos.
+
+Para BINDING_MISMATCH, distinguir representação de destino real: database_id é o
+campo D1 moderno, com id legado aceito e aliases conflitantes bloqueados. Serviços
+comparam destino, entrypoint e ambiente; ausência e null são equivalentes somente
+nos seletores opcionais. Não ajustar Dashboard ou aprovar uma transição apenas
+para acomodar o erro. Se persistir, inspecionar privadamente o binding identificado
+e confrontar o contrato versionado. Settings sem props não prova caller: consultar
+as evidências locais do serializador Wrangler e do RPC físico com segurança de
+produção. A autorização do receiver permanece obrigatória.
+
+Superar essa comparação não homologa a baseline nem aplica migrations. O preflight
+continua bloqueando proveniência ausente, contrato incompatível e esquema pendente;
+os procedimentos protegidos independentes devem resolver esses requisitos antes
+de uma publicação autorizada. A normalização não acrescenta consultas Cloudflare.
 Não copiar saída bruta do Wrangler ou valores do Dashboard. Secret obrigatório
 ausente falha nativamente no Wrangler; tipos Text incorretos falham antes da publicação.
 As consultas D1 de esquema usam leitura, conforme a

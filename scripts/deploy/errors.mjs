@@ -73,6 +73,13 @@ export class DeploymentValidationError extends Error {
     if (['operations', 'billing', 'clinical'].includes(context.worker))
       this.worker = context.worker;
     if (
+      typeof context.binding === 'string' &&
+      /^[A-Z][A-Z0-9_]{0,63}$/.test(context.binding) &&
+      context.allowedBindings instanceof Set &&
+      context.allowedBindings.has(context.binding)
+    )
+      this.binding = context.binding;
+    if (
       Number.isInteger(context.status) &&
       context.status >= 100 &&
       context.status <= 599
@@ -90,7 +97,16 @@ export function diagnostic(error, context = {}) {
       ? error
       : new DeploymentValidationError('REMOTE_RESPONSE_INVALID', context);
   return Object.fromEntries(
-    ['code', 'phase', 'operation', 'worker', 'status', 'requestId', 'commitSha']
+    [
+      'code',
+      'phase',
+      'operation',
+      'worker',
+      'status',
+      'requestId',
+      'commitSha',
+      'binding',
+    ]
       .filter((key) => safe[key] !== undefined)
       .map((key) => [key, safe[key]]),
   );

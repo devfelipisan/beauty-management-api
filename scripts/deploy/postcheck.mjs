@@ -11,6 +11,7 @@ export async function postcheck({
   commitSha,
   configuration,
   context = {},
+  transitions = [],
 }) {
   client.invalidate();
   const state = await publishedWorker(client, worker, {
@@ -18,6 +19,7 @@ export async function postcheck({
     context,
   });
   validateSettings(state.settings, worker, configuration, {
+    transitions,
     phase: 'postcheck',
     context,
   });
