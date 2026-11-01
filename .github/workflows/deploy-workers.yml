@@ -1,6 +1,14 @@
 name: Deploy Beauty Workers
 
 on:
+  workflow_call:
+    inputs:
+      commit_sha:
+        required: true
+        type: string
+    secrets:
+      CLOUDFLARE_DEPLOY_TOKEN:
+        required: true
   workflow_dispatch:
     inputs:
       commit_sha:
@@ -12,12 +20,11 @@ permissions:
   contents: read
   actions: read
 
-concurrency:
-  group: beauty-production
-  cancel-in-progress: false
-
 jobs:
   prepare:
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-latest
     outputs:
       mode: ${{ steps.request.outputs.mode }}
@@ -53,6 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
+    concurrency:
+      group: beauty-production
+      cancel-in-progress: false
     permissions:
       contents: read
       actions: read

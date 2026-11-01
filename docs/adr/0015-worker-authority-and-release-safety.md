@@ -76,8 +76,14 @@ UoW. JWKS pode ser reutilizado; memberships não são armazenadas em cache.
 O pool PostgreSQL legado limita cinco conexões por processo sem ativar seu módulo
 nos Workers. Não se trata de limite distribuído global de concorrência.
 
-request.json permanece como solicitação versionada no SHA escolhido por dispatch
-manual. O SHA deve pertencer à feature/microsservices e possuir CI push confiável.
+request.json permanece como solicitação versionada no SHA do push aprovado ou
+selecionado por dispatch manual. Cada push aprovado na feature/microsservices chama
+o release após verify, preservando aprovação production. Não esperar conclusão do
+CI inteiro, pois a publicação pertence à mesma execução. PRs e main não publicam.
+Recuperação manual exige execução push confiável encerrada e verify aprovado,
+mesmo quando a publicação anterior falhou. Verify posterior reprovado não reutiliza
+aprovação antiga. Tentativas e identidade são comprovadas pela API e registradas
+na proveniência, preservando a leitura de registros manuais e baselines anteriores.
 Publicação all segue Billing → Clinical → Operations, com aprovação production,
 SHA fixo, preflight único, pós-check por destino e migrations independentes em
 production-migrations. Baseline e versões publicadas exigem manifesto/proveniência

@@ -4,23 +4,55 @@ import { readFileSync } from 'node:fs';
 import * as yaml from 'js-yaml';
 const workflow = (name) =>
   yaml.load(readFileSync(`.github/workflows/${name}.yml`, 'utf8'));
-test('CI covers both branches with no remote credential or deployment trigger', () => {
+test('quality gate covers both branches without credentials and chains only authorized pushes', () => {
   const ci = workflow('ci');
   assert.deepEqual(ci.on.push.branches, ['main', 'feature/microsservices']);
   assert.deepEqual(ci.on.pull_request.branches, [
     'main',
     'feature/microsservices',
   ]);
-  assert.ok(!JSON.stringify(ci).includes('secrets.'));
-  assert.ok(!JSON.stringify(ci).includes('environment'));
+  assert.ok(!JSON.stringify(ci.jobs.verify).includes('secrets.'));
+  assert.ok(!JSON.stringify(ci.jobs.verify).includes('environment'));
+  assert.equal(ci.jobs.verify.name, 'verify');
+  assert.deepEqual(ci.jobs.verify.permissions, {
+    contents: 'read',
+    actions: 'read',
+  });
+  assert.equal(ci.jobs.publish.needs, 'verify');
+  assert.equal(ci.jobs.publish.uses, './.github/workflows/deploy-workers.yml');
+  assert.equal(ci.jobs.publish.with.commit_sha, '${{ github.sha }}');
+  assert.equal(
+    ci.jobs.publish.if,
+    "github.event_name == 'push' && github.ref == 'refs/heads/feature/microsservices' && needs.verify.result == 'success'",
+  );
+  assert.deepEqual(Object.keys(ci.jobs.publish.secrets), [
+    'CLOUDFLARE_DEPLOY_TOKEN',
+  ]);
+  assert.equal(ci.concurrency, undefined);
   assert.ok(JSON.stringify(ci).includes('scripts/test-deployment.mjs'));
   assert.ok(JSON.stringify(ci).includes('git diff --exit-code'));
 });
-test('release is manual, protected, immutable and invokes only the orchestrator', () => {
+test('release supports call and dispatch with a protected publication and read-only preparation', () => {
   const release = workflow('deploy-workers');
-  assert.deepEqual(Object.keys(release.on), ['workflow_dispatch']);
+  assert.deepEqual(Object.keys(release.on), [
+    'workflow_call',
+    'workflow_dispatch',
+  ]);
+  assert.equal(release.on.workflow_call.inputs.commit_sha.required, true);
+  assert.deepEqual(release.jobs.prepare.permissions, {
+    contents: 'read',
+    actions: 'read',
+  });
+  assert.ok(!JSON.stringify(release.jobs.prepare).includes('secrets.'));
+  assert.equal(release.jobs.prepare.environment, undefined);
+  assert.equal(
+    release.jobs.deploy.if,
+    "needs.prepare.outputs.mode == 'deploy'",
+  );
   assert.equal(release.jobs.deploy.environment, 'production');
-  assert.equal(release.concurrency.group, 'beauty-production');
+  assert.equal(release.concurrency, undefined);
+  assert.equal(release.jobs.deploy.concurrency.group, 'beauty-production');
+  assert.equal(release.jobs.deploy.concurrency['cancel-in-progress'], false);
   const steps = release.jobs.deploy.steps,
     source = steps.find(
       (s) => s.with?.ref === '${{ needs.prepare.outputs.commitSha }}',

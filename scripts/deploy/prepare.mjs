@@ -21,7 +21,7 @@ export async function prepareMain(args = process.argv.slice(2)) {
     if (process.env.GITHUB_STEP_SUMMARY)
       appendFileSync(
         process.env.GITHUB_STEP_SUMMARY,
-        `## Requested release\n\nSHA: ${sha}\n\nMode: ${request.mode}\n\nTarget: ${request.worker}\n\nRequest: ${request.requestId}\n`,
+        `## Requested release\n\nSHA: ${sha}\n\nMode: ${request.mode}\n\nTarget: ${request.worker}\n\nRequest: ${request.requestId}\n\nOrigin: ${request.releaseOrigin}\n\nCI: ${request.ciRunId}, attempt ${request.ciRunAttempt}, verify job ${request.verifyJobId}\n`,
       );
   } catch (error) {
     console.error(JSON.stringify(diagnostic(error, { phase: 'eligibility' })));

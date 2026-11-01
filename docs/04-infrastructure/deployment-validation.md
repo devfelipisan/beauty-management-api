@@ -1,5 +1,26 @@
 # Evidências locais — PR-DEPLOY
 
+## Correção CI → deploy protegido
+
+Revisão sobre `9a5ee2b0c4d7a888299d5d932bf396476d5d9d28`: CI chama release
+reutilizável após verify; dispatch manual permanece disponível. Sem mudanças de
+negócio, contratos, migrations, recursos ou configuração remota.
+
+Executado localmente `npm run check`: 477 testes unitários/arquiteturais,
+75 testes de Workers/D1, 4 E2E e os três dry-runs aprovados, além de lint e build.
+Os testes dos scripts incluem o CI global em andamento, recuperação manual com
+publicação reprovada, tentativas, paginação, nomes ambíguos, identidade divergente,
+origem/proveniência automática e manual, compatibilidade legada e passagem da
+evidência aos registros. A contagem simulada Cloudflare permanece em 20; consultas
+GitHub são contabilizadas separadamente.
+
+A homologação real do workflow_call, passagem do secret do environment, nova
+aprovação, reexecução de jobs e dispatch manual continua pendente de operação
+explicitamente autorizada. Nenhum push, deploy ou alteração administrativa foi
+executado. A baseline permanece vazia até comprovação real.
+
+## Evidências da refatoração anterior
+
 Ambiente: Node 24.22.1, branch feature/microsservices, base
 e7429ecf8802dad90f74803b7893b042ff307cb4. Execução local, sem credenciais
 Cloudflare, publicação, provisionamento ou aplicação remota de migrations.

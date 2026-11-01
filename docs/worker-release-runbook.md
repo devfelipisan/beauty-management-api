@@ -49,8 +49,9 @@ identidade aprovada; nenhum endpoint ou algoritmo é presumido.
    operations/billing/clinical, commitSha, versionId e qualificationReference.
    Não preencher com versões ilustrativas. Revisar/commitar e executar readiness
    baseline. Estados ativos precisam corresponder exatamente à declaração.
-7. Aguardar CI push confiável do SHA candidato. Selecionar all em request.json
-   daquele commit e executar o release manual com o SHA completo.
+7. Homologar primeiro um commit com mode=validate. Depois selecionar mode=deploy
+   e all em request.json de novo commit revisado. O push aprovado solicitará
+   produção; conferir a baseline e o escopo antes da aprovação operacional.
 
 Um placeholder de bootstrap não é baseline de aplicação homologada. Se não há
 aplicação com contratos comprovados, o primeiro provisionamento funcional precisa
@@ -59,17 +60,36 @@ bloqueado. Não falsificar SERVICE_VERSION ou proveniência para passar pelo gat
 
 ## Release normal
 
-Usar Deploy Beauty Workers → Run workflow na branch autorizada; informar SHA
-completo ancestral da feature/microsservices. O preparo exige CI push concluído
-com sucesso do workflow ci.yml do próprio repositório. CI de PR não autoriza release.
-mode, worker e requestId são lidos do request.json naquele SHA, mesmo se a branch
-avançar. mode=validate termina no preparo, sem credenciais Cloudflare ou escrita.
+Cada push aprovado na feature/microsservices chama o release reutilizável dentro
+do CI, após o job verify. O CI pode permanecer em andamento durante aprovação e
+publicação: o preparo comprova verify pela API, sem esperar o workflow completo.
+PRs e pushes em main não publicam. Não é necessário alterar requestId para disparar;
+com mode=deploy e worker=all, cada push aprovado prepara uma publicação integral.
+Branch protegida e aprovação efetiva são obrigatórias.
+
+O caminho excepcional Deploy Beauty Workers → Run workflow continua disponível na
+branch autorizada com SHA completo ancestral da feature. Exige a execução push
+confiável mais recente daquele SHA encerrada e verify aprovado; falha ou cancelamento
+posterior da publicação não impede recuperação manual. CI de PR não autoriza release.
+mode, worker e requestId são lidos do request.json daquele SHA, mesmo se a branch
+avançar. mode=validate termina no preparo, sem aprovação, credenciais Cloudflare ou escrita.
 
 Conferir SHA e destinos no resumo antes de aprovar production. O checkout da
-aplicação é imutável; o controle usa separadamente o SHA confiável do dispatch.
+aplicação é imutável; o controle usa separadamente o SHA confiável da execução
+chamadora (push do CI ou dispatch manual).
 O orquestrador realiza um preflight remoto e publica Billing → Clinical → Operations
 para all. Cada publicação passa por pós-check dirigido e registro de proveniência.
 Não há aplicação implícita de migrations, bootstrap ou aprovação de mídia.
+
+O chamador passa nominalmente somente CLOUDFLARE_DEPLOY_TOKEN, sem secrets: inherit.
+O secret real pertence a production e é usado apenas pelo job protegido; verify e
+prepare têm token GitHub de leitura e não recebem credenciais Cloudflare em seus
+steps. Ausência de valor bloqueia a publicação com diagnóstico sanitizado.
+
+A exclusão beauty-production pertence ao job de publicação, não ao CI ou preparo.
+Ela continua compartilhada com migrations, bootstrap e readiness, sem cancelar
+execução em andamento. O GitHub pode substituir trabalhos pendentes do mesmo grupo;
+não existe garantia de fila FIFO. Não duplicar esse grupo no workflow chamador.
 
 Se houver erro, consultar código/fase/operation/worker/status no artefato sanitizado.
 Não copiar saída bruta do Wrangler ou valores do Dashboard. Secret obrigatório
@@ -86,10 +106,20 @@ Se a publicação ocorreu, mas seu pós-check ou registro falhou, não presumir 
 a versão anterior continua ativa. Inspecionar e homologar o estado real; uma
 versão sem associação comprovada bloqueia novas publicações até recuperação revisada.
 
-Corrigir a causa e emitir nova solicitação de SHA compatível. Não restaurar D1,
+Corrigir a causa e reexecutar os jobs de publicação que falharam no CI, ou solicitar
+release manual do mesmo SHA compatível após a execução anterior encerrar. Ambas as
+opções exigem nova aprovação de production e revalidação da elegibilidade. Se a
+correção exigir código, emitir novo commit/solicitação. Não restaurar D1,
 apagar objetos, reabrir Clinical R2 ou alterar quotas/aprovações automaticamente.
 Rollback também exige CI, manifesto compatível e aprovação. Repetir release não
 provisiona recursos nem executa efeitos de negócio.
+
+Na busca de verify, consultar tentativas da mais recente para trás, reutilizando
+resultado anterior somente quando o job não foi reexecutado depois. Verify posterior
+falho, ignorado, cancelado ou em andamento bloqueia; nomes parciais e duplicados são
+rejeitados. Os novos deployments registram origem, tentativas, job verify e SHA de
+controle. A leitura histórica usa a tentativa registrada, sem invalidar publicação
+verificada por causa de uma reexecução posterior. Registros legados continuam aceitos.
 
 ## Auditoria
 

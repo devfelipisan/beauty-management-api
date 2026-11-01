@@ -2,11 +2,23 @@ import { fail } from './errors.mjs';
 import { releaseBranch, manifestPath } from './config-contract.mjs';
 import { deploymentRequest } from './validate-local.mjs';
 import { digest } from './manifest.mjs';
+import { load } from 'js-yaml';
+export function runnerExecution(env = process.env) {
+  return {
+    event: env.GITHUB_EVENT_NAME,
+    runId: env.GITHUB_RUN_ID,
+    runAttempt: env.GITHUB_RUN_ATTEMPT,
+    controlSha: env.GITHUB_SHA,
+    repository: env.GITHUB_REPOSITORY,
+    ref: env.GITHUB_REF,
+  };
+}
 export function githubClient({
   repository,
   token,
   fetchImpl = globalThis.fetch,
   context = {},
+  execution = runnerExecution(),
 }) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '') || !token)
     fail('REMOTE_CREDENTIALS_UNAVAILABLE', {
@@ -102,6 +114,56 @@ export function githubClient({
       fail('MANIFEST_INVALID', { ...context, operation: 'github.manifest' });
     }
   }
+  const positive = (value) =>
+    /^\d+$/.test(String(value)) &&
+    Number.isSafeInteger(Number(value)) &&
+    Number(value) > 0;
+  const ciIdentity = (run, sha) =>
+    run?.head_sha === sha &&
+    run.head_branch === releaseBranch &&
+    run.event === 'push' &&
+    run.repository?.full_name === repository &&
+    run.path === '.github/workflows/ci.yml';
+  const trustedCi = (run, sha) =>
+    ciIdentity(run, sha) && positive(run.id) && positive(run.run_attempt);
+  async function approvedVerify(run, attempt, scope) {
+    for (let current = Number(attempt); current > 0; current--) {
+      const jobs = await pages(
+        `/actions/runs/${run.id}/attempts/${current}/jobs`,
+        'jobs',
+        'github.ci',
+      );
+      const matches = jobs.filter((job) => job.name === 'verify');
+      if (!matches.length) continue;
+      const job = matches[0];
+      if (
+        matches.length !== 1 ||
+        job.run_id !== run.id ||
+        job.head_sha !== run.head_sha ||
+        job.status !== 'completed' ||
+        job.conclusion !== 'success' ||
+        !positive(job.id)
+      )
+        fail('CI_NOT_APPROVED', scope);
+      return { ciRunId: run.id, ciRunAttempt: current, verifyJobId: job.id };
+    }
+    fail('CI_NOT_APPROVED', scope);
+  }
+  async function authorizedCaller(sha, scope) {
+    let workflow;
+    try {
+      workflow = load(await file('.github/workflows/ci.yml', sha));
+    } catch {
+      fail('CI_NOT_APPROVED', scope);
+    }
+    const call = workflow?.jobs?.publish;
+    if (
+      call?.uses !== './.github/workflows/deploy-workers.yml' ||
+      call.needs !== 'verify' ||
+      call.with?.commit_sha !== '${{ github.sha }}'
+    )
+      fail('CI_NOT_APPROVED', scope);
+  }
   async function eligible(commitSha) {
     const scope = {
       ...context,
@@ -118,28 +180,62 @@ export function githubClient({
       comparison.merge_base_commit?.sha !== commitSha
     )
       fail('SHA_INELIGIBLE', scope);
-    const runs = await pages(
-      `/actions/workflows/ci.yml/runs?head_sha=${commitSha}&event=push&branch=${encodeURIComponent(releaseBranch)}`,
-      'workflow_runs',
-      'github.ci',
-    );
-    const candidates = runs
-      .filter(
-        (run) =>
-          run.head_sha === commitSha &&
-          run.head_branch === releaseBranch &&
-          run.event === 'push' &&
-          run.repository?.full_name === repository &&
-          run.path === '.github/workflows/ci.yml',
-      )
-      .sort(
-        (a, b) => b.run_number - a.run_number || b.run_attempt - a.run_attempt,
-      );
     if (
-      candidates[0]?.status !== 'completed' ||
-      candidates[0]?.conclusion !== 'success'
+      !['push', 'workflow_dispatch'].includes(execution.event) ||
+      execution.repository !== repository ||
+      execution.ref !== `refs/heads/${releaseBranch}` ||
+      !positive(execution.runId) ||
+      !positive(execution.runAttempt) ||
+      !/^[0-9a-f]{40}$/.test(execution.controlSha ?? '')
     )
       fail('CI_NOT_APPROVED', scope);
+    const own = await request(`/actions/runs/${execution.runId}`, {
+      operation: 'github.ci',
+    });
+    const automatic = execution.event === 'push';
+    if (
+      String(own.id) !== String(execution.runId) ||
+      Number(own.run_attempt) !== Number(execution.runAttempt) ||
+      own.event !== execution.event ||
+      own.head_sha !== execution.controlSha ||
+      own.head_branch !== releaseBranch ||
+      own.repository?.full_name !== repository ||
+      own.path !==
+        (automatic
+          ? '.github/workflows/ci.yml'
+          : '.github/workflows/deploy-workers.yml')
+    )
+      fail('CI_NOT_APPROVED', scope);
+    let candidate;
+    if (automatic) {
+      if (commitSha !== own.head_sha || !trustedCi(own, commitSha))
+        fail('SHA_INELIGIBLE', scope);
+      await authorizedCaller(commitSha, scope);
+      candidate = own;
+    } else {
+      const runs = await pages(
+        `/actions/workflows/ci.yml/runs?head_sha=${commitSha}&event=push&branch=${encodeURIComponent(releaseBranch)}`,
+        'workflow_runs',
+        'github.ci',
+      );
+      if (
+        runs.some(
+          (run) =>
+            ciIdentity(run, commitSha) &&
+            (!trustedCi(run, commitSha) || !positive(run.run_number)),
+        )
+      )
+        fail('CI_NOT_APPROVED', scope);
+      const candidates = runs
+        .filter((run) => trustedCi(run, commitSha))
+        .sort(
+          (a, b) =>
+            b.run_number - a.run_number || b.run_attempt - a.run_attempt,
+        );
+      if (candidates[0]?.status !== 'completed') fail('CI_NOT_APPROVED', scope);
+      candidate = candidates[0];
+    }
+    const proof = await approvedVerify(candidate, candidate.run_attempt, scope);
     const requestValue = await content(
       '.github/deploy/request.json',
       commitSha,
@@ -147,7 +243,10 @@ export function githubClient({
     return {
       ...deploymentRequest(requestValue),
       commitSha,
-      ciRunId: candidates[0].id,
+      ...proof,
+      releaseOrigin: automatic ? 'ci' : 'manual',
+      releaseRunAttempt: Number(execution.runAttempt),
+      controlSha: execution.controlSha,
     };
   }
   async function provenance(worker, commitSha, versionId) {
@@ -179,16 +278,71 @@ export function githubClient({
       const run = await request(`/actions/runs/${record.payload.runId}`, {
         operation: 'github.ci',
       });
+      const automatic = record.payload.releaseOrigin === 'ci';
       const allowedPath = record.payload.baseline
         ? '.github/workflows/infrastructure-readiness.yml'
-        : '.github/workflows/deploy-workers.yml';
+        : automatic
+          ? '.github/workflows/ci.yml'
+          : '.github/workflows/deploy-workers.yml';
       if (
-        run.event !== 'workflow_dispatch' ||
+        run.event !== (automatic ? 'push' : 'workflow_dispatch') ||
         run.head_branch !== releaseBranch ||
         run.path !== allowedPath ||
         run.repository?.full_name !== repository
       )
         continue;
+      if (record.payload.releaseOrigin !== undefined) {
+        const proof = record.payload;
+        if (
+          !['ci', 'manual'].includes(proof.releaseOrigin) ||
+          proof.baseline ||
+          !positive(proof.releaseRunAttempt) ||
+          !positive(proof.ciRunId) ||
+          !positive(proof.ciRunAttempt) ||
+          !positive(proof.verifyJobId) ||
+          proof.controlSha !== run.head_sha ||
+          (automatic &&
+            (run.head_sha !== commitSha ||
+              String(proof.ciRunId) !== String(proof.runId)))
+        )
+          continue;
+        const historical = await request(
+          `/actions/runs/${proof.ciRunId}/attempts/${proof.ciRunAttempt}`,
+          { operation: 'github.ci' },
+        );
+        if (
+          !trustedCi(historical, commitSha) ||
+          historical.id !== proof.ciRunId ||
+          Number(historical.run_attempt) !== proof.ciRunAttempt
+        )
+          continue;
+        const evidence = await approvedVerify(
+          historical,
+          proof.ciRunAttempt,
+          scope,
+        );
+        if (
+          evidence.verifyJobId !== proof.verifyJobId ||
+          evidence.ciRunAttempt !== proof.ciRunAttempt ||
+          (automatic && proof.ciRunAttempt > proof.releaseRunAttempt)
+        )
+          continue;
+        const releaseAttempt = await request(
+          `/actions/runs/${proof.runId}/attempts/${proof.releaseRunAttempt}`,
+          { operation: 'github.ci' },
+        );
+        if (
+          String(releaseAttempt.id) !== String(proof.runId) ||
+          releaseAttempt.head_sha !== proof.controlSha ||
+          releaseAttempt.path !== allowedPath ||
+          releaseAttempt.event !== run.event ||
+          releaseAttempt.repository?.full_name !== repository ||
+          releaseAttempt.head_branch !== releaseBranch ||
+          Number(releaseAttempt.run_attempt) !== proof.releaseRunAttempt
+        )
+          continue;
+        if (automatic) await authorizedCaller(commitSha, scope);
+      }
       if (record.payload.baseline) {
         const baseline = await content(
           '.github/deploy/baseline.json',
@@ -224,7 +378,23 @@ export function githubClient({
     runId,
     baseline = false,
     qualificationReference,
+    releaseOrigin,
+    releaseRunAttempt,
+    ciRunId,
+    ciRunAttempt,
+    verifyJobId,
+    controlSha,
   }) {
+    if (
+      !baseline &&
+      (!['ci', 'manual'].includes(releaseOrigin) ||
+        !positive(releaseRunAttempt) ||
+        !positive(ciRunId) ||
+        !positive(ciRunAttempt) ||
+        !positive(verifyJobId) ||
+        !/^[0-9a-f]{40}$/.test(controlSha ?? ''))
+    )
+      fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
     if (
       !/^[0-9a-f]{40}$/.test(commitSha) ||
       !/^[0-9a-f-]{36}$/i.test(versionId) ||
@@ -248,6 +418,16 @@ export function githubClient({
           manifestDigest: digest(manifest),
           runId: String(runId),
           baseline,
+          ...(!baseline
+            ? {
+                releaseOrigin,
+                releaseRunAttempt,
+                ciRunId,
+                ciRunAttempt,
+                verifyJobId,
+                controlSha,
+              }
+            : {}),
           ...(baseline ? { manifest, qualificationReference } : {}),
         },
       },

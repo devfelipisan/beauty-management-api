@@ -4,12 +4,17 @@ Este documento implementa a revisão do plano sobre `e7429ec`. A mudança limita
 à infraestrutura de publicação. Regras clínicas, financeiras, JWT, memberships,
 Outbox, limites de perfil e contabilidade transacional não são alterados.
 
+Revisão de encadeamento sobre `9a5ee2b`: substituir release exclusivamente manual
+por CI → verify → workflow reutilizável → aprovação production → publicação.
+Preservar dispatch manual para recuperação. A elegibilidade comum comprova o job
+verify sem depender do término global do CI, eliminando a dependência circular.
+
 ## Separação dos fluxos
 
 | Fluxo      | Entrada                                              | Credencial Cloudflare             | Efeito                                 |
 | ---------- | ---------------------------------------------------- | --------------------------------- | -------------------------------------- |
 | CI         | Push/PR em main e feature/microsservices             | Nenhuma                           | Gates locais                           |
-| Release    | Dispatch com SHA completo e request.json desse SHA   | Deploy, production                | Publica destinos selecionados          |
+| Release    | CI push aprovado ou dispatch; request.json do SHA    | Deploy, production                | Publica destinos selecionados          |
 | Migrations | Inspeção; aplicação com execução anterior comprovada | Migrations, production-migrations | Histórico D1 sequencial                |
 | Readiness  | Dispatch protegido                                   | Deploy, production                | Inspeção; baseline explícita no GitHub |
 | Bootstrap  | Dispatch protegido com apply explícito               | Deploy, production                | Cria somente Workers privados ausentes |
@@ -49,10 +54,23 @@ inventário real e referência de homologação, seguido pelo readiness `baselin
 O arquivo vazio é intencional: nenhum histórico fictício foi criado. A declaração
 é conferida contra metadados ativos antes de registrar qualquer baseline.
 
-O controle do release usa o SHA confiável do dispatch em checkout separado;
+O controle do release usa o SHA confiável do chamador em checkout separado;
 a aplicação usa exatamente o SHA selecionado. Assim, um SHA anterior não troca
 o orquestrador por um script de publicação antigo. O release revalida a solicitação
 e o CI depois da aprovação.
+
+No caminho automático, validar push próprio, branch e workflow CI autorizados,
+SHA igual ao da execução e tentativa atual, além de verify concluído com sucesso.
+No manual, exigir o run push confiável mais recente encerrado e verify aprovado,
+sem exigir sucesso da publicação. Procurar verify por nome exato e tentativa,
+reutilizando uma tentativa anterior somente se as posteriores não o reexecutaram.
+Evidências históricas ficam vinculadas à tentativa aprovada; novos registros incluem
+origem, execução/tentativas, job verify e SHA de controle. Preservar registros legados.
+
+Somente o job protegido de publicação usa beauty-production; não duplicar o grupo
+no chamador. Não há cancelamento do trabalho em andamento nem garantia de fila FIFO
+para trabalhos pendentes. Verify e prepare permanecem sem credenciais Cloudflare
+e sem escrita em deployments. O chamador passa apenas o secret nominal autorizado.
 
 ## Preflight e pós-check
 

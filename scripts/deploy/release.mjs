@@ -40,6 +40,18 @@ export async function release({
     workers: [],
     durationsMs: {},
     status: 'running',
+    eligibility: Object.fromEntries(
+      [
+        'releaseOrigin',
+        'releaseRunAttempt',
+        'ciRunId',
+        'ciRunAttempt',
+        'verifyJobId',
+        'controlSha',
+      ]
+        .filter((key) => context[key] !== undefined)
+        .map((key) => [key, context[key]]),
+    ),
   };
   const started = performance.now();
   try {
@@ -86,6 +98,12 @@ export async function release({
           commitSha: context.commitSha,
           manifest,
           runId: context.runId,
+          releaseOrigin: context.releaseOrigin,
+          releaseRunAttempt: context.releaseRunAttempt,
+          ciRunId: context.ciRunId,
+          ciRunAttempt: context.ciRunAttempt,
+          verifyJobId: context.verifyJobId,
+          controlSha: context.controlSha,
         });
       } catch (error) {
         record.verification =

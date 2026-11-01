@@ -16,12 +16,43 @@ function eligibleFixture(overrides = {}) {
   const client = githubClient({
     repository,
     token: 'fixture',
+    execution: {
+      event: 'workflow_dispatch',
+      runId: '99',
+      runAttempt: '1',
+      controlSha: 'b'.repeat(40),
+      repository,
+      ref: 'refs/heads/feature/microsservices',
+    },
     fetchImpl: async (url) => {
       const path = url.replace(
         `https://api.github.com/repos/${repository}`,
         '',
       );
       calls.push(path);
+      if (path === '/actions/runs/99')
+        return json({
+          id: 99,
+          run_attempt: 1,
+          event: 'workflow_dispatch',
+          head_sha: 'b'.repeat(40),
+          head_branch: 'feature/microsservices',
+          repository: { full_name: repository },
+          path: '.github/workflows/deploy-workers.yml',
+        });
+      if (path.includes('/attempts/') && path.endsWith('page=1'))
+        return json({
+          jobs: [
+            {
+              id: 42,
+              run_id: 12,
+              name: 'verify',
+              head_sha: sha,
+              status: 'completed',
+              conclusion: overrides.verifyConclusion ?? 'success',
+            },
+          ],
+        });
       if (path.startsWith('/compare/'))
         return json(
           overrides.comparison ?? {
@@ -59,6 +90,11 @@ test('eligibility reads immutable request from selected ancestor SHA after branc
     ...request,
     commitSha: sha,
     ciRunId: 12,
+    ciRunAttempt: 1,
+    verifyJobId: 42,
+    releaseOrigin: 'manual',
+    releaseRunAttempt: 1,
+    controlSha: 'b'.repeat(40),
   });
   assert.ok(calls.includes(`/contents/.github/deploy/request.json?ref=${sha}`));
 });
@@ -89,6 +125,7 @@ test('invalid SHA, unrelated history and untrusted PR CI cannot authorize releas
 });
 test('latest failed CI attempt blocks release despite an older success', async () => {
   const template = {
+    id: 12,
     head_sha: sha,
     head_branch: 'feature/microsservices',
     event: 'push',
@@ -99,6 +136,7 @@ test('latest failed CI attempt blocks release despite an older success', async (
   };
   await assert.rejects(
     eligibleFixture({
+      verifyConclusion: 'failure',
       runs: [
         { ...template, run_attempt: 1, conclusion: 'success' },
         { ...template, run_attempt: 2, conclusion: 'failure' },
