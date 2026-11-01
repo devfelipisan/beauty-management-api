@@ -1,0 +1,103 @@
+name: Controlled first publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full candidate SHA approved in first-publication.json
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: beauty-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate immutable candidate format
+        env:
+          TARGET_SHA: ${{ inputs.commit_sha }}
+        run: '[[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Validate candidate including physical RPC tests and dry-runs
+        run: |
+          npm run check
+          git diff --exit-code
+      - name: Keep trusted orchestration separate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-control
+          fetch-depth: 0
+          persist-credentials: false
+      - run: npm ci
+        working-directory: .release-control
+      - name: Test trusted orchestration in its own checkout
+        working-directory: .release-control
+        run: |
+          node scripts/test-deployment.mjs
+          git diff --exit-code
+      - name: Validate candidate manifest with trusted orchestration
+        run: node .release-control/scripts/deploy/manifest-check.mjs
+      - name: Validate reviewed first publication and CI
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ inputs.commit_sha }}
+        run: node .release-control/scripts/infra/first-publication.mjs --sha "$TARGET_SHA" --check
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Keep trusted orchestration separate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-control
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm ci
+        working-directory: .release-control
+      - name: Publish reviewed first managed versions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          TARGET_SHA: ${{ inputs.commit_sha }}
+        run: node .release-control/scripts/infra/first-publication.mjs --sha "$TARGET_SHA"
+      - name: Preserve recovery snapshot and partial results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/first-publication/result.json
+          if-no-files-found: ignore
