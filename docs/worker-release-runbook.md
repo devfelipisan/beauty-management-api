@@ -112,12 +112,73 @@ nas capturas precisa de inventário e revisão, não de aceitação automática.
    existente e executar readiness media. Não alterar flags para liberar publicação.
 6. Inventariar SHA e versão Cloudflare ativa de cada Worker. Homologar contratos e
    interoperabilidade. Registrar em .github/deploy/baseline.json, para cada nome
-   operations/billing/clinical, commitSha, versionId e qualificationReference.
-   Não preencher com versões ilustrativas. Revisar/commitar e executar readiness
-   baseline. Estados ativos precisam corresponder exatamente à declaração.
+   operations/billing/clinical, commitSha, versionId, qualificationReference e
+   evidence conforme a seção de adoção inicial abaixo. Não preencher com versões
+   ilustrativas. Revisar/commitar e executar Initial infrastructure adoption na
+   feature/microsservices, com aprovação production. Infrastructure readiness,
+   action=baseline, passa a somente revalidar uma baseline já registrada.
 7. A solicitação atual permanece em mode=validate. Ela valida a configuração local,
    mas não executa o preflight remoto completo. A retomada do deploy normal exige
    uma alteração revisada posterior que restaure mode=deploy após a adoção.
+
+### Qualificação inicial independente
+
+O novo workflow `.github/workflows/infrastructure-initial-adoption.yml` precisa
+ter seu descritor na branch padrão para disponibilizar Run workflow no GitHub.
+Executar selecionando feature/microsservices. Ele usa o Environment production
+existente, revalida suas proteções, exige aprovação e compartilha a exclusão
+beauty-production. Não publica Workers, não aplica migrations e não modifica D1/R2.
+Usa Node de .nvmrc, npm ci e unzip (disponível em ubuntu-latest).
+
+Reaproveitar Infrastructure inventory para coletar os version IDs ativos dos três
+Workers. Esse inventário mantém seis GETs e não homologa proveniência. Consultar os
+Deployments históricos: PROVENANCE_UNAVAILABLE agora inclui provenanceReason
+NO_RECORDS quando não há registros ou NO_ACCEPTED_RECORD quando nenhum foi aceito.
+Falhas de permissão/transporte continuam distintas. Não deduzir o código publicado
+do SHA candidato, de uma tag, de SERVICE_VERSION ou da configuração observada.
+
+Para cada entrada real da baseline, evidence contém quatro campos: runId
+(inteiro), runAttempt (inteiro), artifactId (inteiro) e artifactDigest (sha256:
+seguido de 64 hexadecimais). Obter os campos pela API oficial de Actions: metadados
+do artefato e execução original; não usar um arquivo local editado como prova.
+qualificationReference identifica a revisão humana da homologação e compatibilidade.
+A baseline permanece vazia até esses dados reais estarem disponíveis e aprovados.
+
+O verificador aceita o artefato imutável deployment-<commitSha>-<runAttempt>, não
+expirado, emitido pelo workflow CI de push ou Deploy Beauty Workers manual da
+feature/microsservices deste repositório. Confere identidade/tentativa da execução,
+job de publicação e Environment production no workflow histórico, verify aprovado,
+digest do ZIP e result.json, SHA, version ID e digest do manifesto. Exige que o
+Worker esteja published e verification=passed. Um Worker concluído antes de outro
+falhar pode ser homologado; pending/published_unverified não são evidência aceita.
+Relatórios históricos com outro formato exigem um verificador específico revisado;
+não converter um relatório desconhecido para forçar aceitação.
+
+O manifesto e as configurações são recuperados do commit histórico e o manifesto
+é recalculado a partir dos fontes. Os contratos RPC entre as três versões precisam
+ser compatíveis. A qualificação verifica bindings, configurações de runtime,
+agendamentos, exposição, D1, migrations, privacidade e aprovações/capacidade R2.
+Depois invalida o cache e relê as três versões antes de qualquer registro GitHub.
+Se uma versão mudou ou uma evidência falhou, não registra nenhuma entrada.
+
+A baseline versionada é a declaração revisada; o workflow registra a associação
+nos GitHub Deployments somente após validar o conjunto completo. Falha de escrita
+GitHub pode deixar registros parciais, preservados no artefato initial-adoption.
+Eles não são aceitos pelo release enquanto a execução de adoção não terminar com
+success. Uma nova tentativa protegida revalida tudo. Não há transação distribuída
+entre Cloudflare e GitHub; alterações administrativas externas não compartilham a
+exclusão dos workflows e exigem uma janela operacional controlada.
+
+Depois da homologação, o release reconhece o registro da execução protegida e a
+baseline no SHA dessa execução, conferindo o manifesto no commit histórico. Não
+requer que o artefato original permaneça disponível indefinidamente. Versões novas
+ou modificadas manualmente sem associação válida continuam bloqueadas.
+
+Se não houver artefato histórico íntegro e compatível, a adoção permanece bloqueada.
+Nesse caso é necessária uma primeira publicação controlada, com autorização
+específica, compatibilidade e recuperação revisadas em procedimento separado.
+Este workflow não oferece skipProvenance nem implementa essa publicação extraordinária.
+Preencher a baseline sozinho ou executar novamente a run antiga não libera o deploy.
 
 Um placeholder de bootstrap não é baseline de aplicação homologada. A remoção
 administrativa de SERVICE_VERSION deve ocorrer somente após código sem dependência

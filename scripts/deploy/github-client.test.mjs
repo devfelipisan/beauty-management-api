@@ -153,6 +153,7 @@ function provenanceFixture({
   hash = digest(manifest),
   runPath,
   runConclusion = 'failure',
+  adoption = false,
 } = {}) {
   const calls = [];
   const payload = {
@@ -163,6 +164,16 @@ function provenanceFixture({
     manifestDigest: hash,
     runId: '99',
     baseline,
+    ...(adoption
+      ? {
+          adoptionEvidence: {
+            runId: 10,
+            runAttempt: 1,
+            artifactId: 20,
+            artifactDigest: `sha256:${'a'.repeat(64)}`,
+          },
+        }
+      : {}),
     ...(baseline
       ? { manifest, qualificationReference: 'approved-record' }
       : {}),
@@ -187,11 +198,14 @@ function provenanceFixture({
           head_sha: 'b'.repeat(40),
           path:
             runPath ??
-            (baseline
-              ? '.github/workflows/infrastructure-readiness.yml'
-              : '.github/workflows/deploy-workers.yml'),
+            (adoption
+              ? '.github/workflows/infrastructure-initial-adoption.yml'
+              : baseline
+                ? '.github/workflows/infrastructure-readiness.yml'
+                : '.github/workflows/deploy-workers.yml'),
           repository: { full_name: repository },
           conclusion: runConclusion,
+          status: 'completed',
         });
       if (path.includes('/contents/.github/deploy/baseline.json'))
         return file({
@@ -200,6 +214,7 @@ function provenanceFixture({
               commitSha: sha,
               versionId: version,
               qualificationReference: reference,
+              ...(adoption ? { evidence: payload.adoptionEvidence } : {}),
             },
           },
         });
@@ -246,4 +261,40 @@ test('unassociated versions, altered manifests and unrelated workflows fail clos
       provenanceFixture(options).client.provenanceByVersion('billing', version),
       { code: 'PROVENANCE_UNAVAILABLE' },
     );
+});
+test('completed protected adoption becomes durable provenance without retained historical artifacts', async () => {
+  const f = provenanceFixture({
+    baseline: true,
+    adoption: true,
+    runConclusion: 'success',
+  });
+  const proof = await f.client.provenanceByVersion('billing', version);
+  assert.equal(proof.commitSha, sha);
+  assert.ok(!f.calls.some((path) => path.startsWith('/actions/artifacts/')));
+  for (const options of [
+    { runConclusion: 'failure' },
+    {
+      runPath: '.github/workflows/infrastructure-readiness.yml',
+      runConclusion: 'success',
+    },
+  ])
+    await assert.rejects(
+      provenanceFixture({
+        baseline: true,
+        adoption: true,
+        ...options,
+      }).client.provenanceByVersion('billing', version),
+      { code: 'PROVENANCE_UNAVAILABLE' },
+    );
+  await assert.rejects(
+    provenanceFixture({
+      baseline: true,
+      adoption: true,
+      runConclusion: 'success',
+    }).client.provenanceByVersion(
+      'billing',
+      '11111111-1111-1111-1111-111111111111',
+    ),
+    { code: 'PROVENANCE_UNAVAILABLE' },
+  );
 });

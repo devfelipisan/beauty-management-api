@@ -3,6 +3,7 @@ import { releaseBranch, manifestPath } from './config-contract.mjs';
 import { deploymentRequest } from './validate-local.mjs';
 import { digest } from './manifest.mjs';
 import { load } from 'js-yaml';
+import { readEvidenceArtifact } from '../infra/evidence-artifact.mjs';
 export function runnerExecution(env = process.env) {
   return {
     event: env.GITHUB_EVENT_NAME,
@@ -19,6 +20,7 @@ export function githubClient({
   fetchImpl = globalThis.fetch,
   context = {},
   execution = runnerExecution(),
+  artifactReader = readEvidenceArtifact,
 }) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? '') || !token)
     fail('REMOTE_CREDENTIALS_UNAVAILABLE', {
@@ -282,7 +284,9 @@ export function githubClient({
       });
       const automatic = record.payload.releaseOrigin === 'ci';
       const allowedPath = record.payload.baseline
-        ? '.github/workflows/infrastructure-readiness.yml'
+        ? record.payload.adoptionEvidence
+          ? '.github/workflows/infrastructure-initial-adoption.yml'
+          : '.github/workflows/infrastructure-readiness.yml'
         : automatic
           ? '.github/workflows/ci.yml'
           : '.github/workflows/deploy-workers.yml';
@@ -346,6 +350,11 @@ export function githubClient({
         if (automatic) await authorizedCaller(commitSha, scope);
       }
       if (record.payload.baseline) {
+        if (
+          record.payload.adoptionEvidence &&
+          (run.status !== 'completed' || run.conclusion !== 'success')
+        )
+          continue;
         const baseline = await content(
           '.github/deploy/baseline.json',
           run.head_sha,
@@ -356,6 +365,12 @@ export function githubClient({
           entry?.versionId !== versionId ||
           !entry.qualificationReference?.trim() ||
           entry.qualificationReference !== record.payload.qualificationReference
+        )
+          continue;
+        if (
+          record.payload.adoptionEvidence &&
+          JSON.stringify(entry.evidence) !==
+            JSON.stringify(record.payload.adoptionEvidence)
         )
           continue;
       }
@@ -371,6 +386,12 @@ export function githubClient({
             manifest.workers[worker].packageVersion)
       )
         continue;
+      if (record.payload.adoptionEvidence) {
+        const historical = await content(manifestPath, commitSha);
+        if (digest(historical) !== digest(manifest)) continue;
+        // The successful protected adoption run is the durable attestation.
+        // Historical artifacts may expire after qualification; do not depend on their retention.
+      }
       return {
         worker,
         commitSha,
@@ -386,7 +407,156 @@ export function githubClient({
         },
       };
     }
-    fail('PROVENANCE_UNAVAILABLE', scope);
+    fail('PROVENANCE_UNAVAILABLE', {
+      ...scope,
+      provenanceReason: records.length ? 'NO_ACCEPTED_RECORD' : 'NO_RECORDS',
+    });
+  }
+  // Historical Actions artifacts are independent of GitHub Deployment records.
+  async function adoptionEvidence(worker, entry, manifest) {
+    const scope = {
+      ...context,
+      worker,
+      phase: 'provenance',
+      operation: 'github.deployment',
+    };
+    const evidence = entry.evidence;
+    if (
+      !evidence ||
+      typeof evidence !== 'object' ||
+      Array.isArray(evidence) ||
+      Object.keys(evidence).some(
+        (key) =>
+          !['runId', 'runAttempt', 'artifactId', 'artifactDigest'].includes(
+            key,
+          ),
+      ) ||
+      !positive(evidence?.runId) ||
+      !positive(evidence?.runAttempt) ||
+      !positive(evidence?.artifactId) ||
+      !/^sha256:[0-9a-f]{64}$/.test(evidence?.artifactDigest ?? '')
+    )
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    const comparison = await request(
+      `/compare/${entry.commitSha}...${encodeURIComponent(releaseBranch)}`,
+    );
+    if (
+      !['ahead', 'identical'].includes(comparison.status) ||
+      comparison.merge_base_commit?.sha !== entry.commitSha
+    )
+      fail('SHA_INELIGIBLE', scope);
+    const run = await request(
+      `/actions/runs/${evidence.runId}/attempts/${evidence.runAttempt}`,
+      { operation: 'github.ci' },
+    );
+    const automatic = run.event === 'push';
+    if (
+      run.id !== evidence.runId ||
+      Number(run.run_attempt) !== evidence.runAttempt ||
+      run.status !== 'completed' ||
+      run.head_branch !== releaseBranch ||
+      run.repository?.full_name !== repository ||
+      run.path !==
+        (automatic
+          ? '.github/workflows/ci.yml'
+          : '.github/workflows/deploy-workers.yml') ||
+      !['push', 'workflow_dispatch'].includes(run.event) ||
+      (automatic && run.head_sha !== entry.commitSha)
+    )
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    const artifact = await request(
+      `/actions/artifacts/${evidence.artifactId}`,
+      { operation: 'github.ci' },
+    );
+    if (
+      artifact.id !== evidence.artifactId ||
+      artifact.expired !== false ||
+      artifact.digest !== evidence.artifactDigest ||
+      artifact.name !==
+        `deployment-${entry.commitSha}-${evidence.runAttempt}` ||
+      artifact.workflow_run?.id !== run.id ||
+      artifact.workflow_run?.head_sha !== run.head_sha ||
+      artifact.workflow_run?.head_branch !== releaseBranch
+    )
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    const report = await artifactReader({
+      repository,
+      token,
+      artifactId: evidence.artifactId,
+      digest: artifact.digest,
+      fetchImpl,
+    });
+    let workflow;
+    try {
+      workflow = load(
+        await file('.github/workflows/deploy-workers.yml', run.head_sha),
+      );
+    } catch {
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    }
+    if (
+      workflow?.jobs?.deploy?.environment !== 'production' ||
+      !['all', worker].includes(report.target)
+    )
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    const jobs = await pages(
+      `/actions/runs/${run.id}/attempts/${evidence.runAttempt}/jobs`,
+      'jobs',
+      'github.ci',
+    );
+    const jobName = `${automatic ? 'Deploy after CI / ' : ''}Publish ${report.target} at ${entry.commitSha}`;
+    const publication = jobs.filter((job) => job.name === jobName);
+    if (
+      publication.length !== 1 ||
+      publication[0].run_id !== run.id ||
+      publication[0].head_sha !== run.head_sha ||
+      publication[0].status !== 'completed' ||
+      !['success', 'failure'].includes(publication[0].conclusion)
+    )
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    const item = report.workers?.filter((value) => value.worker === worker);
+    const proof = report.eligibility;
+    if (
+      report.commitSha !== entry.commitSha ||
+      report.manifestDigest !== digest(manifest) ||
+      item?.length !== 1 ||
+      item[0].commitSha !== entry.commitSha ||
+      item[0].version !== entry.versionId ||
+      item[0].status !== 'published' ||
+      item[0].verification !== 'passed' ||
+      item[0].manifestDigest !== digest(manifest) ||
+      proof?.releaseOrigin !== (automatic ? 'ci' : 'manual') ||
+      proof.controlSha !== run.head_sha ||
+      proof.releaseRunAttempt !== evidence.runAttempt ||
+      !positive(proof.ciRunId) ||
+      !positive(proof.ciRunAttempt) ||
+      !positive(proof.verifyJobId) ||
+      (automatic && proof.ciRunId !== run.id)
+    )
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    const ci = await request(
+      `/actions/runs/${proof.ciRunId}/attempts/${proof.ciRunAttempt}`,
+      { operation: 'github.ci' },
+    );
+    if (
+      !trustedCi(ci, entry.commitSha) ||
+      ci.id !== proof.ciRunId ||
+      ci.run_attempt !== proof.ciRunAttempt
+    )
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    const verified = await approvedVerify(ci, proof.ciRunAttempt, scope);
+    if (
+      verified.verifyJobId !== proof.verifyJobId ||
+      verified.ciRunAttempt !== proof.ciRunAttempt
+    )
+      fail('ADOPTION_EVIDENCE_INVALID', scope);
+    await authorizedCaller(entry.commitSha, scope);
+    return {
+      runId: evidence.runId,
+      runAttempt: evidence.runAttempt,
+      artifactId: evidence.artifactId,
+      artifactDigest: evidence.artifactDigest,
+    };
   }
   async function recordPublished({
     worker,
@@ -403,6 +573,7 @@ export function githubClient({
     ciRunAttempt,
     verifyJobId,
     controlSha,
+    adoptionEvidence: initialEvidence,
   }) {
     if (
       !baseline &&
@@ -448,7 +619,15 @@ export function githubClient({
                 controlSha,
               }
             : {}),
-          ...(baseline ? { manifest, qualificationReference } : {}),
+          ...(baseline
+            ? {
+                manifest,
+                qualificationReference,
+                ...(initialEvidence
+                  ? { adoptionEvidence: initialEvidence }
+                  : {}),
+              }
+            : {}),
         },
       },
     });
@@ -470,6 +649,7 @@ export function githubClient({
     eligible,
     provenanceByVersion,
     recordPublished,
+    adoptionEvidence,
     metrics,
   };
 }

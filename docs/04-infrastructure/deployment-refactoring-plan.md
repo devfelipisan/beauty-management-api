@@ -7,7 +7,23 @@ Outbox, limites de perfil e contabilidade transacional não são alterados.
 Revisão de encadeamento sobre `9a5ee2b`: substituir release exclusivamente manual
 por CI → verify → workflow reutilizável → aprovação production → publicação.
 Preservar dispatch manual para recuperação. A elegibilidade comum comprova o job
-verify sem depender do término global do CI, eliminando a dependência circular.
+verify sem depender do término global do CI, eliminando a dependência circular do CI.
+
+## Adoção inicial de proveniência
+
+A solicitação retorna temporariamente a mode=validate até a homologação real.
+Initial infrastructure adoption é um workflow manual separado, protegido por
+production. Verifica artefatos históricos de Actions, CI e manifestos recalculados
+sem chamar provenanceByVersion como pré-condição. Somente após conferir todas as
+evidências, infraestrutura e versões ativas registra GitHub Deployments de baseline.
+Infrastructure readiness/action=baseline apenas revalida associações existentes.
+O release normal mantém provenanceByVersion e não possui opção de bypass.
+
+O procedimento e os limites da evidência aceita estão no
+[runbook](../worker-release-runbook.md#qualificação-inicial-independente).
+A baseline continua vazia; não foram fornecidos version IDs e artefatos históricos
+homologados. Sem evidência compatível, a primeira publicação controlada exige
+procedimento e autorização separados. Não foi feita homologação ou publicação remota.
 
 ## Solicitação de publicação
 
@@ -15,7 +31,7 @@ O release lê `.github/deploy/request.json` no SHA aprovado pelo CI. `mode: vali
 encerra a preparação sem executar o job de publicação; esse job aparece como
 `skipped`, mesmo com CI aprovado. `mode: deploy` habilita a publicação do alvo
 `worker`, após os controles de elegibilidade, proteção de production e preflight.
-A solicitação atual seleciona os três Workers (`worker: all`).
+A solicitação atual seleciona os três Workers (`worker: all`) em modo validate.
 
 Para publicar esta alteração, ela precisa integrar `feature/microsservices` e
 passar por uma nova execução de push. Reexecutar a run 41332401207 reutiliza o SHA
@@ -99,7 +115,8 @@ recuperado no SHA publicado. Uma execução global falha não invalida o destino
 anterior já verificado. Versões sem associação comprovada bloqueiam o preflight.
 
 A primeira adoção requer `.github/deploy/baseline.json` preenchido a partir do
-inventário real e referência de homologação, seguido pelo readiness `baseline`.
+inventário real, evidência histórica e referência de homologação, seguido pelo
+workflow Initial infrastructure adoption. Readiness `baseline` apenas revalida.
 O arquivo vazio é intencional: nenhum histórico fictício foi criado. A declaração
 é conferida contra metadados ativos antes de registrar qualquer baseline.
 

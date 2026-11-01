@@ -12,7 +12,7 @@ import {
   readConfiguration,
   validateWorkerConfigurations,
 } from '../deploy/validate-local.mjs';
-import { manifestAtCommit, readManifest } from '../deploy/manifest.mjs';
+import { readManifest } from '../deploy/manifest.mjs';
 import { publishedWorker } from '../deploy/worker-state.mjs';
 import { diagnostic, fail } from '../deploy/errors.mjs';
 import { infrastructureReadiness } from './readiness.mjs';
@@ -80,7 +80,6 @@ export async function infrastructureMain(args = process.argv.slice(2)) {
         const baseline = JSON.parse(
           readFileSync('.github/deploy/baseline.json', 'utf8'),
         );
-        const qualified = [];
         for (const worker of Object.keys(workerConfigurations)) {
           const entry = baseline.workers?.[worker];
           if (
@@ -129,23 +128,8 @@ export async function infrastructureMain(args = process.argv.slice(2)) {
               worker,
               operation: 'worker.deployments',
             });
-          qualified.push({
-            worker,
-            ...entry,
-            manifest: proof.manifest ?? manifestAtCommit(entry.commitSha),
-          });
         }
-        // Nothing is attested until every baseline entry is checked.
-        report.records = [];
-        for (const item of qualified)
-          report.records.push({
-            worker: item.worker,
-            id: await github.recordPublished({
-              ...item,
-              baseline: true,
-              runId: process.env.GITHUB_RUN_ID,
-            }),
-          });
+        // Revalidation only. First evidence is registered by initial-adoption.
       }
     }
     report.status = 'success';
