@@ -214,6 +214,11 @@ Preencher a baseline sozinho ou executar novamente a run antiga não libera o de
 
 ### Primeira publicação controlada quando não existe histórico
 
+A autorização documental da primeira implantação está em
+[Primeira publicacao gerenciada](first-managed-publication.md). Ela reúne as
+referências de CI/RPC, recuperação e janela usadas pelo pedido versionado, sem
+substituir o snapshot remoto nem a aprovação efetiva no Environment production.
+
 Controlled first publication (`infrastructure-first-publication.yml`) é um workflow
 exclusivamente manual. Não é fallback do CI nem do preflight normal. O descritor
 deve estar aprovado na branch padrão para disponibilizar Run workflow; executar
@@ -261,8 +266,11 @@ publicações em andamento e exige aprovação pelo Environment production.
 7. Depois da aprovação, ele revalida as permissões de production e a solicitação,
    confere readiness, migrations existentes, privacidade e capacidade/aprovações R2.
    Preserva o snapshot antigo como proveniência desconhecida.
-   Se todas as versões ativas já têm proveniência aceita, rejeita o fluxo
-   extraordinário e exige o release normal. Falhas de acesso/transporte GitHub
+   O fluxo inicial exige NO_RECORDS nos três Workers. Se algum tiver registros
+   existentes mas rejeitados (NO_ACCEPTED_RECORD), interrompe para recuperação.
+   Estados mistos, com Workers confiáveis e outros sem registros, também são
+   rejeitados. Se todos já forem confiáveis, usar o release normal.
+   Falhas de acesso/transporte GitHub
    também bloqueiam; não são interpretadas como ausência de proveniência.
    Reconsulta as versões
    antes de cada publicação, publica o SHA exato com provisionamento desativado,
@@ -278,7 +286,9 @@ Em falha, consultar o artefato first-publication-<run>-<attempt> e o inventário
 O relatório conserva snapshot e versões novas já publicadas; não declara sucesso
 parcial como conjunto homologado. Interromper a janela e executar a recuperação
 revisada ou revisar uma nova solicitação com o snapshot atual, conforme a decisão
-operacional. Não reexecutar cegamente: a solicitação antiga será rejeitada quando
+operacional. Se houver registros parciais, tratar como recuperação separada; não
+remover registros ou contornar a política para repetir uma primeira publicação.
+Não reexecutar cegamente: a solicitação antiga será rejeitada quando
 as versões ativas tiverem mudado. Falha na escrita GitHub pode deixar registros
 parciais; uma execução falha não os torna confiáveis.
 
