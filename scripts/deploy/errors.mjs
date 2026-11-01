@@ -21,6 +21,7 @@ const codes = new Set([
   'MANIFEST_INVALID',
   'MANIFEST_UNAVAILABLE',
   'PROVENANCE_UNAVAILABLE',
+  'ADOPTION_EVIDENCE_INVALID',
   'SHA_INELIGIBLE',
   'CI_NOT_APPROVED',
   'WRANGLER_FAILED',
@@ -109,6 +110,11 @@ export class DeploymentValidationError extends Error {
       this.requestId = context.requestId;
     if (/^[0-9a-f]{40}$/.test(context.commitSha ?? ''))
       this.commitSha = context.commitSha;
+    if (
+      this.code === 'PROVENANCE_UNAVAILABLE' &&
+      ['NO_RECORDS', 'NO_ACCEPTED_RECORD'].includes(context.provenanceReason)
+    )
+      this.provenanceReason = context.provenanceReason;
   }
 }
 export function diagnostic(error, context = {}) {
@@ -128,6 +134,7 @@ export function diagnostic(error, context = {}) {
       'binding',
       'reason',
       'selector',
+      'provenanceReason',
     ]
       .filter(
         (key) =>
@@ -139,7 +146,12 @@ export function diagnostic(error, context = {}) {
               serviceMismatchReasons.has(safe.reason))) &&
           (key !== 'selector' ||
             (safe.reason === 'SELECTOR_MISMATCH' &&
-              serviceSelectors.has(safe.selector))),
+              serviceSelectors.has(safe.selector))) &&
+          (key !== 'provenanceReason' ||
+            (safe.code === 'PROVENANCE_UNAVAILABLE' &&
+              ['NO_RECORDS', 'NO_ACCEPTED_RECORD'].includes(
+                safe.provenanceReason,
+              ))),
       )
       .map((key) => [key, safe[key]]),
   );

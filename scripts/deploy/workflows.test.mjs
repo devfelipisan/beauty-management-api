@@ -141,3 +141,26 @@ test('migration and bootstrap flows share exclusion but have separate protected 
     );
   }
 });
+test('initial adoption is manual, protected, serialized and separate from release and baseline revalidation', () => {
+  const adoption = workflow('infrastructure-initial-adoption');
+  assert.deepEqual(Object.keys(adoption.on), ['workflow_dispatch']);
+  assert.equal(adoption.concurrency.group, 'beauty-production');
+  assert.equal(adoption.concurrency['cancel-in-progress'], false);
+  assert.equal(adoption.jobs.qualify.environment, 'production');
+  assert.equal(adoption.jobs.qualify.permissions.deployments, 'write');
+  assert.equal(
+    workflow('infrastructure-readiness').permissions.deployments,
+    'read',
+  );
+  assert.ok(!JSON.stringify(adoption.jobs.validate).includes('secrets.'));
+  assert.equal(adoption.jobs.qualify.needs, 'validate');
+  assert.ok(
+    JSON.stringify(adoption).includes(
+      'node scripts/infra/initial-adoption.mjs',
+    ),
+  );
+  assert.ok(!JSON.stringify(adoption).includes('wrangler deploy'));
+  assert.ok(
+    !readFileSync('scripts/infra/run.mjs', 'utf8').includes('recordPublished'),
+  );
+});

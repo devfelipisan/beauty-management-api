@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: Read-only inspection or explicit baseline qualification
+        description: Read-only inspection or revalidation of an existing baseline
         type: choice
         options: [readiness, media, baseline]
         default: readiness
@@ -12,7 +12,7 @@ on:
 permissions:
   contents: read
   actions: read
-  deployments: write
+  deployments: read
 
 concurrency:
   group: beauty-production
