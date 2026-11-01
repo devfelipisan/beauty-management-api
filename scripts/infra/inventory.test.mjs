@@ -344,7 +344,7 @@ test('shared analysis and release validation preserve the first error of the ori
     (v) => (v.bindings[0].text = 'wrong'),
     (v) =>
       (v.bindings.find((b) => b.name === 'OPERATIONS_SERVICE').environment =
-        'production'),
+        'staging'),
     (v) =>
       (v.bindings.find((b) => b.name === 'D1_DATABASE').database_id = null),
   ]) {
@@ -380,7 +380,7 @@ test('shared analysis and release validation preserve the first error of the ori
   ]) {
     const value = settings('billing');
     value.bindings.find((b) => b.name === 'OPERATIONS_SERVICE').environment =
-      'production';
+      'staging';
     for (const phase of ['preflight', 'postcheck']) {
       const options = {
         phase,
@@ -406,7 +406,7 @@ test('shared analysis and release validation preserve the first error of the ori
   const value = settings('billing');
   value.bindings[0].text = 'wrong';
   value.bindings.find((b) => b.name === 'OPERATIONS_SERVICE').environment =
-    'production';
+    'staging';
   const analysis = analyzeSettings(value, 'billing', configurations.billing);
   assert.ok(analysis.findings.length >= 2);
   assert.deepEqual(

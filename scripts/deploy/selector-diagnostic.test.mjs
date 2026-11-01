@@ -29,6 +29,7 @@ test('identifies entrypoint, environment, both and normalized absence without ch
     [{ entrypoint: 'private-api', environment: 'private-env' }, 'BOTH'],
     [{}, null],
     [{ entrypoint: null, environment: null }, null],
+    [{ environment: 'production' }, null],
   ]) {
     const actual = normalizeBinding({ ...expected, ...patch });
     assert.equal(serviceSelectorMismatch(actual, expected), selector);
@@ -49,7 +50,7 @@ test('identifies entrypoint, environment, both and normalized absence without ch
         },
       );
   }
-  for (const value of ['production', 'default'])
+  for (const value of ['staging', 'default'])
     assert.equal(
       serviceSelectorMismatch(
         normalizeBinding({ ...expected, environment: value }),

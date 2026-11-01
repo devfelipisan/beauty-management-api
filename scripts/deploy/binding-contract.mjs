@@ -39,7 +39,10 @@ export function normalizeBinding(value) {
       ...base,
       service: value.service,
       entrypoint: value.entrypoint ?? null,
-      environment: value.environment ?? null,
+      // Cloudflare's workers_binding_kind_service schema defaults to production.
+      // Canonicalize that default; named environments remain distinct.
+      environment:
+        value.environment === 'production' ? null : (value.environment ?? null),
       ...(value.props !== undefined ? { props: value.props } : {}),
     };
   }
