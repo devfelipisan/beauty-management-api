@@ -214,6 +214,35 @@ Preencher a baseline sozinho ou executar novamente a run antiga não libera o de
 
 ### Primeira publicação controlada quando não existe histórico
 
+#### Coleta automatica dos version IDs
+
+Com CLOUDFLARE_ACCOUNT_ID e CLOUDFLARE_API_TOKEN exportados no WSL/Bash, executar
+na raiz do checkout:
+
+```bash
+npm run infra:sync:first-publication
+npx prettier --check .github/deploy/first-publication.json
+git diff -- .github/deploy/first-publication.json
+```
+
+O comando usa cloudflareClient e activeVersion existentes: exatamente três GETs
+de deployments em uma coleta bem-sucedida, um por Worker, sem D1, R2 ou publicação.
+Exige uma versão única a 100%, preserva SHA e referências documentais e reutiliza
+firstPublicationRequest para validar o contrato completo antes de gravar. Portanto,
+o SHA candidato e as referências devem estar preenchidos previamente. O arquivo é
+formatado pelo Prettier já instalado no projeto, sem dependências adicionais.
+
+Se um versionId já registrado diferir do remoto, interrompe com
+PUBLISHED_VERSION_MISMATCH e não modifica o arquivo. Falhas em qualquer consulta,
+contrato inválido e edições locais concorrentes também impedem a gravação do
+snapshot. Não há opção force: revisar o estado remoto e a autorização antes de
+alterar IDs fixados. Os IDs obtidos não são prova da origem do código ativo.
+
+Revisar e versionar o JSON coletado antes do workflow protegido. O comando não
+aprova CI, não altera credenciais, não registra proveniência nem autoriza deploy.
+Uma linha em branco inicial ou outro erro de estilo pode ser corrigido separadamente
+com npx prettier --write .github/deploy/first-publication.json, sem acesso remoto.
+
 A autorização documental da primeira implantação está em
 [Primeira publicacao gerenciada](first-managed-publication.md). Ela reúne as
 referências de CI/RPC, recuperação e janela usadas pelo pedido versionado, sem
