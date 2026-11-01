@@ -219,7 +219,12 @@ test('verified destination in a partially failed run retains independent provena
 });
 test('baseline qualification is bound to a versioned reviewed inventory', async () => {
   assert.deepEqual(
-    (await provenanceFixture({ baseline: true }).client.provenanceByVersion('billing', version)).workerManifest,
+    (
+      await provenanceFixture({ baseline: true }).client.provenanceByVersion(
+        'billing',
+        version,
+      )
+    ).workerManifest,
     manifest.workers.billing,
   );
   await assert.rejects(

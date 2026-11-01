@@ -36,7 +36,12 @@ export async function postcheck({
     context,
     'postcheck',
   );
-  return { worker, versionId, deploymentId: state.deploymentId, verification: 'passed' };
+  return {
+    worker,
+    versionId,
+    deploymentId: state.deploymentId,
+    verification: 'passed',
+  };
 }
 export async function checkWorkerControls(
   client,

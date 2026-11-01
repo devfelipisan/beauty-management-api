@@ -116,8 +116,14 @@ export async function infrastructureMain(args = process.argv.slice(2)) {
             context,
             phase,
           });
-          const proof = await github.provenanceByVersion(worker, actual.versionId);
-          if (actual.versionId !== entry.versionId || proof.commitSha !== entry.commitSha)
+          const proof = await github.provenanceByVersion(
+            worker,
+            actual.versionId,
+          );
+          if (
+            actual.versionId !== entry.versionId ||
+            proof.commitSha !== entry.commitSha
+          )
             fail('PUBLISHED_VERSION_MISMATCH', {
               ...context,
               worker,

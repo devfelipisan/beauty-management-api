@@ -120,7 +120,9 @@ export function manifestFromSources(read, files, configs) {
     }
     comp(compAst);
     const config = configs[name];
-    const packageVersion = JSON.parse(read(`apps/${name}-worker/package.json`)).version;
+    const packageVersion = JSON.parse(
+      read(`apps/${name}-worker/package.json`),
+    ).version;
     workers[name] = {
       packageVersion,
       provided: {
