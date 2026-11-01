@@ -77,9 +77,20 @@ export class UpdateServiceUseCase {
     input: Parameters<typeof Service.create>[1],
     context?: MutationAuditContext,
   ) {
-    assertPhotographyAvailable(input, this.clinicalPhotographyAvailable);
     const item = await this.repo.findById(tenantId, id);
     if (!item) return null;
+    const before =
+      item.data.requiresPhotography ||
+      item.data.technicalRequirements?.requiresPhotography === true;
+    const after =
+      (input.requiresPhotography ?? item.data.requiresPhotography) ||
+      (input.technicalRequirements ?? item.data.technicalRequirements)
+        ?.requiresPhotography === true;
+    if (!before && after)
+      assertPhotographyAvailable(
+        { requiresPhotography: true },
+        this.clinicalPhotographyAvailable,
+      );
     const previousUpdatedAt = item.data.updatedAt;
     item.update(input);
     return auditedMutation(

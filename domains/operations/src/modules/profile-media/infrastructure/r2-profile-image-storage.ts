@@ -2,7 +2,10 @@ import { putImage } from '@beauty/reliability/media/r2-image-storage';
 import { PROFILE_IMAGE_MAX_BYTES } from '../domain/profile-image.js';
 import type { ProfileImageStoragePort } from '../ports/profile-image-storage.js';
 export class R2ProfileImageStorage implements ProfileImageStoragePort {
-  constructor(private readonly bucket?: R2Bucket) {}
+  constructor(
+    private readonly bucket?: R2Bucket,
+    private readonly maxBytes = PROFILE_IMAGE_MAX_BYTES,
+  ) {}
   private storage() {
     if (!this.bucket) throw new Error('PROFILE_MEDIA_UNAVAILABLE');
     return this.bucket;
@@ -20,7 +23,7 @@ export class R2ProfileImageStorage implements ProfileImageStoragePort {
       body,
       type,
       metadata,
-      PROFILE_IMAGE_MAX_BYTES,
+      this.maxBytes === PROFILE_IMAGE_MAX_BYTES ? this.maxBytes : 0,
       size,
     );
   }

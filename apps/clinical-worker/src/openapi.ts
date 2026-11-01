@@ -61,7 +61,7 @@ const photoUpload = operation(
       ),
     ],
     description:
-      'Enviar o arquivo diretamente no corpo, sem multipart/form-data. O navegador define Content-Length. O limite vem do binding MAX_CLINICAL_PHOTO_BYTES já previsto pelo runtime; esta documentação não configura esse valor.',
+      'Indisponível: captura clínica está suspensa. A API retorna CLINICAL_MEDIA_UNAVAILABLE após autorização.',
   },
 );
 photoUpload.requestBody = {
@@ -73,6 +73,8 @@ photoUpload.requestBody = {
     ]),
   ),
 };
+photoUpload.deprecated = true;
+photoUpload['x-browser-testable'] = false;
 
 const equipmentRead = operation(
   `${tenant}/equipment`,
@@ -223,11 +225,17 @@ export const clinicalOpenApi = document(
     },
     [`${sessions}/photos/{photoId}`]: {
       get: {
+        deprecated: true,
+        'x-browser-testable': false,
         ...operation(
           `${sessions}/photos/{photoId}`,
           'getSessionPhoto',
           'Baixar foto da sessão',
           'clinical.photo.read',
+          {
+            description:
+              'Indisponível: acesso binário clínico está suspenso; os metadados históricos são preservados.',
+          },
         ),
         responses: {
           ...(operation(

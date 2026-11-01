@@ -86,6 +86,31 @@ test('checks secret names and Text configuration without returning remote values
     headers: { authorization: 'Bearer fixture-token' },
   });
 });
+test('clinical preflight does not request R2 and missing Text produces a safe actionable code', async () => {
+  const calls = [],
+    fixture = remoteFixture();
+  await requireRemoteSecrets(configurations(), 'clinical', {
+    ...options,
+    fetchImpl: async (url, ...args) => {
+      calls.push(url);
+      return fixture(url, ...args);
+    },
+  });
+  assert.ok(calls.every((url) => !url.includes('/r2/')));
+  await assert.rejects(
+    requireRemoteSecrets(configurations(), 'operations', {
+      ...options,
+      fetchImpl: remoteFixture({ settings: { bindings: [] } }),
+    }),
+    (error) => {
+      assert.equal(error.code, 'BINDING_MISSING');
+      assert.equal(error.phase, 'preflight');
+      assert.equal(error.worker, 'billing');
+      assert.equal(error.binding, 'APP_ENV');
+      return true;
+    },
+  );
+});
 test('preflights receivers and storage before publishing Operations', async () => {
   const calls = [];
   const fixture = remoteFixture();
@@ -268,7 +293,10 @@ test('standalone preflight fails with a generic message without credentials', ()
   );
   assert.equal(result.status, 1);
   assert.equal(result.stdout, '');
-  assert.equal(result.stderr.trim(), requiredBindingsFailure);
+  assert.deepEqual(JSON.parse(result.stderr.trim()), {
+    code: 'REMOTE_CREDENTIALS_UNAVAILABLE',
+    phase: 'preflight',
+  });
 });
 
 test('deployment evidence allowlists version/status and discards raw Wrangler diagnostics', () => {

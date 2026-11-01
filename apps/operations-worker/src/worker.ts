@@ -1,3 +1,4 @@
+import { dispatchEligibleOutbox } from './outbox-coordinator.js';
 import { D1ProfileImageRepository } from '@beauty/operations/modules/profile-media/infrastructure/d1-profile-image-repository';
 import { profileMediaRoute } from './profile-media-routes.js';
 import { executionEnv, scopeEntrypoint } from '@beauty/database/d1/invocation';
@@ -395,17 +396,24 @@ export default class OperationsWorker extends WorkerEntrypoint<
     type Dispatcher = {
       dispatchOutboxBatch(value: typeof input): Promise<unknown>;
     };
-    const results = await Promise.allSettled([
-      new OperationsComposition(executionEnv(this.env)).dispatchOutboxBatch(
-        input,
-      ),
-      (
-        executionEnv(this.env).BILLING_SERVICE as Dispatcher
-      ).dispatchOutboxBatch(input),
-      (
-        executionEnv(this.env).CLINICAL_SERVICE as Dispatcher
-      ).dispatchOutboxBatch(input),
-    ]);
+    const results = await dispatchEligibleOutbox(
+      executionEnv(this.env).D1_DATABASE,
+      new Date().toISOString(),
+      {
+        operations: () =>
+          new OperationsComposition(executionEnv(this.env)).dispatchOutboxBatch(
+            input,
+          ),
+        billing: () =>
+          (
+            executionEnv(this.env).BILLING_SERVICE as Dispatcher
+          ).dispatchOutboxBatch(input),
+        clinical: () =>
+          (
+            executionEnv(this.env).CLINICAL_SERVICE as Dispatcher
+          ).dispatchOutboxBatch(input),
+      },
+    );
     console.log(
       JSON.stringify({
         operation: 'outbox.dispatch',

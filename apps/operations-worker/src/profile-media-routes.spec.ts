@@ -58,7 +58,7 @@ describe('profile HTTP authority and binary contract', () => {
         { 'if-match': '"0"', 'idempotency-key': 'one' },
         new Uint8Array([255, 216, 255, 0]),
       ),
-      {} as never,
+      { MAX_PROFILE_IMAGE_BYTES: '300000' } as never,
     );
     expect(result?.status).toBe(200);
     expect(mocks.upload).toHaveBeenCalledWith(
@@ -79,14 +79,18 @@ describe('profile HTTP authority and binary contract', () => {
     });
     unauthenticated.headers.delete('authorization');
     expect(
-      (await profileMediaRoute(unauthenticated, {} as never))?.status,
+      (
+        await profileMediaRoute(unauthenticated, {
+          MAX_PROFILE_IMAGE_BYTES: '300000',
+        } as never)
+      )?.status,
     ).toBe(401);
     mocks.membership.mockResolvedValueOnce({ permissions: ['customer.read'] });
     expect(
       (
         await profileMediaRoute(
           request('DELETE', { 'if-match': '"0"', 'idempotency-key': 'one' }),
-          {} as never,
+          { MAX_PROFILE_IMAGE_BYTES: '300000' } as never,
         )
       )?.status,
     ).toBe(403);
@@ -98,7 +102,7 @@ describe('profile HTTP authority and binary contract', () => {
       (
         await profileMediaRoute(
           request('DELETE', { 'if-match': '"0"', 'idempotency-key': 'one' }),
-          {} as never,
+          { MAX_PROFILE_IMAGE_BYTES: '300000' } as never,
         )
       )?.status,
     ).toBe(403);
@@ -106,7 +110,7 @@ describe('profile HTTP authority and binary contract', () => {
     expect(mocks.upload).not.toHaveBeenCalled();
   });
   it('rejects excessive and inconsistent declared lengths without forwarding a command', async () => {
-    for (const length of ['2000001', '3']) {
+    for (const length of ['300001', '3']) {
       const result = await profileMediaRoute(
         request(
           'PUT',
@@ -117,7 +121,7 @@ describe('profile HTTP authority and binary contract', () => {
           },
           new Uint8Array([255, 216, 255, 0]),
         ),
-        {} as never,
+        { MAX_PROFILE_IMAGE_BYTES: '300000' } as never,
       );
       expect(result?.status).toBe(400);
     }

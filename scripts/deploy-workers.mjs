@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import {
   requireRemoteSecrets,
-  requiredBindingsFailure,
+  DeploymentValidationError,
 } from './worker-required-secrets.mjs';
 import { deploymentOutcome } from './worker-deployment-output.mjs';
 import {
@@ -54,9 +54,17 @@ try {
       accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
       apiToken: process.env.CLOUDFLARE_API_TOKEN,
     });
-  } catch {
-    report.failureCode = 'PRODUCTION_BINDINGS_UNAVAILABLE';
-    throw new Error(requiredBindingsFailure);
+  } catch (error) {
+    if (error instanceof DeploymentValidationError) {
+      report.failureCode = error.code;
+      report.failure = {
+        phase: error.phase,
+        worker: error.worker,
+        binding: error.binding,
+        status: error.status,
+      };
+    }
+    throw error;
   }
   for (const name of selectedWorkers(request.worker)) {
     const result = spawnSync(
@@ -99,9 +107,18 @@ try {
         publishedSha: process.env.GITHUB_SHA,
       });
       report.workers.at(-1).verification = 'passed';
-    } catch {
+    } catch (error) {
       report.workers.at(-1).verification = 'failed';
-      throw new Error(requiredBindingsFailure);
+      if (error instanceof DeploymentValidationError) {
+        report.failureCode = error.code;
+        report.failure = {
+          phase: error.phase,
+          worker: error.worker,
+          binding: error.binding,
+          status: error.status,
+        };
+      }
+      throw error;
     }
     console.log(`Published ${name}: ${outcome.version}`);
   }
@@ -109,9 +126,7 @@ try {
   failed = true;
   report.failureCode ??= 'DEPLOYMENT_FAILED';
   console.error(
-    report.failureCode === 'PRODUCTION_BINDINGS_UNAVAILABLE'
-      ? requiredBindingsFailure
-      : 'Worker deployment failed; verify production configuration in Cloudflare.',
+    JSON.stringify({ code: report.failureCode, ...report.failure }),
   );
 } finally {
   writeFileSync(
@@ -121,7 +136,7 @@ try {
   if (process.env.GITHUB_STEP_SUMMARY)
     appendFileSync(
       process.env.GITHUB_STEP_SUMMARY,
-      `### Deployment ${request.requestId}\n\nSHA: ${report.sha}\n\n| Worker | Result | Version |\n|---|---|---|\n` +
+      `### Deployment ${request.requestId}\n\nSHA: ${report.sha}\n\nFailure: ${report.failureCode ?? 'none'}\n\n| Worker | Result | Version |\n|---|---|---|\n` +
         report.workers
           .map(
             (worker) =>

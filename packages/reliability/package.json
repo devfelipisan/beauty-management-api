@@ -147,6 +147,12 @@
       "types": "./dist/media/observe-media-capacity.d.ts",
       "workerd": "./src/media/observe-media-capacity.ts",
       "default": "./dist/media/observe-media-capacity.js"
+    },
+    "./outbox/ownership": {
+      "beauty": "./src/outbox/ownership.ts",
+      "types": "./dist/outbox/ownership.d.ts",
+      "workerd": "./src/outbox/ownership.ts",
+      "default": "./dist/outbox/ownership.js"
     }
   },
   "scripts": {

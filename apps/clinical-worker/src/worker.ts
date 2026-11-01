@@ -332,7 +332,7 @@ export default class ClinicalWorker extends WorkerEntrypoint<
         requestId,
         correlationId,
         body: request.body ?? new ReadableStream(),
-        maxBytes: Number(executionEnv(this.env).MAX_CLINICAL_PHOTO_BYTES),
+        maxBytes: 0,
       });
       return json({ data: result, requestId, correlationId }, 201);
     } catch (error) {

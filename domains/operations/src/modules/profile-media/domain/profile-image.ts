@@ -1,4 +1,4 @@
-export const PROFILE_IMAGE_MAX_BYTES = 2_000_000;
+export const PROFILE_IMAGE_MAX_BYTES = 300_000;
 export interface ProfileImage {
   id: string;
   tenantId: string;
@@ -16,12 +16,18 @@ export interface ProfileImage {
   updatedAt: string;
 }
 export const ProfileImagePolicy = {
-  validate(contentType: string, size: number): void {
+  validate(
+    contentType: string,
+    size: number,
+    maxBytes = PROFILE_IMAGE_MAX_BYTES,
+  ): void {
+    if (maxBytes !== PROFILE_IMAGE_MAX_BYTES)
+      throw new Error('INVALID_PROFILE_MEDIA_CONFIGURATION');
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType))
       throw new Error('PHOTO_CONTENT_INVALID');
     if (!Number.isSafeInteger(size) || size < 1)
       throw new Error('PHOTO_CONTENT_INVALID');
-    if (size > PROFILE_IMAGE_MAX_BYTES) throw new Error('PHOTO_SIZE_EXCEEDED');
+    if (size > maxBytes) throw new Error('PHOTO_SIZE_EXCEEDED');
   },
 };
 export function profileMetadata(image: ProfileImage) {

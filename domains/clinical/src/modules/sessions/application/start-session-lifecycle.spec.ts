@@ -53,6 +53,37 @@ function fixture() {
   return { input, sessions, qualification, context, store, tx, uow, start };
 }
 describe('StartSession orchestration', () => {
+  it('blocks a new session requiring unavailable photography before any write', async () => {
+    const f = fixture();
+    const start = new StartSession(
+      f.sessions as never,
+      f.context,
+      f.uow as never,
+      f.store,
+      undefined,
+      false,
+    );
+    await expect(start.execute(f.input)).rejects.toMatchObject({
+      code: 'CLINICAL_MEDIA_UNAVAILABLE',
+    });
+    expect(f.uow.execute).not.toHaveBeenCalled();
+    expect(f.sessions.create).not.toHaveBeenCalled();
+  });
+  it('allows a previously completed idempotent replay without creating a session', async () => {
+    const f = fixture();
+    const response = { id: 'existing' };
+    f.store.find.mockResolvedValue({ status: 'COMPLETED', response });
+    const start = new StartSession(
+      f.sessions as never,
+      f.context,
+      f.uow as never,
+      f.store,
+      undefined,
+      false,
+    );
+    await expect(start.execute(f.input)).resolves.toBe(response);
+    expect(f.uow.execute).not.toHaveBeenCalled();
+  });
   it('exposes transaction-bound complete/fail operations through the injected idempotency store', async () => {
     const f = fixture();
     let delegated: IdempotencyStore | undefined;

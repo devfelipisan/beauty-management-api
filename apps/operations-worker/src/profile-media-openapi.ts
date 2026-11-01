@@ -14,7 +14,7 @@ const metadata = object({
   ownerId: text(),
   imageRole: text({ enum: ['PROFILE'] }),
   contentType: text({ enum: ['image/jpeg', 'image/png', 'image/webp'] }),
-  sizeBytes: integer({ maximum: 2_000_000 }),
+  sizeBytes: integer(),
   version: integer({ minimum: 1 }),
   updatedAt: text({ format: 'date-time' }),
 });
@@ -44,7 +44,7 @@ put.requestBody = {
         schema: {
           type: 'string',
           format: 'binary',
-          description: 'Imagem otimizada de até 2.000.000 bytes.',
+          description: 'Imagem otimizada de até 300.000 bytes.',
         },
       },
     ]),

@@ -43,7 +43,7 @@ jobs:
         run: npm run check
 
       - name: Test deployment configuration
-        run: node --test scripts/worker-deployment-config.test.mjs scripts/worker-required-secrets.test.mjs scripts/bootstrap-workers.test.mjs
+        run: node --test scripts/worker-deployment-config.test.mjs scripts/worker-required-secrets.test.mjs scripts/bootstrap-workers.test.mjs scripts/profile-image-migration.test.mjs
 
       - name: Verify clean worktree
         run: git diff --exit-code

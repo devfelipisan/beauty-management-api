@@ -1,3 +1,4 @@
+import { outboxOwnership } from '@beauty/reliability/outbox/ownership';
 import { D1RefundsPersistence } from '@beauty/billing/modules/refunds/infrastructure/d1-persistence';
 import { D1CreditsPersistence } from '@beauty/billing/modules/credits/infrastructure/d1-persistence';
 import { D1AppointmentChangePoliciesPersistence } from '@beauty/billing/modules/appointment-change-policies/infrastructure/d1-persistence';
@@ -98,11 +99,7 @@ export class BillingComposition {
   }) {
     return new DispatchOutboxBatch(
       new D1OutboxDeliveryRepository(this.env.D1_DATABASE, [
-        'DepositConfirmed',
-        'DepositExpired',
-        'PackageUnitConsumed',
-        'PaymentReceived',
-        'RefundIssued',
+        ...outboxOwnership.billing,
       ]),
       {
         deliver: async (e) =>

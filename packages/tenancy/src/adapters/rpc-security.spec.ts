@@ -9,6 +9,12 @@ import {
 } from './rpc-security.js';
 
 describe('RPC authority', () => {
+  it('denies an empty reconciliation policy even with upload permission and does no persistence I/O',async()=>{
+    const {env}=environment();
+    const authenticate=vi.spyOn(JwtIdentityProvider.prototype,'authenticate');
+    await expect(authorizeWorkerRpc(env,{}, {tenantId:'tenant',rpcAuthority:{version:1,kind:'user',token:'signed'}})).rejects.toThrow('PERMISSION_DENIED');
+    expect(authenticate).not.toHaveBeenCalled();
+  });
   it('rejects an unspecified fixture environment for both user and system operations', async () => {
     const env = { AUTH_PROVIDER: 'mock', D1_DATABASE: {} as never };
     await expect(

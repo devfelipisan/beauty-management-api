@@ -36,6 +36,7 @@ export class ProfileImages {
     private readonly uow: UnitOfWork,
     private readonly idempotency: IdempotencyStore,
     private readonly leaseSeconds = 60,
+    private readonly maxBytes = 300_000,
   ) {}
   private async owner(i: Pick<Actor, 'tenantId' | 'ownerId'>) {
     if (!(await this.repository.customerExists(i.tenantId, i.ownerId)))
@@ -102,7 +103,7 @@ export class ProfileImages {
     assertProfessionalAuthorization(i, '');
     await this.owner(i);
     this.validateMutation(i);
-    ProfileImagePolicy.validate(i.contentType, i.sizeBytes);
+    ProfileImagePolicy.validate(i.contentType, i.sizeBytes, this.maxBytes);
     const request = {
       ownerId: i.ownerId,
       version: i.expectedVersion,

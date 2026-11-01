@@ -6,6 +6,9 @@ type ClinicalService = {
   listSessionPhotos(input: Record<string, unknown>): Promise<any[]>;
   getClinicalPhoto(input: Record<string, unknown>): Promise<any>;
   evaluateSessionPhotoRequirement(input: Record<string, unknown>): Promise<any>;
+  checkSessionCompletionEligibility(
+    input: Record<string, unknown>,
+  ): Promise<any>;
 };
 const db = env.D1_DATABASE;
 const clinical = env.CLINICAL_SERVICE as unknown as ClinicalService;
@@ -59,84 +62,47 @@ async function seed() {
       ),
   ]);
 }
-const jpeg = () =>
-  new Response(
-    new Uint8Array([
-      0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xd9,
-    ]),
-  ).body!;
-async function approveCapacity() {
-  await db.batch([
-    db.prepare(
-      "UPDATE media_capacity SET inventory_approved=1,policy_approved=1,writers_coordinated=1,approval_reference='test-fixture' WHERE bucket='beauty-r2'",
-    ),
-    db
-      .prepare(
-        'INSERT INTO tenant_media_capacity (tenant_id,limit_bytes) VALUES (?,1000000)',
-      )
-      .bind(tenantId),
-  ]);
-}
-describe('Session photos on the real workerd R2 binding', () => {
-  it('persists metadata, streams bytes and is idempotent', async () => {
+describe('Clinical photos without R2', () => {
+  it('preserves a confirmed BEFORE in D1 without access to R2', async () => {
     await seed();
-    await approveCapacity();
-    const input = {
-      tenantId,
-      sessionId,
-      purpose: 'BEFORE',
-      contentType: 'image/jpeg',
-      contentLength: 14,
-      actorId: 'actor-dev-admin',
-      idempotencyKey: `photo-${run}`,
-      requestId: `request-${run}`,
-      correlationId: `correlation-${run}`,
-      body: jpeg(),
-      maxBytes: 1024,
-    };
-    const first = await clinical.uploadSessionPhoto(input);
-    const replay = await clinical.uploadSessionPhoto({
-      ...input,
-      body: jpeg(),
-    });
-    expect(first).toMatchObject({
-      status: 'AVAILABLE',
-      purpose: 'BEFORE',
-      sizeBytes: 14,
-    });
-    expect(replay).toEqual(first);
+    const actorId = 'actor-dev-admin';
     expect(
-      await clinical.listSessionPhotos({
+      await clinical.checkSessionCompletionEligibility({
         tenantId,
         sessionId,
-        actorId: 'actor-dev-admin',
+        actorId,
       }),
-    ).toHaveLength(1);
-    const read = await clinical.getClinicalPhoto({
-      tenantId,
-      sessionId,
-      photoId: first.id,
-      actorId: 'actor-dev-admin',
-    });
+    ).toMatchObject({ status: 'BLOCKED' });
+    await db
+      .prepare(
+        "INSERT INTO clinical_photo_attachments (id,tenant_id,session_id,purpose,object_key,content_type,size_bytes,status,uploaded_by,created_at,updated_at) VALUES (?, ?, ?, 'BEFORE', ?, 'image/jpeg', 14, 'AVAILABLE', ?, '2029-01-01','2029-01-01')",
+      )
+      .bind('historical-' + run, tenantId, sessionId, 'legacy/' + run, actorId)
+      .run();
     expect(
-      new Uint8Array(await new Response(read.object.body).arrayBuffer())[0],
-    ).toBe(0xff);
+      await clinical.listSessionPhotos({ tenantId, sessionId, actorId }),
+    ).toHaveLength(1);
     expect(
       await clinical.evaluateSessionPhotoRequirement({
         tenantId,
         sessionId,
-        actorId: 'actor-dev-admin',
+        actorId,
       }),
     ).toMatchObject({ status: 'REQUIRED_SATISFIED' });
     expect(
-      (
-        await db
-          .prepare(
-            "SELECT COUNT(*) AS count FROM audit_events WHERE tenant_id = ? AND resource_id = ? AND action = 'SessionPhotoUploaded'",
-          )
-          .bind(tenantId, first.id)
-          .first<{ count: number }>()
-      )?.count,
-    ).toBe(1);
+      await clinical.checkSessionCompletionEligibility({
+        tenantId,
+        sessionId,
+        actorId,
+      }),
+    ).toMatchObject({ status: 'READY' });
+    expect(
+      await db
+        .prepare(
+          "SELECT COUNT(*) AS count FROM idempotency_records WHERE tenant_id=? AND operation='UPLOAD_SESSION_PHOTO'",
+        )
+        .bind(tenantId)
+        .first(),
+    ).toMatchObject({ count: 0 });
   });
 });

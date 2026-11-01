@@ -78,12 +78,6 @@
       "define": {
         "__BEAUTY_LOCAL__": "true",
       },
-      "r2_buckets": [
-        {
-          "binding": "SESSION_MEDIA",
-          "bucket_name": "beauty-r2",
-        },
-      ],
     },
   },
   "keep_vars": true,
@@ -91,10 +85,4 @@
   "define": {
     "__BEAUTY_LOCAL__": "false",
   },
-  "r2_buckets": [
-    {
-      "binding": "SESSION_MEDIA",
-      "bucket_name": "beauty-r2",
-    },
-  ],
 }

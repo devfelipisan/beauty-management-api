@@ -3,15 +3,15 @@
 ## Responsabilidades e configuração
 
 `beauty-r2` é privado e provisionado manualmente. Operations usa somente
-`PROFILE_MEDIA`; Clinical usa somente `SESSION_MEDIA`; Billing não acessa R2.
+`PROFILE_MEDIA`; Clinical e Billing não possuem acesso R2.
 As chaves de perfil começam com `profile/`; fotografias clínicas preservam suas
 chaves existentes. O binding é acesso ao bucket inteiro: a separação de prefixos
 é aplicada pelos adapters e não representa isolamento físico entre Workers.
 
 O Dashboard administra Text em todos os Workers: `APP_ENV=production`,
 `AUTH_PROVIDER=jwt`, `OBSERVE_ENABLED=true`, `OUTBOX_BATCH_SIZE=5`,
-`OUTBOX_LEASE_SECONDS=60`. Clinical também exige
-`MAX_CLINICAL_PHOTO_BYTES=5242880`. O pipeline administra `SERVICE_VERSION`.
+`OUTBOX_LEASE_SECONDS=60`. Operations exige `MAX_PROFILE_IMAGE_BYTES=300000`.
+O pipeline administra `SERVICE_VERSION`.
 Os quatro parâmetros JWT continuam secrets individuais, cadastrados manualmente.
 Não registrar seus valores em comandos, evidências, logs ou issues.
 
@@ -21,14 +21,17 @@ ou aos testes. Mudar Text no Dashboard não habilita mocks no bundle de produç�
 
 ## Primeiro provisionamento
 
-1. Solicitar `deploy/all` por `request.json` e aprovar `production` após os gates.
-2. O bootstrap cria somente Workers privados ausentes e encerra o job com falha
-   controlada. Não publica a aplicação sobre placeholders.
-3. Cadastrar manualmente variáveis e secrets e provisionar o bucket privado.
-4. Inventariar D1 remoto e aplicar migrations pelo processo independente aprovado.
-5. Concluir o inventário e aprovações de capacidade abaixo.
-6. Criar nova solicitação versionada. O preflight deve passar integralmente antes
-   da publicação Billing → Clinical → Operations.
+1. Validar configurações, contratos, testes, migrations em banco local e dry-runs.
+2. Inventariar o D1 remoto, seu histórico de migrations e intenções pendentes.
+3. Aplicar migrations revisadas pelo workflow independente, protegido e sequencial.
+4. Verificar privacidade, inventário completo e capacidade efetiva do R2.
+5. Registrar aprovações reais de inventário, política e escritores, com referência.
+6. Executar preflight remoto antes de qualquer publicação.
+7. Publicar Billing → Clinical → Operations, conferindo versão e SHA de cada um.
+8. Executar smoke interno autorizado, sem criar exposição pública.
+
+O bootstrap, quando necessário, cria apenas Workers privados ausentes e interrompe
+o job para configuração manual e nova solicitação. Não substitui Workers existentes.
 
 ## Inventário e aprovação: gate obrigatório
 
@@ -75,7 +78,7 @@ GET/listagem do cadastro incluem `profileImage: { version, image }` quando exist
 slot. Um slot removido mantém sua versão, evitando conflito ABA após refresh.
 Ausência de slot equivale à versão inicial zero.
 
-O servidor impõe 2.000.000 bytes e calcula SHA-256 do arquivo recebido para
+O servidor impõe 300.000 bytes e calcula SHA-256 do arquivo recebido para
 comparar tentativas de uma mesma operação. Nunca aceita chave R2 do cliente.
 O frontend deve corrigir orientação, redimensionar até 512×512, remover metadados
 e preferir WebP de 100–250 KB. Não reenviar arquivo inalterado. A integração do
@@ -95,14 +98,14 @@ O dispatcher existente recupera inconsistências conhecidas e exclusões pendent
 
 ## Clínica e recuperação
 
-Clinical impõe 5.242.880 bytes pelo receiver e exige BEFORE AVAILABLE quando o
+Clinical não recebe R2 e exige BEFORE AVAILABLE quando o
 snapshot determinar fotografia. DURING, AFTER e INTERCURRENCE não satisfazem esse
 requisito. Não revalidar sessões históricas concluídas.
 
-O RPC de reconciliação existente exige `clinical.photo.upload`; resolve a sessão
-pelo photoId e revalida tenant e profissional. Intenções novas têm correlação
-idempotente e ledger. Objetos históricos sem correlação exigem tratamento
-administrativo, sem associação presumida a uma chave idempotente.
+O RPC de reconciliação permanece negado em produção, inclusive para usuários com
+`clinical.photo.upload`. Upload e leitura binária estão indisponíveis. Metadados
+e objetos históricos são preservados; o acesso físico exige solução separada.
+Uma referência externa não satisfaz a regra sem política de evidência aprovada.
 
 Resultados incertos mantêm reserva e intenção. Falha de DELETE mantém bytes
 contabilizados. Não liberar saldos apenas porque um pedido falhou. Pendências que

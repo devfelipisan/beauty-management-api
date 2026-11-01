@@ -1,3 +1,4 @@
+import { outboxOwnership } from '@beauty/reliability/outbox/ownership';
 import {
   ProfileImages,
   PROFILE_DELETE_EVENT,
@@ -140,7 +141,7 @@ export async function invokeCreateAppointment(
     new D1UnitOfWork(env.D1_DATABASE),
     new D1IdempotencyStore(env.D1_DATABASE),
     undefined,
-    true, // Clinical enforces storage readiness and the frozen photography requirement.
+    false, // Clinical capture is unavailable.
   ).execute(input);
 }
 function appointmentLifecycle(env: OperationsEnv) {
@@ -219,10 +220,14 @@ export class OperationsComposition {
   profileImages() {
     return new ProfileImages(
       new D1ProfileImageRepository(this.env.D1_DATABASE),
-      new R2ProfileImageStorage(this.env.PROFILE_MEDIA),
+      new R2ProfileImageStorage(
+        this.env.PROFILE_MEDIA,
+        Number(this.env.MAX_PROFILE_IMAGE_BYTES),
+      ),
       new D1UnitOfWork(this.env.D1_DATABASE),
       new D1IdempotencyStore(this.env.D1_DATABASE),
       Number(this.env.OUTBOX_LEASE_SECONDS),
+      Number(this.env.MAX_PROFILE_IMAGE_BYTES),
     );
   }
 
@@ -255,14 +260,14 @@ export class OperationsComposition {
     return {
       create: new CreateServiceUseCase(
         repository,
-        true,
+        false,
         new D1UnitOfWork(this.env.D1_DATABASE),
       ),
       get: new GetServiceUseCase(repository),
       list: new ListServicesUseCase(repository),
       update: new UpdateServiceUseCase(
         repository,
-        true,
+        false,
         new D1UnitOfWork(this.env.D1_DATABASE),
       ),
       deactivate: new DeactivateServiceUseCase(
@@ -521,11 +526,7 @@ export class OperationsComposition {
   }) {
     return new DispatchOutboxBatch(
       new D1OutboxDeliveryRepository(this.env.D1_DATABASE, [
-        PROFILE_DELETE_EVENT,
-        PROFILE_RECONCILE_EVENT,
-        'FinancialSettlementRequested',
-        'AppointmentCanceled',
-        'AppointmentNoShowRecorded',
+        ...outboxOwnership.operations,
       ]),
       {
         deliver: (e) =>

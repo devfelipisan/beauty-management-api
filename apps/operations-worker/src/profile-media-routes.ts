@@ -90,6 +90,8 @@ export async function profileMediaRoute(
       );
       return json({ data, ...context });
     }
+    if (env.MAX_PROFILE_IMAGE_BYTES !== String(PROFILE_IMAGE_MAX_BYTES))
+      throw new Error('INVALID_PROFILE_MEDIA_CONFIGURATION');
     const contentType = request.headers.get('content-type') ?? '';
     const declared = request.headers.get('content-length');
     if (

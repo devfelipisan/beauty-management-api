@@ -1,4 +1,4 @@
-import { observeMediaCapacity } from '@beauty/reliability/media/observe-media-capacity';
+import { outboxOwnership } from '@beauty/reliability/outbox/ownership';
 import type {
   AssessmentEligibilityRequest,
   AssessmentEligibilityResponse,
@@ -10,7 +10,7 @@ import type {
   RecordSessionTechnicalValuesRequest,
   RecordSessionPowerRequest,
 } from '@beauty/contracts';
-import { inheritActorAuthorization } from '@beauty/kernel/application/actor-authorization';
+import type { GetClinicalPhoto } from '@beauty/clinical/modules/media/application/use-cases';
 import { D1AssessmentRepository } from '@beauty/clinical/modules/assessments/infrastructure/d1-assessment-repository';
 import { CheckAssessmentEligibility } from '@beauty/clinical/modules/assessments/application/check-assessment-eligibility';
 import { D1SessionRepository } from '@beauty/clinical/modules/sessions/infrastructure/d1-session-repository';
@@ -47,13 +47,9 @@ import {
 } from '@beauty/clinical/modules/intercurrences/application/use-cases';
 import { OperationsRestrictionDelivery } from '@beauty/clinical/modules/intercurrences/infrastructure/operations-restriction-delivery';
 import { D1PhotoAttachmentRepository } from '@beauty/clinical/modules/media/infrastructure/d1-photo-attachment-repository';
-import { clinicalMediaStorage } from '@beauty/clinical/modules/media/infrastructure/r2-clinical-media-storage';
 import {
   EvaluateSessionPhotoRequirement,
-  GetClinicalPhoto,
   ListSessionPhotos,
-  ReconcilePhotoAttachment,
-  UploadSessionPhoto,
 } from '@beauty/clinical/modules/media/application/use-cases';
 import {
   CheckSessionCompletionEligibility,
@@ -159,6 +155,8 @@ export class ClinicalComposition {
       this.env.OPERATIONS_SERVICE as SessionStartContextPort,
       new D1UnitOfWork(this.env.D1_DATABASE),
       new D1IdempotencyStore(this.env.D1_DATABASE),
+      undefined,
+      false,
     ).execute(input);
   }
   async getSessionStartContext(input: GetSessionStartContextRequest) {
@@ -174,12 +172,7 @@ export class ClinicalComposition {
   }) {
     return new DispatchOutboxBatch(
       new D1OutboxDeliveryRepository(this.env.D1_DATABASE, [
-        'SessionStarted',
-        'SessionCompleted',
-        'ReturnRecommended',
-        'PackageConsumptionRequested',
-        'ClinicalRestrictionActivated',
-        'ClinicalRestrictionResolved',
+        ...outboxOwnership.clinical,
       ]),
       {
         deliver: async (event: any) =>
@@ -330,28 +323,9 @@ export class ClinicalComposition {
     ).execute(input);
   }
   async uploadSessionPhoto(
-    input: import('@beauty/contracts').UploadClinicalPhotoRequest,
+    _input: import('@beauty/contracts').UploadClinicalPhotoRequest,
   ) {
-    if (this.env.MAX_CLINICAL_PHOTO_BYTES !== '5242880')
-      throw new Error('INVALID_AUTHENTICATION_CONFIGURATION');
-    const result = await new UploadSessionPhoto(
-      new D1SessionRepository(this.env.D1_DATABASE),
-      new D1IntercurrenceRepository(this.env.D1_DATABASE),
-      new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
-      clinicalMediaStorage(this.env.SESSION_MEDIA),
-      new D1UnitOfWork(this.env.D1_DATABASE),
-      new D1IdempotencyStore(this.env.D1_DATABASE),
-    ).execute(
-      inheritActorAuthorization(input, {
-        ...input,
-        maxBytes: Number(this.env.MAX_CLINICAL_PHOTO_BYTES),
-      }),
-    );
-    await observeMediaCapacity(
-      this.env.D1_DATABASE,
-      this.env.OBSERVE_ENABLED === 'true',
-    );
-    return result;
+    throw new Error('CLINICAL_MEDIA_UNAVAILABLE');
   }
   async listSessionPhotos(input: {
     tenantId: string;
@@ -363,31 +337,22 @@ export class ClinicalComposition {
       new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
     ).execute(input);
   }
-  async getClinicalPhoto(input: {
+  async getClinicalPhoto(_input: {
     tenantId: string;
     sessionId: string;
     photoId: string;
     actorId: string;
-  }) {
-    return new GetClinicalPhoto(
-      new D1SessionRepository(this.env.D1_DATABASE),
-      new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
-      clinicalMediaStorage(this.env.SESSION_MEDIA),
-    ).execute(input);
+  }): Promise<Awaited<ReturnType<GetClinicalPhoto['execute']>>> {
+    throw new Error('CLINICAL_MEDIA_UNAVAILABLE');
   }
-  async reconcilePhotoAttachment(input: {
+  async reconcilePhotoAttachment(_input: {
     tenantId: string;
     photoId: string;
     requestId: string;
     correlationId: string;
     actorId: string;
-  }) {
-    return new ReconcilePhotoAttachment(
-      new D1PhotoAttachmentRepository(this.env.D1_DATABASE),
-      clinicalMediaStorage(this.env.SESSION_MEDIA),
-      new D1UnitOfWork(this.env.D1_DATABASE),
-      new D1SessionRepository(this.env.D1_DATABASE),
-    ).execute(input);
+  }): Promise<{ status: string }> {
+    throw new Error('CLINICAL_MEDIA_UNAVAILABLE');
   }
   async evaluateSessionPhotoRequirement(input: {
     tenantId: string;

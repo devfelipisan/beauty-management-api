@@ -46,7 +46,7 @@ async function auxiliaryWorker(
       OUTBOX_BATCH_SIZE: '5',
       OUTBOX_LEASE_SECONDS: '60',
       OBSERVE_ENABLED: 'false',
-      MAX_CLINICAL_PHOTO_BYTES: '5242880',
+      ...(name === 'beauty-operations-runtime' ? {MAX_PROFILE_IMAGE_BYTES:'300000'} : {}),
     },
     modules: [{ type: 'ESModule', path }],
   };
@@ -72,7 +72,7 @@ export default defineConfig({
           OUTBOX_LEASE_SECONDS: '60',
           OBSERVE_ENABLED: 'false',
           TEST_MIGRATIONS: migrations,
-          MAX_CLINICAL_PHOTO_BYTES: '5242880',
+          MAX_PROFILE_IMAGE_BYTES: '300000',
         },
         workers: [
           await auxiliaryWorker(
@@ -88,7 +88,7 @@ export default defineConfig({
               OPERATIONS_SERVICE: 'beauty-operations-runtime',
               BILLING_SERVICE: 'beauty-billing-worker',
             },
-            ['SESSION_MEDIA'],
+            [],
           ),
           await auxiliaryWorker(
             './apps/billing-worker/src/worker.ts',

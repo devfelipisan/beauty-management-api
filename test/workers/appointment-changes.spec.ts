@@ -59,7 +59,7 @@ function req(path: string, method = 'POST', key?: string, body?: unknown) {
 
 describe('appointment reschedule authoritative flow', () => {
   beforeAll(seed);
-  it('admits photography journeys while Clinical remains authoritative for completion', async () => {
+  it('blocks new photography journeys when capture is unavailable', async () => {
     await env.D1_DATABASE.prepare(
       'UPDATE services SET requires_photography=1 WHERE tenant_id=? AND id=?',
     )
@@ -78,8 +78,10 @@ describe('appointment reschedule authoritative flow', () => {
           origin: 'RECEPTION',
         },
       );
-      expect(response.status).toBe(201);
-      expect(await response.json()).toHaveProperty('data.id');
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({
+        code: 'CLINICAL_MEDIA_UNAVAILABLE',
+      });
     } finally {
       await env.D1_DATABASE.prepare(
         'UPDATE services SET requires_photography=0 WHERE tenant_id=? AND id=?',

@@ -21,7 +21,7 @@ export function requiredProductionText(name) {
     OBSERVE_ENABLED: 'true',
     OUTBOX_BATCH_SIZE: '5',
     OUTBOX_LEASE_SECONDS: '60',
-    ...(name === 'clinical' ? { MAX_CLINICAL_PHOTO_BYTES: '5242880' } : {}),
+    ...(name === 'operations' ? { MAX_PROFILE_IMAGE_BYTES: '300000' } : {}),
   };
 }
 export function selectedWorkers(target) {
@@ -85,10 +85,9 @@ export function validateWorkerConfigurations(
     )
       throw new Error(`Public access is not disabled: ${name}`);
     const buckets = config.r2_buckets ?? [];
-    const expectedBinding =
-      name === 'operations' ? 'PROFILE_MEDIA' : 'SESSION_MEDIA';
+    const expectedBinding = 'PROFILE_MEDIA';
     if (
-      name === 'billing'
+      name !== 'operations'
         ? buckets.length !== 0
         : buckets.length !== 1 ||
           buckets[0].binding !== expectedBinding ||
@@ -186,19 +185,29 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 ) {
-  const request = deploymentRequest(
-    JSON.parse(readFileSync('.github/deploy/request.json', 'utf8')),
-  );
-  validateWorkerConfigurations(
-    Object.fromEntries(
-      Object.entries(workerConfigurations).map(([name, path]) => [
-        name,
-        readConfiguration(path),
-      ]),
-    ),
-    request.mode === 'deploy',
-  );
-  console.log(
-    `Validated ${request.requestId}: ${request.mode}/${request.worker}`,
-  );
+  try {
+    const request = deploymentRequest(
+      JSON.parse(readFileSync('.github/deploy/request.json', 'utf8')),
+    );
+    validateWorkerConfigurations(
+      Object.fromEntries(
+        Object.entries(workerConfigurations).map(([name, path]) => [
+          name,
+          readConfiguration(path),
+        ]),
+      ),
+      request.mode === 'deploy',
+    );
+    console.log(
+      `Validated ${request.requestId}: ${request.mode}/${request.worker}`,
+    );
+  } catch {
+    console.error(
+      JSON.stringify({
+        code: 'INVALID_VERSIONED_CONFIGURATION',
+        phase: 'validation',
+      }),
+    );
+    process.exitCode = 1;
+  }
 }

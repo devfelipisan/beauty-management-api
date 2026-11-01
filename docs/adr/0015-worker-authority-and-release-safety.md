@@ -32,24 +32,24 @@ persistência do compromisso remarcado nesse estado. O requisito aprovado manté
 RESCHEDULED ocupando o novo horário, sem adicionar estados ou transições.
 A gravação revalida snapshot anterior e conflito no próprio statement D1.
 
-## Mídia privada — revisão da suspensão anterior
+## Mídia privada — decisão revisada
 
-A decisão anterior sem R2 foi substituída pela autorização explícita para
-implementar e testar fotografia clínica e perfil de cliente em beauty-r2.
-Operations declara PROFILE_MEDIA, Clinical declara SESSION_MEDIA e Billing não
-recebe R2. As entidades e tabelas de perfil permanecem separadas das clínicas.
+Operations declara PROFILE_MEDIA para novas imagens de perfil em beauty-r2.
+Clinical e Billing não recebem R2. Os metadados e objetos clínicos históricos
+permanecem preservados, sem migração, transferência ou exclusão automática.
 
 Produção exige inventário aprovado, política documental, quotas explícitas e
 coordenação de todos os escritores. Migrations mantêm os gates fechados por
 padrão. O orçamento é 8.000.000.000 bytes, incluindo reservas e exclusões pendentes.
 
 Fotografia clínica obrigatória exige BEFORE AVAILABLE, conforme snapshot da
-sessão e fallback legado. Não revalidar sessões concluídas. Reconciliação usa
-clinical.photo.upload, tenant e profissional atuais. O receiver impõe 5 MiB.
-Não criar exclusão automática de evidências clínicas.
+sessão e fallback legado. BEFORE AVAILABLE confirmada continua válida sem
+consultar o objeto. Não revalidar sessões concluídas. Captura e acesso binário
+estão indisponíveis; reconciliação mantém a política vazia que nega produção.
+Referências externas dependem de política específica antes de satisfazer a regra.
 
 Perfil inicial atende somente clientes: customer.read/customer.update, sem
-grants automáticos, máximo de 2.000.000 bytes. A imagem anterior só é excluída
+grants automáticos, máximo de 300.000 bytes via Text validado no Operations. A imagem anterior só é excluída
 após confirmação da substituta; remoção explícita gera exclusão recuperável.
 Imagem ativa não recebe prazo de descarte presumido.
 
