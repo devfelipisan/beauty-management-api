@@ -1,5 +1,9 @@
 import { fail } from './errors.mjs';
-import { releaseBranch, manifestPath } from './config-contract.mjs';
+import {
+  releaseBranch,
+  manifestPath,
+  workerConfigurations,
+} from './config-contract.mjs';
 import { deploymentRequest } from './validate-local.mjs';
 import { digest } from './manifest.mjs';
 import { load } from 'js-yaml';
@@ -663,21 +667,35 @@ export function githubClient({
     };
   }
   async function assertFirstPublicationNeeded(versions) {
-    let missing = false;
+    const scope = {
+      ...context,
+      phase: 'eligibility',
+      operation: 'github.deployment',
+    };
+    if (
+      !versions ||
+      Object.keys(versions).sort().join() !==
+        Object.keys(workerConfigurations).sort().join() ||
+      Object.values(versions).some((version) => !validVersionId(version))
+    )
+      fail('FIRST_PUBLICATION_NOT_APPROVED', scope);
+    let missing = 0;
     for (const [worker, version] of Object.entries(versions)) {
       try {
         await provenanceByVersion(worker, version);
       } catch (error) {
-        if (error.code !== 'PROVENANCE_UNAVAILABLE') throw error;
-        missing = true;
+        // Existing but rejected records require recovery, not first adoption.
+        if (
+          error.code !== 'PROVENANCE_UNAVAILABLE' ||
+          error.provenanceReason !== 'NO_RECORDS'
+        )
+          throw error;
+        missing++;
       }
     }
-    if (!missing)
-      fail('FIRST_PUBLICATION_NOT_APPROVED', {
-        ...context,
-        phase: 'eligibility',
-        operation: 'github.deployment',
-      });
+    // A partially trusted topology must not use the initial-publication path.
+    if (missing !== Object.keys(workerConfigurations).length)
+      fail('FIRST_PUBLICATION_NOT_APPROVED', scope);
   }
   async function recordPublished({
     worker,

@@ -252,7 +252,47 @@ test('GitHub access failures cannot be treated as permission for first publicati
     fetchImpl: async () => ({ ok: false, status: 403 }),
   });
   await assert.rejects(
-    client.assertFirstPublicationNeeded({ billing: version }),
+    client.assertFirstPublicationNeeded(
+      Object.fromEntries(
+        Object.keys(configurations).map((worker) => [worker, version]),
+      ),
+    ),
     { code: 'REMOTE_ACCESS_DENIED' },
   );
+});
+
+test('existing rejected records and mixed trusted/untracked topology require recovery', async () => {
+  const versions = Object.fromEntries(
+    Object.keys(configurations).map((worker) => [worker, version]),
+  );
+  const rejected = scenario();
+  rejected.records.push({
+    id: 1,
+    payload: { worker: 'billing', commitSha: 'invalid' },
+  });
+  await assert.rejects(rejected.client.assertFirstPublicationNeeded(versions), {
+    code: 'PROVENANCE_UNAVAILABLE',
+    provenanceReason: 'NO_ACCEPTED_RECORD',
+  });
+  const mixed = scenario();
+  await register(mixed);
+  const billing = mixed.records.filter(
+    (record) => record.payload.worker === 'billing',
+  );
+  mixed.records.splice(0, mixed.records.length, ...billing);
+  await assert.rejects(mixed.client.assertFirstPublicationNeeded(versions), {
+    code: 'FIRST_PUBLICATION_NOT_APPROVED',
+  });
+});
+
+test('incomplete or malformed first-publication snapshots cannot authorize the initial path', async () => {
+  const f = scenario();
+  for (const value of [
+    {},
+    { billing: version },
+    { billing: 'invalid', clinical: version, operations: version },
+  ])
+    await assert.rejects(f.client.assertFirstPublicationNeeded(value), {
+      code: 'FIRST_PUBLICATION_NOT_APPROVED',
+    });
 });
