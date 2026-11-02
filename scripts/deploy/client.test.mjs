@@ -112,3 +112,49 @@ test('approved previous binding is accepted only before deployment; arbitrary bi
     { code: 'BINDING_MISSING' },
   );
 });
+
+test('D1 error classification is scoped and does not infer missing history from unrelated errors', async () => {
+  for (const [path, operation, message, expected] of [
+    [
+      '/d1/database/id/query',
+      'database.schema',
+      'no such table: d1_migrations_backup',
+      'QUERY_REJECTED',
+    ],
+    [
+      '/workers/services/example',
+      'worker.settings',
+      'no such table: d1_migrations',
+      undefined,
+    ],
+    [
+      '/d1/database/id/query',
+      'database.schema',
+      'no such column: name',
+      'QUERY_REJECTED',
+    ],
+  ]) {
+    const client = cloudflareClient({
+      accountId: 'fixture',
+      apiToken: 'private',
+      fetchImpl: async () => ({
+        ok: false,
+        status: 400,
+        json: async () => ({ success: false, errors: [{ message }] }),
+      }),
+    });
+    await assert.rejects(
+      client.request(path, {
+        operation,
+        body: { sql: 'SELECT name FROM d1_migrations' },
+      }),
+      (error) => {
+        assert.equal(error.code, 'REMOTE_HTTP_ERROR');
+        assert.equal(diagnostic(error).databaseReason, expected);
+        error.databaseReason = 'sensitive';
+        assert.equal(diagnostic(error).databaseReason, undefined);
+        return true;
+      },
+    );
+  }
+});

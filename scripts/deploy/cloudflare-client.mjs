@@ -48,17 +48,48 @@ export function cloudflareClient({
         } catch {
           fail('REMOTE_TRANSPORT_ERROR', scope);
         }
-        if (!response.ok)
+        if (!response.ok) {
+          // Interpret only the D1 query failure; never expose remote messages.
+          let databaseReason;
+          if (
+            response.status === 400 &&
+            operation === 'database.schema' &&
+            /^\/d1\/database\/[^/]+\/query$/.test(path) &&
+            body
+          ) {
+            let rejected;
+            try {
+              rejected = await response.json();
+            } catch {
+              // Non-JSON failures retain the generic HTTP classification.
+            }
+            databaseReason = 'QUERY_REJECTED';
+            if (
+              rejected?.success === false &&
+              Array.isArray(rejected.errors) &&
+              rejected.errors.some(
+                (error) =>
+                  typeof error?.message === 'string' &&
+                  /\bno such table:\s*(?:main\.)?d1_migrations(?:\s|:|$)/i.test(
+                    error.message,
+                  ),
+              )
+            )
+              databaseReason = 'MIGRATION_HISTORY_MISSING';
+          }
           fail(
-            response.status === 401
-              ? 'REMOTE_UNAUTHENTICATED'
-              : response.status === 403
-                ? 'REMOTE_ACCESS_DENIED'
-                : response.status === 404
-                  ? 'REMOTE_RESOURCE_UNAVAILABLE'
-                  : 'REMOTE_HTTP_ERROR',
-            { ...scope, status: response.status },
+            databaseReason === 'MIGRATION_HISTORY_MISSING'
+              ? 'SCHEMA_NOT_READY'
+              : response.status === 401
+                ? 'REMOTE_UNAUTHENTICATED'
+                : response.status === 403
+                  ? 'REMOTE_ACCESS_DENIED'
+                  : response.status === 404
+                    ? 'REMOTE_RESOURCE_UNAVAILABLE'
+                    : 'REMOTE_HTTP_ERROR',
+            { ...scope, status: response.status, databaseReason },
           );
+        }
         let data;
         try {
           data = await response.json();

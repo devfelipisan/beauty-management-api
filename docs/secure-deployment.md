@@ -81,3 +81,29 @@ O sucesso anterior informado pelo operador não foi inventariado nesta alteraç�
 Se um Worker tiver sido editado manualmente depois, o gate deve reprovar por falta
 de proveniência da nova versão. Investigar esse estado sem remover o bloqueio ou
 atribuir um SHA presumido.
+
+### D1 HTTP 400 durante o preflight
+
+`operation: database.schema` identifica a leitura de migrations, não uma falha
+na proveniência GitHub. A consulta ocorre após validar as versões e seus registros.
+O HTTP 400 isolado não permite concluir que faltam migrations.
+
+O cliente distingue uma resposta D1 explícita `no such table: d1_migrations`
+como `SCHEMA_NOT_READY`, com `databaseReason: MIGRATION_HISTORY_MISSING`.
+Outras rejeições HTTP 400 da consulta permanecem `REMOTE_HTTP_ERROR`, com
+`databaseReason: QUERY_REJECTED`. Mensagens remotas não são publicadas nos logs.
+Nenhum caso permite publicar, ignora proveniência ou aplica migrations automaticamente.
+Não há consultas adicionais nem acesso a R2.
+
+Se a ausência do histórico for confirmada, usar o fluxo existente
+`.github/workflows/migrations-d1.yml`: primeiro inspeção (`apply=false`), revisão
+das migrations pendentes e, então, aplicação aprovada no Environment
+`production-migrations`, referenciando a inspeção bem-sucedida do mesmo SHA.
+Não criar registros fictícios em `d1_migrations` para liberar o deploy.
+Uma base com tabelas preexistentes e sem histórico exige reconciliação antes
+qualquer aplicação: não presumir que migrations podem ser reaplicadas.
+
+Os testes locais `node scripts/test-deployment.mjs` reproduzem o HTTP 400 sem
+credenciais nem chamadas remotas e verificam que nenhuma publicação acontece.
+Eles não comprovam o estado do banco remoto; para isso é necessária uma consulta
+somente leitura no mesmo banco e com as mesmas credenciais do Environment.
