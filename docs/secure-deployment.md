@@ -187,3 +187,17 @@ Desativar o cron suspende esse processamento agendado; não implementa entrega
 por evento nem uma reconciliação financeira independente. O acionamento por
 evento e a separação das rotinas discutidos anteriormente exigem implementação
 própria antes de depender deles para manter o processamento automático.
+
+#### CRONJOB no Dashboard do Worker
+
+`CRONJOB` e `CRONJOB_ENABLED` são variáveis de **deploy** no GitHub Environment
+`production`; não são bindings de runtime do `beauty-operations-worker`.
+Se forem cadastradas em Cloudflare → Worker → Settings → Variables and Secrets,
+o preflight rejeita o binding indevido. O diagnóstico identifica somente os dois
+nomes conhecidos, sem imprimir seus valores nem nomes de bindings arbitrários.
+
+Remover somente esses controles do Worker e configurá-los nas Variables do GitHub.
+Edições manuais de settings podem alterar a versão ativa: conferir a versão e sua
+proveniência com `npm run infra:diagnose:readonly` antes de repetir a publicação.
+Se aparecer `NO_RECORDS`, não remover o gate nem inventar um registro; é necessário
+reconciliar a versão ativa com a última publicação gerenciada antes de prosseguir.

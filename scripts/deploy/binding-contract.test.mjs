@@ -372,3 +372,75 @@ test('installed Wrangler upload metadata retains configured service props', () =
     }
   }
 });
+
+test('cron controls placed in Worker settings are identified without allowing them or exposing values', () => {
+  for (const name of ['CRONJOB', 'CRONJOB_ENABLED']) {
+    for (const type of ['plain_text', 'secret_text', 'service']) {
+      const state = settings('operations');
+      state.bindings.push({
+        name,
+        type,
+        text: 'private-control-value',
+        service: 'private-service',
+      });
+      assert.throws(
+        () => validateSettings(state, 'operations', configurations.operations),
+        (error) => {
+          const result = diagnostic(error);
+          assert.equal(result.code, 'BINDING_MISMATCH');
+          assert.equal(result.binding, name);
+          assert.equal(result.operation, 'worker.settings');
+          assert.ok(!JSON.stringify(result).includes('private-'));
+          return true;
+        },
+      );
+    }
+  }
+});
+
+test('unknown remote binding names stay redacted and cron controls remain forbidden on other Workers', () => {
+  for (const [worker, name] of [
+    ['operations', 'PRIVATE_UNKNOWN_NAME'],
+    ['billing', 'CRONJOB'],
+  ]) {
+    const state = settings(worker);
+    state.bindings.push({ name, type: 'plain_text', text: 'private-value' });
+    assert.throws(
+      () => validateSettings(state, worker, configurations[worker]),
+      (error) => {
+        assert.equal(error.code, 'BINDING_MISMATCH');
+        assert.equal(diagnostic(error).binding, undefined);
+        return true;
+      },
+    );
+  }
+});
+
+test('deployment-only cron binding stops all uploads during preflight', async () => {
+  const f = fixture((path) => {
+    if (!path.includes('beauty-operations-worker/settings')) return;
+    const state = settings('operations');
+    state.bindings.push({
+      name: 'CRONJOB_ENABLED',
+      type: 'plain_text',
+      text: 'false',
+    });
+    return response(state);
+  });
+  let uploads = 0;
+  const report = await release({
+    ...f,
+    configurations,
+    manifest,
+    context: { mode: 'deploy', worker: 'all', commitSha: sha },
+    publish: () => {
+      uploads++;
+      return { status: 0 };
+    },
+  });
+  assert.equal(uploads, 0);
+  assert.equal(report.failure.code, 'BINDING_MISMATCH');
+  assert.equal(report.failure.binding, 'CRONJOB_ENABLED');
+  assert.equal(report.failure.phase, 'preflight');
+  assert.ok(!f.calls.some(({ path }) => path.includes('/r2/')));
+});

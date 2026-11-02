@@ -1,5 +1,7 @@
 import { fail } from './errors.mjs';
 
+export const cronVariableNames = Object.freeze(['CRONJOB_ENABLED', 'CRONJOB']);
+
 export const defaultCron = '0 3 * * *'; // 00:00 America/Sao_Paulo (UTC-3).
 const bounds = [
   [0, 59],

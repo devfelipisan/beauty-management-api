@@ -2,6 +2,7 @@ import {
   requiredProductionText,
   requiredJwtSecretNames,
 } from './config-contract.mjs';
+import { cronVariableNames } from './cron-policy.mjs';
 import { DeploymentValidationError, diagnostic } from './errors.mjs';
 import {
   BindingShapeError,
@@ -115,7 +116,16 @@ function* settingsChecks(
   const actual = [];
   for (const binding of valid) {
     if (!scope.allowedBindings.has(binding.name)) {
-      yield error('BINDING_MISMATCH');
+      // These deployment controls are safe names to identify, but they are
+      // deliberately not accepted as runtime bindings or schedule evidence.
+      yield new DeploymentValidationError('BINDING_MISMATCH', {
+        ...scope,
+        binding: binding.name,
+        allowedBindings: new Set([
+          ...scope.allowedBindings,
+          ...(name === 'operations' ? cronVariableNames : []),
+        ]),
+      });
       continue;
     }
     try {
