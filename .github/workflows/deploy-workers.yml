@@ -1,4 +1,4 @@
-name: Deploy Beauty Workers
+name: Publicar Workers
 
 on:
   workflow_call:
@@ -22,6 +22,7 @@ permissions:
 
 jobs:
   prepare:
+    name: Preparar publicação
     permissions:
       contents: read
       actions: read
@@ -32,29 +33,32 @@ jobs:
       requestId: ${{ steps.request.outputs.requestId }}
       commitSha: ${{ steps.request.outputs.commitSha }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Obter código do commit
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - name: Validate immutable request and trusted CI
+      - name: Instalar dependências
+        run: npm ci
+      - name: Validar commit solicitado e CI aprovado
         id: request
         env:
           GITHUB_TOKEN: ${{ github.token }}
           REQUESTED_SHA: ${{ inputs.commit_sha }}
         run: node scripts/deploy/prepare.mjs --sha "$REQUESTED_SHA"
-      - name: Verify production protection
+      - name: Verificar proteção de produção
         if: steps.request.outputs.mode == 'deploy'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/check-production-protection.mjs production
 
   deploy:
-    name: Publish ${{ needs.prepare.outputs.worker }} at ${{ needs.prepare.outputs.commitSha }}
+    name: Publicar ${{ needs.prepare.outputs.worker }} no commit ${{ needs.prepare.outputs.commitSha }}
     needs: prepare
     if: needs.prepare.outputs.mode == 'deploy'
     runs-on: ubuntu-latest
@@ -68,27 +72,30 @@ jobs:
       actions: read
       deployments: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Obter código do commit
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.prepare.outputs.commitSha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Keep trusted orchestration separate from selected application code
+      - name: Preparar orquestração confiável separada do código
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           path: .release-control
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - name: Recheck approval policy
+      - name: Instalar dependências
+        run: npm ci
+      - name: Revalidar política de aprovação
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node .release-control/scripts/check-production-protection.mjs production
-      - name: Validate Cloudflare credentials availability
+      - name: Verificar disponibilidade das credenciais Cloudflare
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -103,14 +110,14 @@ jobs:
             echo "::error::production variable CLOUDFLARE_ACCOUNT_ID unavailable"
             exit 1
           fi
-      - name: Validate provenance, publish and verify Workers
+      - name: Validar proveniência, publicar e verificar Workers
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           TARGET_SHA: ${{ needs.prepare.outputs.commitSha }}
         run: node .release-control/scripts/deploy-workers.mjs --sha "$TARGET_SHA"
-      - name: Preserve partial results
+      - name: Salvar resultados e publicações parciais
         if: always()
         uses: actions/upload-artifact@v4
         with:

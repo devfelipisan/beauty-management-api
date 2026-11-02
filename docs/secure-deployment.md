@@ -144,3 +144,16 @@ node scripts/test-deployment.mjs
 Esses testes incluem histórico de migrations ausente, esquema incompleto,
 proveniência indisponível e falhas de publicação/pós-check, usando respostas
 simuladas e sem gastar publicações Cloudflare.
+
+### Nomes exibidos no GitHub Actions
+
+- **Validar e publicar aplicação** (`ci.yml`): validação e chamada automática da publicação.
+- **Publicar Workers** (`deploy-workers.yml`): publicação reutilizável ou manual.
+- **Gerenciar migrations D1** (`migrations-d1.yml`): inspeção e aplicação revisada.
+- **Primeira publicação — excepcional** (`infrastructure-first-publication.yml`): fluxo inicial controlado.
+
+Os arquivos, IDs de jobs, triggers, Environments e artefatos permanecem iguais.
+A proveniência reconhece os nomes antigos e novos dos jobs, preservando os
+registros históricos. Caso uma regra de proteção de branch exija o status
+`verify` pelo nome, atualizar essa regra para `Validar código e testes` na
+transição. O ID interno do job continua sendo `verify`.

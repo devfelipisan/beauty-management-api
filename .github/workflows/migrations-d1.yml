@@ -1,4 +1,4 @@
-name: D1 migrations
+name: Gerenciar migrations D1
 
 on:
   workflow_dispatch:
@@ -23,51 +23,61 @@ concurrency:
 
 jobs:
   validate:
+    name: Validar requisitos e testes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Obter código do commit
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - name: Validate branch and production configurations
+      - name: Instalar dependências
+        run: npm ci
+      - name: Validar branch e configurações de produção
         run: |
           test "$GITHUB_REF" = 'refs/heads/feature/microsservices'
           node --input-type=module <<'NODE'
           import { workerConfigurations, readConfiguration, validateWorkerConfigurations } from './scripts/worker-deployment-config.mjs';
           validateWorkerConfigurations(Object.fromEntries(Object.entries(workerConfigurations).map(([name,path])=>[name,readConfiguration(path)])), true);
           NODE
-      - run: npm run check
-      - run: |
+      - name: Executar validações funcionais locais
+        run: npm run check
+      - name: Validar scripts de release e manifesto
+        run: |
           node scripts/test-deployment.mjs
           node scripts/deploy/manifest-check.mjs
-      - name: Check environment approval
+      - name: Verificar proteção do ambiente de migrations
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/check-production-protection.mjs production-migrations
   migrations:
+    name: Inspecionar ou aplicar migrations
     needs: validate
     runs-on: ubuntu-latest
     environment: production-migrations
     steps:
-      - uses: actions/checkout@v4
+      - name: Obter código do commit
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - name: Recheck migration environment
+      - name: Instalar dependências
+        run: npm ci
+      - name: Revalidar proteção do ambiente de migrations
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/check-production-protection.mjs production-migrations
-      - name: Inspect or apply a reviewed migration set
+      - name: Inspecionar ou aplicar migrations revisadas
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_MIGRATIONS_TOKEN }}
@@ -80,7 +90,7 @@ jobs:
           else
             node scripts/infra/migrations.mjs
           fi
-      - name: Preserve migration evidence
+      - name: Salvar evidências das migrations
         if: always()
         uses: actions/upload-artifact@v4
         with:

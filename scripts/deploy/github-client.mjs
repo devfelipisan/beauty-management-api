@@ -145,7 +145,9 @@ export function githubClient({
         'jobs',
         'github.ci',
       );
-      const matches = jobs.filter((job) => job.name === 'verify');
+      const matches = jobs.filter((job) =>
+        ['verify', 'Validar código e testes'].includes(job.name),
+      );
       if (!matches.length) continue;
       const job = matches[0];
       if (
@@ -612,8 +614,12 @@ export function githubClient({
       'jobs',
       'github.ci',
     );
-    const jobName = `${automatic ? 'Deploy after CI / ' : ''}Publish ${report.target} at ${entry.commitSha}`;
-    const publication = jobs.filter((job) => job.name === jobName);
+    // Keep immutable evidence from runs before the display-name migration valid.
+    const jobNames = [
+      `${automatic ? 'Deploy after CI / ' : ''}Publish ${report.target} at ${entry.commitSha}`,
+      `${automatic ? 'Publicar após validação / ' : ''}Publicar ${report.target} no commit ${entry.commitSha}`,
+    ];
+    const publication = jobs.filter((job) => jobNames.includes(job.name));
     if (
       publication.length !== 1 ||
       publication[0].run_id !== run.id ||

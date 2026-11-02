@@ -77,7 +77,14 @@ function scenario(change = () => {}) {
       },
     ],
   };
-  const values = { entry, run, job, artifact, report };
+  const values = {
+    entry,
+    run,
+    job,
+    artifact,
+    report,
+    publicationName: `Deploy after CI / Publish all at ${sha}`,
+  };
   change(values);
   const client = githubClient({
     repository,
@@ -99,7 +106,7 @@ function scenario(change = () => {}) {
             {
               ...job,
               id: 31,
-              name: `Deploy after CI / Publish all at ${sha}`,
+              name: values.publicationName,
               conclusion: 'failure',
             },
           ],
@@ -182,4 +189,13 @@ test('provenance diagnostics distinguish no records from rejected records withou
       provenanceReason: records.length ? 'NO_ACCEPTED_RECORD' : 'NO_RECORDS',
     });
   }
+});
+
+test('renamed publication keeps historical artifact provenance verifiable', async () => {
+  const f = scenario((values) => {
+    values.job.name = 'Validar código e testes';
+    values.publicationName = `Publicar após validação / Publicar all no commit ${sha}`;
+  });
+  const proof = await f.client.adoptionEvidence('billing', f.entry, manifest);
+  assert.ok(proof);
 });

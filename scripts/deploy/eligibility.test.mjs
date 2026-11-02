@@ -318,3 +318,26 @@ test('runner execution is extracted only from GitHub identity fields', () => {
     },
   );
 });
+
+test('renamed verify job preserves eligibility but duplicate old/new names are rejected', async () => {
+  const renamed = job({ name: 'Validar código e testes' });
+  assert.equal(
+    (await scenario({ jobs: { 1: [renamed] } }).client.eligible(sha))
+      .verifyJobId,
+    41,
+  );
+  await assert.rejects(
+    scenario({ jobs: { 1: [job(), { ...renamed, id: 42 }] } }).client.eligible(
+      sha,
+    ),
+    { code: 'CI_NOT_APPROVED' },
+  );
+  await assert.rejects(
+    scenario({
+      jobs: {
+        1: [job({ name: 'Validar código e testes', conclusion: 'failure' })],
+      },
+    }).client.eligible(sha),
+    { code: 'CI_NOT_APPROVED' },
+  );
+});

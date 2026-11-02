@@ -1,4 +1,4 @@
-name: CI
+name: Validar e publicar aplicação
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   verify:
-    name: verify
+    name: Validar código e testes
     permissions:
       contents: read
       actions: read
@@ -20,17 +20,20 @@ jobs:
     outputs:
       deployRequired: ${{ steps.changes.outputs.deployRequired }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Obter código do commit
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - name: Check formatting of changed files
+      - name: Instalar dependências
+        run: npm ci
+      - name: Verificar formatação e alterações
         id: changes
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -40,12 +43,12 @@ jobs:
           fi
           node scripts/check-format-changes.mjs "$BASE_SHA" HEAD
           node scripts/deploy/changed-files.mjs "$BASE_SHA" HEAD
-      - name: Verify code, contracts, architecture and local migrations
+      - name: Validar código, contratos e migrations locais
         run: npm run check:release
-      - name: Reject generated drift
+      - name: Verificar alterações geradas
         run: git diff --exit-code
   publish:
-    name: Deploy after CI
+    name: Publicar após validação
     needs: verify
     if: github.event_name == 'push' && github.ref == 'refs/heads/feature/microsservices' && needs.verify.result == 'success' && needs.verify.outputs.deployRequired == 'true'
     permissions:

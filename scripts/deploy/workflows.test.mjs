@@ -7,6 +7,8 @@ const workflow = (name) =>
   yaml.load(readFileSync(`.github/workflows/${name}.yml`, 'utf8'));
 test('quality gate covers both branches without credentials and chains only authorized pushes', () => {
   const ci = workflow('ci');
+  assert.equal(ci.name, 'Validar e publicar aplicação');
+  assert.equal(ci.jobs.publish.name, 'Publicar após validação');
   assert.deepEqual(ci.on.push.branches, ['main', 'feature/microsservices']);
   assert.deepEqual(ci.on.pull_request.branches, [
     'main',
@@ -14,7 +16,7 @@ test('quality gate covers both branches without credentials and chains only auth
   ]);
   assert.ok(!JSON.stringify(ci.jobs.verify).includes('secrets.'));
   assert.ok(!JSON.stringify(ci.jobs.verify).includes('environment'));
-  assert.equal(ci.jobs.verify.name, 'verify');
+  assert.equal(ci.jobs.verify.name, 'Validar código e testes');
   assert.deepEqual(ci.jobs.verify.permissions, {
     contents: 'read',
     actions: 'read',
@@ -59,6 +61,7 @@ test('quality gate covers both branches without credentials and chains only auth
 });
 test('release supports call and dispatch with a protected publication and read-only preparation', () => {
   const release = workflow('deploy-workers');
+  assert.equal(release.name, 'Publicar Workers');
   assert.deepEqual(Object.keys(release.on), [
     'workflow_call',
     'workflow_dispatch',
@@ -95,10 +98,12 @@ test('release supports call and dispatch with a protected publication and read-o
   );
   const commands = steps.map((s) => s.run ?? '').join('\n');
   const availability = steps.findIndex(
-    (step) => step.name === 'Validate Cloudflare credentials availability',
+    (step) =>
+      step.name === 'Verificar disponibilidade das credenciais Cloudflare',
   );
   const publication = steps.findIndex(
-    (step) => step.name === 'Validate provenance, publish and verify Workers',
+    (step) =>
+      step.name === 'Validar proveniência, publicar e verificar Workers',
   );
   assert.ok(availability >= 0 && availability < publication);
   assert.deepEqual(steps[availability].env, {
@@ -227,5 +232,13 @@ test('controlled first publication is an explicit protected workflow with immuta
     !readFileSync('scripts/deploy/preflight.mjs', 'utf8').includes(
       'firstPublication',
     ),
+  );
+});
+
+test('migration and initial-publication workflows display distinct Portuguese names', () => {
+  assert.equal(workflow('migrations-d1').name, 'Gerenciar migrations D1');
+  assert.equal(
+    workflow('infrastructure-first-publication').name,
+    'Primeira publicação — excepcional',
   );
 });

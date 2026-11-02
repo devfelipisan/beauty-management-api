@@ -1,4 +1,4 @@
-name: Controlled first publication
+name: Primeira publicação — excepcional
 
 on:
   workflow_dispatch:
@@ -18,48 +18,54 @@ concurrency:
 
 jobs:
   validate:
+    name: Validar requisitos e testes
     runs-on: ubuntu-latest
     steps:
-      - name: Validate immutable candidate format
+      - name: Validar formato do commit candidato
         env:
           TARGET_SHA: ${{ inputs.commit_sha }}
         run: '[[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]'
-      - uses: actions/checkout@v4
+      - name: Obter código do commit
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.commit_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - name: Validate candidate including physical RPC tests and dry-runs
+      - name: Instalar dependências
+        run: npm ci
+      - name: Validar candidato, contratos RPC e dry-runs
         run: |
           npm run check
           git diff --exit-code
-      - name: Keep trusted orchestration separate
+      - name: Preparar orquestração confiável
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           path: .release-control
           fetch-depth: 0
           persist-credentials: false
-      - run: npm ci
+      - name: Instalar dependências
+        run: npm ci
         working-directory: .release-control
-      - name: Test trusted orchestration in its own checkout
+      - name: Testar orquestração confiável separadamente
         working-directory: .release-control
         run: |
           node scripts/test-deployment.mjs
           git diff --exit-code
-      - name: Validate candidate manifest with trusted orchestration
+      - name: Validar manifesto do candidato
         run: node .release-control/scripts/deploy/manifest-check.mjs
-      - name: Validate reviewed first publication and CI
+      - name: Validar primeira publicação revisada e CI
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TARGET_SHA: ${{ inputs.commit_sha }}
         run: node .release-control/scripts/infra/first-publication.mjs --sha "$TARGET_SHA" --check
   publish:
+    name: Publicar primeiras versões
     needs: validate
     runs-on: ubuntu-latest
     environment: production
@@ -68,33 +74,37 @@ jobs:
       actions: read
       deployments: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Obter código do commit
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.commit_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Keep trusted orchestration separate
+      - name: Preparar orquestração confiável
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           path: .release-control
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - run: npm ci
+      - name: Instalar dependências
+        run: npm ci
+      - name: Instalar dependências
+        run: npm ci
         working-directory: .release-control
-      - name: Publish reviewed first managed versions
+      - name: Publicar primeiras versões gerenciadas revisadas
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           TARGET_SHA: ${{ inputs.commit_sha }}
         run: node .release-control/scripts/infra/first-publication.mjs --sha "$TARGET_SHA"
-      - name: Preserve recovery snapshot and partial results
+      - name: Salvar snapshot de recuperação e resultados parciais
         if: always()
         uses: actions/upload-artifact@v4
         with:
