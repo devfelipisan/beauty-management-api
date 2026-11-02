@@ -1,31 +1,28 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, relative } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, execFileSync } from 'node:child_process';
+import { wranglerDeployArgs } from './deploy/wrangler-command.mjs';
+import { releaseOrder } from './deploy/config-contract.mjs';
 
 const configHome = await mkdtemp(join(tmpdir(), 'beauty-wrangler-'));
 const executable = process.execPath;
-const wrangler = join(
-  process.cwd(),
-  'node_modules',
-  'wrangler',
-  'bin',
-  'wrangler.js',
-);
-const configs = [
-  'apps/operations-worker/wrangler.jsonc',
-  'apps/clinical-worker/wrangler.jsonc',
-  'apps/billing-worker/wrangler.jsonc',
-];
+const commitSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+  encoding: 'utf8',
+}).trim();
 
 try {
-  for (const config of configs) {
+  for (const worker of releaseOrder) {
     const result = spawnSync(
       executable,
-      [wrangler, 'deploy', '--dry-run', '--env', '', '-c', config],
+      wranglerDeployArgs(worker, commitSha, { dryRun: true }),
       {
         stdio: 'inherit',
-        env: { ...process.env, XDG_CONFIG_HOME: configHome },
+        env: {
+          ...process.env,
+          XDG_CONFIG_HOME: configHome,
+          WRANGLER_SEND_METRICS: 'false',
+        },
       },
     );
     if (result.status !== 0) process.exit(result.status ?? 1);

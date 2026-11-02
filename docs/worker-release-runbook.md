@@ -17,26 +17,16 @@ falha nunca é usada como prova de publicação, mesmo que contenha um UUID vál
 
 ## Politica atual do deploy completo
 
-Por instrução do solicitante, o CI com request worker=all publica Billing →
-Clinical → Operations após verify, testes/build e validação local do manifesto e
-dos contratos candidatos. Não exige proveniência das versões anteriores nem faz
-consultas próprias a Workers settings/deployments, D1, R2, capacidade ou exposição
-antes/depois da publicação. O fluxo completo agora realiza zero consultas explícitas
-de infraestrutura pelo orquestrador; as operações nativas de publicação pertencem
-ao Wrangler/Cloudflare e não são contabilizadas como inspeções próprias.
+Após a primeira publicação bem-sucedida informada pelo solicitante, o fluxo normal
+volta a exigir proveniência anterior, compatibilidade dos contratos e esquema D1,
+além dos pós-checks de versão, bindings, agendamentos e exposição por Worker.
+O relatório usa verificationPolicy=provenance-and-postcheck e verification=passed
+somente depois desses checks. Não há fallback automático de NO_RECORDS.
 
-O resultado exige sucesso do Wrangler e um version ID válido, registrando
-verification=wrangler_confirmed e infrastructureVerification=not_performed.
-Os registros GitHub associam SHA, CI, manifesto e versão publicada e indicam
-verificationMethod=wrangler. Isso não comprova readiness, compatibilidade com o código
-antigo durante a troca nem comportamento funcional em produção. Não há alteração
-implícita de migrations ou aprovação fictícia de infraestrutura.
-
-Não é necessário usar a publicação inicial extraordinária para contornar NO_RECORDS
-no deploy completo normal. Deploys individuais e os workflows administrativos
-explícitos conservam suas próprias verificações; não são acionados por worker=all.
-Esta política substitui as exigências anteriores de primeira adoção para o CI de
-publicação completa. A aprovação efetiva de production e o verify continuam exigidos.
+A validação local/CI usa npm run check:release. Alterações somente em documentação,
+testes e ferramentas de release não publicam automaticamente. O fluxo protegido,
+os limites do filtro e a matriz de testes estão em
+[Validacao e deploy seguro](secure-deployment.md).
 
 ## Escopo atual das verificacoes R2 no deploy
 
@@ -49,8 +39,8 @@ separadamente e não deve ser disparada como parte desta publicação sem autori
 Os bindings declarados da aplicação são preservados, assim como validação de
 Workers, versões, proveniência, configurações, D1/migrations e pós-checks. A mudança
 retira consultas explícitas do orquestrador; não altera o uso do bucket pela aplicação.
-O release completo normal agora executa zero consultas Cloudflare explícitas de
-infraestrutura no teste simulado. Os testes de regressão rejeitam chamadas R2 ou media_capacity
+O release completo seguro executa 19 consultas Cloudflare explícitas no teste
+simulado, incluindo um SELECT no D1, sem chamadas R2. Os testes de regressão rejeitam chamadas R2 ou media_capacity
 durante a primeira publicação.
 
 ## Diagnóstico local somente leitura (WSL/Bash)

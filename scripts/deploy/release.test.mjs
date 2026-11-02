@@ -36,7 +36,7 @@ test('active version rejects malformed UUIDs and split traffic', () => {
     });
   }
 });
-test('complete release validates code locally and records Wrangler-confirmed publications without infrastructure queries', async () => {
+test('complete release validates provenance once, postchecks every Worker and never queries R2', async () => {
   const f = fixture(),
     order = [],
     records = [];
@@ -63,12 +63,10 @@ test('complete release validates code locally and records Wrangler-confirmed pub
   assert.equal(checks, 1);
   assert.deepEqual(order, ['billing', 'clinical', 'operations']);
   assert.equal(records.length, 3);
-  assert.equal(f.client.metrics.calls, 0);
-  assert.equal(f.calls.filter((c) => c.body).length, 0);
-  assert.ok(
-    records.every((record) => record.verificationMethod === 'wrangler'),
-  );
-  assert.equal(result.infrastructureVerification, 'not_performed');
+  assert.equal(f.client.metrics.calls, 19);
+  assert.equal(f.calls.filter((c) => c.body).length, 1);
+  assert.ok(records.every((record) => record.verificationMethod === undefined));
+  assert.equal(result.verificationPolicy, 'provenance-and-postcheck');
   assert.ok(
     f.calls.every(
       (c) =>
@@ -79,7 +77,7 @@ test('complete release validates code locally and records Wrangler-confirmed pub
     ),
   );
 });
-test('complete release does not inspect remote service selectors', async () => {
+test('complete release accepts normalized production service selectors', async () => {
   const f = fixture((path) => {
     if (!path.endsWith('/settings')) return;
     const name = path.match(/beauty-(operations|billing|clinical)-worker/)[1];
@@ -104,7 +102,7 @@ test('complete release does not inspect remote service selectors', async () => {
   });
   assert.equal(result.status, 'success');
   assert.deepEqual(order, ['billing', 'clinical', 'operations']);
-  assert.equal(f.client.metrics.calls, 0);
+  assert.equal(f.client.metrics.calls, 19);
 });
 test('failed second publication retains first proof and stops Operations', async () => {
   const f = fixture(),
@@ -125,7 +123,7 @@ test('failed second publication retains first proof and stops Operations', async
   });
   assert.equal(result.status, 'failed');
   assert.deepEqual(order, ['billing', 'clinical']);
-  assert.equal(result.workers[0].verification, 'wrangler_confirmed');
+  assert.equal(result.workers[0].verification, 'passed');
   assert.equal(result.workers[0].githubDeploymentId, 42);
   assert.equal(result.failure.code, 'WRANGLER_FAILED');
   assert.ok(!JSON.stringify(snapshots).includes('private token'));
@@ -293,32 +291,25 @@ test('safe diagnostics exclude unknown upstream data and unapproved fields', () 
     'operation',
   ]);
 });
-test('all Workers publish with no previous provenance and no infrastructure API calls', async () => {
+test('missing previous provenance blocks all Workers before any publication', async () => {
   const f = fixture();
-  const order = [];
-  f.client.request = async () => assert.fail('must not query infrastructure');
   f.github.provenanceByVersion = async () =>
-    assert.fail('must not query prior provenance');
+    fail('PROVENANCE_UNAVAILABLE', {
+      phase: 'provenance',
+      operation: 'github.deployment',
+      worker: 'billing',
+    });
   const result = await release({
     ...f,
     context,
     configurations,
     manifest,
-    publish: (worker) => {
-      order.push(worker);
-      return published();
-    },
-    postcheckImpl: async () =>
-      assert.fail('must not inspect remote infrastructure'),
+    publish: () =>
+      assert.fail('must not publish without trusted previous versions'),
   });
-  assert.equal(result.status, 'success');
-  assert.deepEqual(order, ['billing', 'clinical', 'operations']);
-  assert.ok(
-    result.workers.every(
-      (worker) => worker.verification === 'wrangler_confirmed',
-    ),
-  );
-  assert.equal(result.infrastructureVerification, 'not_performed');
+  assert.equal(result.status, 'failed');
+  assert.equal(result.failure.code, 'PROVENANCE_UNAVAILABLE');
+  assert.equal(result.workers.length, 0);
 });
 test('full publication retains actual versions and stops if GitHub registration fails', async () => {
   const f = fixture();
@@ -339,7 +330,7 @@ test('full publication retains actual versions and stops if GitHub registration 
   assert.deepEqual(order, ['billing']);
   assert.equal(result.status, 'published_unverified');
   assert.equal(result.workers[0].version, version);
-  assert.equal(result.cloudflare.calls, 0);
+  assert.equal(result.cloudflare.calls, 11);
 });
 test('native publication failures preserve sanitized cause and exit code in the release report', async () => {
   const f = fixture();
@@ -359,5 +350,72 @@ test('native publication failures preserve sanitized cause and exit code in the 
   assert.equal(result.failure.upstreamCode, 10021);
   assert.equal(result.workers.length, 1);
   assert.ok(!JSON.stringify(result).includes('PRIVATE_VALUE'));
-  assert.equal(result.cloudflare.calls, 0);
+  assert.equal(result.cloudflare.calls, 7);
+});
+test('schema not ready and incompatible active contracts prevent every Worker upload', async () => {
+  for (const mode of ['schema', 'contracts']) {
+    const f = fixture((path) =>
+      mode === 'schema' && path.endsWith('/query')
+        ? response([{ success: true, results: [] }])
+        : undefined,
+    );
+    if (mode === 'contracts') {
+      const lookup = f.github.provenanceByVersion;
+      f.github.provenanceByVersion = async (name) => {
+        const proof = structuredClone(await lookup(name));
+        if (name === 'billing')
+          proof.workerManifest.provided.revision = 'f'.repeat(64);
+        return proof;
+      };
+    }
+    const result = await release({
+      ...f,
+      context,
+      configurations,
+      manifest,
+      publish: () => assert.fail('must stop before upload'),
+    });
+    assert.equal(result.status, 'failed');
+    assert.equal(
+      result.failure.code,
+      mode === 'schema' ? 'SCHEMA_NOT_READY' : 'CONTRACT_INCOMPATIBLE',
+    );
+    assert.equal(result.workers.length, 0);
+  }
+});
+test('full release stops after a stale published version without touching the next Worker or R2', async () => {
+  let billingReads = 0;
+  const f = fixture((path) => {
+    if (
+      path.includes('beauty-billing-worker/deployments') &&
+      ++billingReads > 1
+    )
+      return response({
+        deployments: [
+          {
+            versions: [
+              {
+                version_id: '11111111-1111-1111-1111-111111111111',
+                percentage: 100,
+              },
+            ],
+          },
+        ],
+      });
+  });
+  const order = [];
+  const result = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    publish: (name) => {
+      order.push(name);
+      return published();
+    },
+  });
+  assert.equal(result.status, 'published_unverified');
+  assert.equal(result.failure.code, 'PUBLISHED_VERSION_MISMATCH');
+  assert.deepEqual(order, ['billing']);
+  assert.ok(f.calls.every((call) => !call.path.includes('/r2/')));
 });
