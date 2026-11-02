@@ -4,8 +4,10 @@
 
 WRANGLER_FAILED inclui wranglerReason (categoria fixa), exitCode e upstreamCode
 numérico quando disponíveis. A mesma informação sanitizada aparece como anotação
-de erro do GitHub Actions. Nenhuma saída bruta, token, URL assinada ou caminho do
-processo é exposto. Os campos distinguem secrets obrigatórios ausentes, erro de
+de erro do GitHub Actions. Em falha, um trecho do erro nativo também é exibido,
+com tokens conhecidos do ambiente, chaves, URLs, IDs e caminhos locais mascarados
+antes do recorte. Ele é limitado a 12 linhas e 1600 caracteres e não é prova de
+publicação. Os campos distinguem secrets obrigatórios ausentes, erro de
 autorização, build, argumentos CLI, falha de processo e versão não confirmada.
 Uma categoria não substitui a mensagem original e um código de API não comprova
 sozinho a causa. Os testes e dry-runs não comprovam autorização de publicação.

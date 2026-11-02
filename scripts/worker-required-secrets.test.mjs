@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import {
   deploymentOutcome,
   wranglerFailure,
+  wranglerErrorExcerpt,
 } from './worker-deployment-output.mjs';
 import { DeploymentValidationError, diagnostic } from './deploy/errors.mjs';
 import { requireRemoteSecrets } from './worker-required-secrets.mjs';
@@ -154,4 +155,46 @@ test('unapproved diagnostic values cannot expose native error strings', () => {
     upstreamCode: 10021,
   });
   assert.equal(diagnostic(unrelated).wranglerReason, undefined);
+});
+test('native error excerpt preserves the error while redacting credentials, URLs and resource IDs', () => {
+  const secret = 'private token/value';
+  const error = `[ERROR] Worker upload rejected.\nAuthorization: Bearer hidden-value\nCLOUDFLARE_API_TOKEN="${secret}"\n${encodeURIComponent(secret)}\nhttps://storage.example.test/?token=hidden\n12345678-1234-1234-1234-123456789abc\n${'a'.repeat(32)}\n/home/runner/private/file.js`;
+  const output = wranglerErrorExcerpt(
+    { status: 1, stderr: error },
+    { CLOUDFLARE_API_TOKEN: secret },
+  );
+  assert.ok(output.includes('Worker upload rejected'));
+  for (const value of [
+    secret,
+    encodeURIComponent(secret),
+    'hidden-value',
+    'storage.example.test',
+    'token=hidden',
+    '/home/runner',
+    version,
+    'a'.repeat(32),
+  ])
+    assert.ok(!output.includes(value));
+  assert.ok(output.includes('[REDACTED]'));
+});
+test('native excerpt redacts multiline credentials before truncation and never proves publication', () => {
+  const secret = Array.from(
+    { length: 20 },
+    (_, i) => `sensitive-part-${i}`,
+  ).join('\n');
+  const output = wranglerErrorExcerpt(
+    { status: 1, stderr: `[ERROR] Failure\n${secret}\n${'x'.repeat(3000)}` },
+    { PRIVATE_KEY: secret },
+  );
+  assert.ok(!output.includes('sensitive-part'));
+  assert.ok(output.length <= 1600);
+  assert.equal(
+    deploymentOutcome({ status: 1, stdout: `Current Version ID: ${version}` })
+      .status,
+    'failed',
+  );
+  assert.equal(
+    wranglerErrorExcerpt({ status: 0, stdout: 'private-success-value' }, {}),
+    'Wrangler exited successfully without a recognized version ID.',
+  );
 });

@@ -22,6 +22,7 @@ import { diagnostic, fail } from './errors.mjs';
 import {
   deploymentOutcome,
   wranglerFailure,
+  wranglerErrorExcerpt,
 } from '../worker-deployment-output.mjs';
 
 export async function release({
@@ -206,8 +207,8 @@ export async function releaseMain(args = process.argv.slice(2)) {
       apiToken: process.env.CLOUDFLARE_API_TOKEN,
       context,
     });
-    const publish = (worker, sha) =>
-      spawnSync(
+    const publish = (worker, sha) => {
+      const result = spawnSync(
         process.execPath,
         [
           resolve('node_modules/wrangler/bin/wrangler.js'),
@@ -225,6 +226,18 @@ export async function releaseMain(args = process.argv.slice(2)) {
         ],
         { encoding: 'utf8' },
       );
+      if (deploymentOutcome(result).status !== 'published') {
+        const excerpt = wranglerErrorExcerpt(result);
+        console.error(
+          `Wrangler diagnostic (${worker}): ${JSON.stringify(excerpt)}`,
+        );
+        if (process.env.GITHUB_ACTIONS === 'true')
+          console.error(
+            `::error title=Wrangler diagnostic (${worker})::${excerpt.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`,
+          );
+      }
+      return result;
+    };
     const report = await release({
       context,
       configurations,
