@@ -38,6 +38,9 @@ test('limits R2 and Cron to their owning Workers and requires an immutable produ
       ]),
     (value) => (value.billing.triggers = { crons: ['*/1 * * * *'] }),
     (value) => (value.operations.triggers = { crons: ['*/1 * * * *'] }),
+    (value) => (value.billing.observability.logs.head_sampling_rate = 1),
+    (value) => (value.clinical.observability.traces.enabled = true),
+    (value) => delete value.operations.observability.logs.persist,
     (value) => (value.operations.keep_vars = false),
     (value) => (value.clinical.define.__BEAUTY_LOCAL__ = 'true'),
   ]) {

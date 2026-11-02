@@ -279,3 +279,20 @@ exigindo tratamento controlado; não há rollback automático de código ou dado
 O comando manual de deploy permanece para exceções, sem SHA obrigatório.
 Documentação, testes e auditorias sem mudanças no release continuam evitando
 publicações desnecessárias. Migrations mantêm seu fluxo e aprovação específicos.
+
+### Amostragem de logs dos Workers
+
+Os três arquivos `apps/*-worker/wrangler.jsonc` mantêm a configuração de
+observabilidade solicitada: logs habilitados, persistidos e com amostragem de
+10% (`observability.logs.head_sampling_rate: 0.1`), incluindo logs de invocação.
+A taxa geral permanece em 1, traces ficam desativados e Issues habilitado.
+`redact_query_string: false` mantém as query strings nos registros capturados.
+A amostragem é probabilística por invocação; a proporção observada pode variar
+e não reduz a quantidade de execuções do Worker.
+
+O contrato `requiredObservability` valida essa política nos três Workers durante
+a validação local/CI e no preflight de produção. Cada publicação aplica os
+arquivos Wrangler versionados; configurações manuais no Dashboard não são a
+fonte de verdade. Para alterar a política, atualizar o contrato e os três arquivos
+no mesmo PR. O fluxo automático reconhece mudanças nesses arquivos como motivo
+para publicação. Nenhuma consulta R2 adicional é necessária.
