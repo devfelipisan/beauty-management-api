@@ -37,7 +37,7 @@ test('limits R2 and Cron to their owning Workers and requires an immutable produ
         { binding: 'SESSION_MEDIA', bucket_name: 'beauty-r2' },
       ]),
     (value) => (value.billing.triggers = { crons: ['*/1 * * * *'] }),
-    (value) => (value.operations.triggers.crons = []),
+    (value) => (value.operations.triggers.crons = ['*/1 * * * *']),
     (value) => (value.operations.keep_vars = false),
     (value) => (value.clinical.define.__BEAUTY_LOCAL__ = 'true'),
   ]) {

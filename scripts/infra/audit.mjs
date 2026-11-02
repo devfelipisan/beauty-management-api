@@ -44,6 +44,13 @@ export async function auditInfrastructure({ client, github, context = {} }) {
         operation: 'github.manifest',
         worker: name,
       });
+    // Cron overrides are attested by the successful publication, while the
+    // manifest hash still verifies the immutable checked-in configuration.
+    if (provenance.scheduledCrons !== undefined)
+      config.triggers = {
+        ...config.triggers,
+        crons: provenance.scheduledCrons,
+      };
     configurations[name] = config;
     if (
       !manifest.productionText ||

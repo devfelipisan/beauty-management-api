@@ -2,9 +2,11 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, relative } from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
+import { cronPolicy } from './deploy/cron-policy.mjs';
 import { wranglerDeployArgs } from './deploy/wrangler-command.mjs';
 import { releaseOrder } from './deploy/config-contract.mjs';
 
+const cron = cronPolicy(process.env);
 const configHome = await mkdtemp(join(tmpdir(), 'beauty-wrangler-'));
 const executable = process.execPath;
 const commitSha = execFileSync('git', ['rev-parse', 'HEAD'], {
@@ -15,7 +17,7 @@ try {
   for (const worker of releaseOrder) {
     const result = spawnSync(
       executable,
-      wranglerDeployArgs(worker, commitSha, { dryRun: true }),
+      wranglerDeployArgs(worker, commitSha, { dryRun: true, cron }),
       {
         stdio: 'inherit',
         env: {

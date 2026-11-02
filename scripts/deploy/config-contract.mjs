@@ -10,7 +10,7 @@ export const workerSpecifications = Object.freeze({
       BILLING_SERVICE: 'beauty-billing-worker',
     },
     r2: [{ binding: 'PROFILE_MEDIA', bucket_name: 'beauty-r2' }],
-    crons: ['*/1 * * * *'],
+    crons: [],
     minMigration: '0030',
   },
   billing: {

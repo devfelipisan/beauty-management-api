@@ -57,7 +57,7 @@
         "AUTH_JWKS_URL",
         "AUTH_ALGORITHM"
       ],
-      "configurationHash": "c92264586d6364e7f1f01c4b9832d021f35e1d2f32484e864b58c5aabdc9b287",
+      "configurationHash": "a06b143634171178b1101dbe8998236fd29dcacac5e53b05dab16ab94bae50a0",
       "transitions": []
     },
     "billing": {
