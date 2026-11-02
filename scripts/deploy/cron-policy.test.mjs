@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cronPolicy, scheduledConfiguration } from './cron-policy.mjs';
+import { cronPolicy, workerCronPolicy } from './cron-policy.mjs';
 import { wranglerDeployArgs } from './wrangler-command.mjs';
 const sha = 'a'.repeat(40);
 
@@ -22,24 +22,16 @@ test('enabled cron defaults to midnight Sao Paulo expressed in UTC', () => {
       crons: ['0 3 * * *'],
     });
 });
-test('schedule override only affects Operations and dry-run uses the exact deployment schedule', () => {
-  for (const expression of [
-    '*/30 * * * *',
-    '0 * * * *',
-    '0 3 * * *',
-    '0,30 1-5/2 * 1-12 1-7',
-  ]) {
-    const policy = cronPolicy({ CRONJOB_ENABLED: 'true', CRONJOB: expression });
-    for (const worker of ['operations', 'billing', 'clinical']) {
-      const args = wranglerDeployArgs(worker, sha, { cron: policy });
-      assert.deepEqual(
-        wranglerDeployArgs(worker, sha, { cron: policy, dryRun: true }),
-        [...args, '--dry-run'],
-      );
-      assert.equal(args.includes('--triggers'), worker === 'operations');
-      if (worker === 'operations')
-        assert.equal(args[args.indexOf('--triggers') + 1], expression);
-    }
+test('code deployment never supplies triggers even when a cron override is requested', () => {
+  for (const worker of ['operations', 'billing', 'clinical']) {
+    const args = wranglerDeployArgs(worker, sha, {
+      cron: cronPolicy({ CRONJOB_ENABLED: 'true' }),
+    });
+    assert.ok(!args.includes('--triggers'));
+    assert.deepEqual(wranglerDeployArgs(worker, sha, { dryRun: true }), [
+      ...args,
+      '--dry-run',
+    ]);
   }
 });
 test('invalid activation and schedules fail closed before producing publish arguments', () => {
@@ -64,13 +56,35 @@ test('invalid activation and schedules fail closed before producing publish argu
       code: 'INVALID_VERSIONED_CONFIGURATION',
     });
 });
-test('postcheck configuration uses the effective schedule without mutating versioned config', () => {
-  const config = { triggers: { crons: [] } };
-  const policy = cronPolicy({ CRONJOB_ENABLED: 'true' });
+test('Worker settings are the source of optional cron controls with safe type and value checks', () => {
+  assert.deepEqual(workerCronPolicy({ bindings: [] }), {
+    enabled: false,
+    crons: [],
+  });
   assert.deepEqual(
-    scheduledConfiguration('operations', config, policy).triggers.crons,
+    workerCronPolicy({
+      bindings: [{ name: 'CRONJOB_ENABLED', type: 'plain_text', text: 'true' }],
+    }).crons,
     ['0 3 * * *'],
   );
-  assert.deepEqual(config.triggers.crons, []);
-  assert.equal(scheduledConfiguration('billing', config, policy), config);
+  for (const binding of [
+    { name: 'CRONJOB_ENABLED', type: 'secret_text' },
+    { name: 'CRONJOB_ENABLED', type: 'plain_text', text: 'yes' },
+    { name: 'CRONJOB_ENABLED', type: 'plain_text' },
+  ])
+    assert.throws(() => workerCronPolicy({ bindings: [binding] }));
+  assert.throws(
+    () =>
+      workerCronPolicy({
+        bindings: [
+          { name: 'CRONJOB_ENABLED', type: 'plain_text', text: 'true' },
+          {
+            name: 'CRONJOB',
+            type: 'plain_text',
+            text: 'invalid-private-value',
+          },
+        ],
+      }),
+    { code: 'BINDING_VALUE_INVALID', binding: 'CRONJOB' },
+  );
 });

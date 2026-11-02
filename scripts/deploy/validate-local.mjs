@@ -61,6 +61,10 @@ export function validateWorkerConfigurations(
       )
     )
       throw new Error(`Invalid R2 configuration: ${name}`);
+    if (name === 'operations' && Object.hasOwn(config, 'triggers'))
+      throw new Error(
+        'Operations schedules must be managed independently of deployment',
+      );
     const crons = config.triggers?.crons ?? [];
     if (
       crons.length !== specification.crons.length ||

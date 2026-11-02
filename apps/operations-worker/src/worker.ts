@@ -390,6 +390,8 @@ export default class OperationsWorker extends WorkerEntrypoint<
   { caller?: string }
 > {
   async scheduled(): Promise<void> {
+    // A stale trigger must not process the outbox when explicitly disabled.
+    if (this.env.CRONJOB_ENABLED?.trim().toLowerCase() !== 'true') return;
     workerSecurity(executionEnv(this.env));
     const configuration = dispatchConfiguration(executionEnv(this.env));
     const input = { ...configuration, workerId: crypto.randomUUID() };

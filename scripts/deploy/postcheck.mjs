@@ -3,6 +3,7 @@ import {
   validateSettings,
   workerPath,
 } from './worker-state.mjs';
+import { workerCronPolicy } from './cron-policy.mjs';
 import { fail } from './errors.mjs';
 export async function postcheck({
   client,
@@ -29,33 +30,47 @@ export async function postcheck({
       operation: 'worker.deployments',
       worker,
     });
-  await checkWorkerControls(
+  const controls = await checkWorkerControls(
     client,
     worker,
     configuration,
     context,
     'postcheck',
+    state.settings,
   );
   return {
     worker,
     versionId,
     deploymentId: state.deploymentId,
     verification: 'passed',
+    ...(worker === 'operations' ? { scheduledCrons: controls.crons } : {}),
   };
 }
-export async function checkWorkerControls(
+export async function checkWorkerSchedule(
   client,
   worker,
   configuration,
   context = {},
   phase = 'audit',
+  settings,
 ) {
   const schedules = await client.request(`${workerPath(worker)}/schedules`, {
     phase,
     operation: 'worker.schedules',
     worker,
   });
-  const expected = configuration.triggers?.crons ?? [];
+  const expected =
+    worker === 'operations'
+      ? workerCronPolicy(
+          settings ??
+            (await client.request(`${workerPath(worker)}/settings`, {
+              phase,
+              operation: 'worker.settings',
+              worker,
+            })),
+          { ...context, phase },
+        ).crons
+      : (configuration.triggers?.crons ?? []);
   if (
     !Array.isArray(schedules?.schedules) ||
     schedules.schedules.length !== expected.length ||
@@ -67,6 +82,25 @@ export async function checkWorkerControls(
       operation: 'worker.schedules',
       worker,
     });
+  return { crons: expected };
+}
+
+export async function checkWorkerControls(
+  client,
+  worker,
+  configuration,
+  context = {},
+  phase = 'audit',
+  settings,
+) {
+  const checked = await checkWorkerSchedule(
+    client,
+    worker,
+    configuration,
+    context,
+    phase,
+    settings,
+  );
   const exposure = await client.request(`${workerPath(worker)}/subdomain`, {
     phase,
     operation: 'worker.exposure',
@@ -79,4 +113,5 @@ export async function checkWorkerControls(
       operation: 'worker.exposure',
       worker,
     });
+  return checked;
 }

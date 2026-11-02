@@ -141,8 +141,17 @@ test('migration inspection does not mistake denied or malformed history for an e
   );
 });
 
-test('audit uses the attested cron override while preserving the versioned configuration hash', async () => {
+test('audit uses live Worker controls rather than pinning schedules to historical deployment metadata', async () => {
   const f = fixture((path, body) => {
+    if (path.includes('beauty-operations-worker/settings')) {
+      const state = settings('operations');
+      state.bindings.push({
+        name: 'CRONJOB_ENABLED',
+        type: 'plain_text',
+        text: 'true',
+      });
+      return response(state);
+    }
     if (path.includes('beauty-operations-worker/schedules'))
       return response({ schedules: [{ cron: '0 3 * * *' }] });
     if (body?.sql.includes('media_capacity'))
@@ -151,7 +160,7 @@ test('audit uses the attested cron override while preserving the versioned confi
   const provenance = f.github.provenanceByVersion;
   f.github.provenanceByVersion = async (name) => ({
     ...(await provenance(name)),
-    ...(name === 'operations' ? { scheduledCrons: ['0 3 * * *'] } : {}),
+    ...(name === 'operations' ? { scheduledCrons: ['*/30 * * * *'] } : {}),
   });
   f.github.file = async (path) => readFileSync(path, 'utf8');
   assert.equal((await auditInfrastructure({ ...f })).published.length, 3);

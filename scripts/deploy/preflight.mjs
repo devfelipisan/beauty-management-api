@@ -7,6 +7,7 @@ import {
   validateRuntimeText,
   workerPath,
 } from './worker-state.mjs';
+import { checkWorkerSchedule } from './postcheck.mjs';
 import { fail } from './errors.mjs';
 export async function preflight({
   client,
@@ -46,6 +47,15 @@ export async function preflight({
       });
     else
       validateRuntimeText(settings, name, { ...context, phase: 'preflight' });
+    if (name === 'operations' && workers.includes(name))
+      await checkWorkerSchedule(
+        client,
+        name,
+        configurations[name],
+        context,
+        'preflight',
+        settings,
+      );
     const state = await publishedWorker(client, name, { settings, context });
     const provenance = await github.provenanceByVersion(name, state.versionId);
     published[name] = {

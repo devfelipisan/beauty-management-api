@@ -101,7 +101,4 @@
       "bucket_name": "beauty-r2",
     },
   ],
-  "triggers": {
-    "crons": [],
-  },
 }

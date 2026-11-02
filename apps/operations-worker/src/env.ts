@@ -4,6 +4,8 @@ export interface OperationsEnv extends WorkerSecurityEnv {
   D1_DATABASE: D1Database;
   PROFILE_MEDIA?: R2Bucket;
   MAX_PROFILE_IMAGE_BYTES?: string;
+  CRONJOB_ENABLED?: string;
+  CRONJOB?: string;
   CLINICAL_SERVICE: unknown;
   BILLING_SERVICE: unknown;
 }
