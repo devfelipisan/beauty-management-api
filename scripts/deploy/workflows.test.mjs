@@ -237,3 +237,57 @@ test('publication no longer reads cron policy from GitHub Variables', () => {
   assert.equal(env.CRONJOB_ENABLED, undefined);
   assert.equal(env.CRONJOB, undefined);
 });
+
+test('manual releases default to the event SHA while CI calls remain immutable and required', () => {
+  const release = workflow('deploy-workers');
+  assert.equal(release.on.workflow_dispatch.inputs.commit_sha.required, false);
+  assert.equal(release.on.workflow_call.inputs.commit_sha.required, true);
+  const step = release.jobs.prepare.steps.find((step) => step.id === 'request');
+  assert.equal(step.env.REQUESTED_SHA, '${{ inputs.commit_sha }}');
+  assert.ok(step.run.includes('--sha "$REQUESTED_SHA"'));
+});
+
+test('protected release synchronizes cron before publishing and preserves a separate cron artifact', () => {
+  const release = workflow('deploy-workers');
+  const steps = release.jobs.deploy.steps;
+  assert.equal(release.jobs.deploy.environment, 'production');
+  assert.equal(release.jobs.deploy.concurrency.group, 'beauty-production');
+  const sync = steps.findIndex((step) => step.id === 'sync-cron');
+  const publish = steps.findIndex((step) =>
+    step.run?.includes('scripts/deploy-workers.mjs'),
+  );
+  const protection = steps.findIndex((step) =>
+    step.run?.includes('check-production-protection.mjs'),
+  );
+  assert.ok(protection < sync && sync < publish);
+  assert.equal(
+    steps[sync].run,
+    'node .release-control/scripts/infra/manage-cron.mjs --apply',
+  );
+  assert.equal(
+    steps[sync].if,
+    "needs.prepare.outputs.worker == 'all' || needs.prepare.outputs.worker == 'operations'",
+  );
+  assert.equal(
+    steps[sync].env.CLOUDFLARE_API_TOKEN,
+    '${{ secrets.CLOUDFLARE_API_TOKEN }}',
+  );
+  assert.equal(steps[sync]['continue-on-error'], undefined);
+  const artifacts = steps.filter(
+    (step) => step.uses === 'actions/upload-artifact@v4',
+  );
+  assert.ok(
+    artifacts.some((step) => step.with.path === '.cache/cron/result.json'),
+  );
+  assert.ok(
+    artifacts.some(
+      (step) => step.with.path === '.cache/deployment/result.json',
+    ),
+  );
+  assert.ok(
+    artifacts.every(
+      (step) =>
+        typeof step.with.path === 'string' && !step.with.path.includes('\n'),
+    ),
+  );
+});

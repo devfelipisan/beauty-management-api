@@ -4,11 +4,20 @@ import { pathToFileURL } from 'node:url';
 import { githubClient } from './github-client.mjs';
 import { releaseBranch } from './config-contract.mjs';
 import { diagnostic, fail } from './errors.mjs';
+export function requestedReleaseSha(args, env = process.env) {
+  if (!args.length) return env.GITHUB_SHA;
+  if (args.length !== 2 || args[0] !== '--sha' || typeof args[1] !== 'string')
+    fail('INVALID_REQUEST', { phase: 'eligibility' });
+  // Use the immutable event SHA, never resolve the moving branch head later.
+  // Explicit invalid values are left for eligible() to reject, not replaced.
+  return args[1] || env.GITHUB_SHA;
+}
+
 export async function prepareMain(args = process.argv.slice(2)) {
   try {
     if (process.env.GITHUB_REF !== `refs/heads/${releaseBranch}`)
       fail('SHA_INELIGIBLE', { phase: 'eligibility' });
-    const sha = args[0] === '--sha' ? args[1] : undefined;
+    const sha = requestedReleaseSha(args);
     const github = githubClient({
       repository: process.env.GITHUB_REPOSITORY,
       token: process.env.GITHUB_TOKEN,

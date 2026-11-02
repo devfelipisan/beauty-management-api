@@ -12,8 +12,8 @@ on:
   workflow_dispatch:
     inputs:
       commit_sha:
-        description: Full approved commit SHA from feature/microsservices
-        required: true
+        description: Optional approved SHA; leave empty to use the commit selected by GitHub
+        required: false
         type: string
 
 permissions:
@@ -103,6 +103,13 @@ jobs:
             echo "::error::production variable CLOUDFLARE_ACCOUNT_ID unavailable"
             exit 1
           fi
+      - name: Sincronizar cron com as variáveis do Operations
+        id: sync-cron
+        if: needs.prepare.outputs.worker == 'all' || needs.prepare.outputs.worker == 'operations'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node .release-control/scripts/infra/manage-cron.mjs --apply
       - name: Validate provenance, publish and verify Workers
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -116,4 +123,11 @@ jobs:
         with:
           name: deployment-${{ needs.prepare.outputs.commitSha }}-${{ github.run_attempt }}
           path: .cache/deployment/result.json
+          if-no-files-found: ignore
+      - name: Salvar resultado da sincronização do cron
+        if: always() && (needs.prepare.outputs.worker == 'all' || needs.prepare.outputs.worker == 'operations')
+        uses: actions/upload-artifact@v4
+        with:
+          name: cron-${{ needs.prepare.outputs.commitSha }}-${{ github.run_attempt }}
+          path: .cache/cron/result.json
           if-no-files-found: ignore

@@ -40,8 +40,9 @@ conjunto; o filtro não escolhe destinos individualmente.
 
 O filtro usa o intervalo do push, não uma comparação com a produção. Uma mudança
 somente em testes pode corrigir um CI anteriormente reprovado sem disparar deploy;
-nesse caso, o operador pode usar o dispatch existente Deploy Beauty Workers com o
-SHA aprovado. Esse dispatch continua validando CI, ancestralidade, branch e request.
+nesse caso, o operador pode usar o dispatch existente Deploy Beauty Workers sem
+preencher SHA: o commit do evento é selecionado automaticamente. Esse dispatch
+continua validando CI, ancestralidade, branch e request.
 Ele não se destina a ignorar uma reprovação. Não é necessário alterar requestId.
 
 ## Dentro do Environment production
@@ -59,7 +60,7 @@ automático ou restauração de dados. Registros anteriores confirmados são pre
 O teste integral observa 20 consultas Cloudflare explícitas: seis leituras iniciais
 dos Workers, uma leitura do cron do Operations, um SELECT de migrations D1 e quatro
 pós-checks por destino. Não há
-listagem de secrets ou chamadas R2. Essas contagens não incluem operações internas
+listagem de secrets ou chamadas R2. Essas contagens não incluem a sincronização do cron nem operações internas
 do Wrangler, que pode consultar rotas/domínios quando o Worker foi editado no Dashboard.
 
 ## Evidencia e limites
@@ -205,3 +206,38 @@ O handler `scheduled()` retorna sem acessar D1 ou despachar eventos quando
 antigo; `cron:sync` deve removê-lo para reduzir execuções. O cron ainda coordena a
 outbox financeira, clínica e operacional; o processamento por evento e a
 reconciliação financeira independente continuam fora desta implementação.
+
+### Disparo manual sem preencher SHA
+
+O workflow `deploy-workers.yml` usa automaticamente o SHA imutável selecionado
+pelo GitHub no momento do disparo. O campo `commit_sha` é opcional no disparo
+manual e continua obrigatório na chamada interna do CI, que já o fornece
+automaticamente. Não é gerado um novo commit nem escolhido silenciosamente um
+commit antigo se o atual ainda não tiver CI aprovado.
+
+```bash
+gh workflow run deploy-workers.yml \
+  --repo devfelipisan/beauty-management-api \
+  --ref feature/microsservices
+```
+
+Um SHA explícito continua disponível para recuperação controlada e passa pelas
+mesmas validações. Sem SHA informado, o prepare usa `GITHUB_SHA`, nunca uma nova
+consulta ao HEAD mutável da branch. O Environment `production`, a aprovação do
+CI para esse SHA, a proveniência e os demais gates continuam obrigatórios.
+
+### Sincronização do cron antes da publicação
+
+`SCHEDULE_MISMATCH` significa que os Cron Triggers remotos diferem da política
+nas variáveis do Operations, não que o SHA foi digitado incorretamente.
+Após a aprovação de produção, o workflow sincroniza essa configuração antes de
+executar o deploy quando o destino é `all` ou `operations`. Reutiliza o comando
+`manage-cron.mjs --apply`: não altera variáveis, não publica código e só faz PUT
+no endpoint de schedules se houver divergência. Um erro nessa etapa interrompe
+a publicação. O preflight e o pós-check continuam verificando o resultado.
+Publicações individuais de Billing ou Clinical não sincronizam o cron.
+
+A sincronização pode ter sucesso e o deploy falhar depois por outro gate. Seu
+resultado fica em artefato próprio `cron-<sha>-<tentativa>`, separado do artefato
+de publicação para preservar o contrato das evidências históricas. O comando
+`npm run cron:sync` continua disponível para gerenciar o agendamento sem deploy.
