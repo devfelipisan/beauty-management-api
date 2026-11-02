@@ -107,3 +107,40 @@ Os testes locais `node scripts/test-deployment.mjs` reproduzem o HTTP 400 sem
 credenciais nem chamadas remotas e verificam que nenhuma publicação acontece.
 Eles não comprovam o estado do banco remoto; para isso é necessária uma consulta
 somente leitura no mesmo banco e com as mesmas credenciais do Environment.
+
+### Validação local antes de solicitar deploy (WSL)
+
+Na raiz do repositório, usando a versão Node de `.nvmrc`:
+
+```bash
+nvm install
+nvm use
+npm ci
+npm run deploy:validate
+```
+
+O comando reutiliza os mesmos gates de `check:release`, também utilizado pelo CI:
+formatação, lint, TypeScript/build, testes unitários, Workers/RPC com D1 local,
+E2E, dry-run dos três Workers, regressões do fluxo de publicação, configuração
+e manifesto. Interrompe na primeira falha e retorna código de saída diferente de zero.
+Não executa deploy, migrations remotas, consultas de proveniência GitHub nem
+consultas ao R2 remoto. Os testes locais de armazenamento usam os emuladores.
+Não é necessário exportar credenciais Cloudflare/GitHub para essa validação.
+
+O relatório fica em `.cache/deploy-validation/result.json`, com SHA do HEAD,
+resultado de cada etapa e status final. Reflete o conteúdo local executado,
+inclusive alterações ainda não commitadas; não é uma aprovação de produção
+nem substitui o CI do commit enviado. `remoteStateVerified: false` explicita
+que permissões, migrations aplicadas no D1 remoto, versões publicadas e
+proveniência anterior continuam sendo verificados pelo fluxo remoto existente.
+
+Para reproduzir apenas as regressões do mecanismo de release, sem executar
+novamente toda a suíte funcional:
+
+```bash
+node scripts/test-deployment.mjs
+```
+
+Esses testes incluem histórico de migrations ausente, esquema incompleto,
+proveniência indisponível e falhas de publicação/pós-check, usando respostas
+simuladas e sem gastar publicações Cloudflare.

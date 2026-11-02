@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as yaml from 'js-yaml';
+import { validationSteps } from './validate-local-release.mjs';
 const workflow = (name) =>
   yaml.load(readFileSync(`.github/workflows/${name}.yml`, 'utf8'));
 test('quality gate covers both branches without credentials and chains only authorized pushes', () => {
@@ -34,16 +35,22 @@ test('quality gate covers both branches without credentials and chains only auth
     '${{ secrets.CLOUDFLARE_API_TOKEN }}',
   );
   assert.ok(JSON.stringify(ci).includes('npm run check:release'));
-  const checks = JSON.parse(readFileSync('package.json', 'utf8')).scripts[
-    'check:release'
-  ];
-  for (const check of [
-    'npm run check',
-    'scripts/test-deployment.mjs',
-    'scripts/worker-deployment-config.mjs',
-    'scripts/deploy/manifest-check.mjs',
-  ])
-    assert.ok(checks.includes(check));
+  const scripts = JSON.parse(readFileSync('package.json', 'utf8')).scripts;
+  assert.equal(
+    scripts['check:release'],
+    'node scripts/deploy/validate-local-release.mjs',
+  );
+  assert.equal(scripts['deploy:validate'], 'npm run check:release');
+  assert.deepEqual(
+    validationSteps.map(([, args]) => args),
+    [
+      ['scripts/check-format-changes.mjs', '--local'],
+      ['npm', 'run', 'check'],
+      ['scripts/test-deployment.mjs'],
+      ['scripts/worker-deployment-config.mjs'],
+      ['scripts/deploy/manifest-check.mjs'],
+    ],
+  );
   assert.equal(
     ci.jobs.verify.outputs.deployRequired,
     '${{ steps.changes.outputs.deployRequired }}',

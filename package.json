@@ -10,7 +10,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "check:release": "node scripts/check-format-changes.mjs --local && npm run check && node scripts/test-deployment.mjs && node scripts/worker-deployment-config.mjs && node scripts/deploy/manifest-check.mjs",
+    "check:release": "node scripts/deploy/validate-local-release.mjs",
     "infra:sync:first-publication": "node scripts/infra/sync-first-publication-versions.mjs",
     "infra:diagnose:readonly": "node scripts/infra/local-provenance-check.mjs",
     "build": "tsc --build",
@@ -84,7 +84,8 @@
     "swagger:assets": "node scripts/generate-swagger-assets.mjs",
     "db:seed": "node scripts/seed-local.mjs",
     "db:seed:preview": "node scripts/seed-local.mjs --preview",
-    "test:seed": "vitest run --config ./vitest.config.workers.mjs test/workers/development-seed.spec.ts"
+    "test:seed": "vitest run --config ./vitest.config.workers.mjs test/workers/development-seed.spec.ts",
+    "deploy:validate": "npm run check:release"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "13.1.0",
