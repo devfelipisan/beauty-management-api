@@ -70,6 +70,34 @@ const serviceMismatchReasons = new Set([
   'PROPS_MISMATCH',
 ]);
 const serviceSelectors = new Set(['ENTRYPOINT', 'ENVIRONMENT', 'BOTH']);
+const wranglerReasons = new Set([
+  'UNKNOWN',
+  'OUTPUT_LIMIT',
+  'PROCESS_FAILED',
+  'MISSING_REQUIRED_SECRETS',
+  'AUTHORIZATION_FAILED',
+  'CLI_ARGUMENT_ERROR',
+  'BUILD_FAILED',
+  'CLOUDFLARE_API_ERROR',
+  'VERSION_ID_UNCONFIRMED',
+]);
+function wranglerFields(value) {
+  return {
+    ...(wranglerReasons.has(value.wranglerReason)
+      ? { wranglerReason: value.wranglerReason }
+      : {}),
+    ...(Number.isInteger(value.exitCode) &&
+    value.exitCode >= 0 &&
+    value.exitCode <= 255
+      ? { exitCode: value.exitCode }
+      : {}),
+    ...(Number.isInteger(value.upstreamCode) &&
+    value.upstreamCode > 0 &&
+    value.upstreamCode <= 999999
+      ? { upstreamCode: value.upstreamCode }
+      : {}),
+  };
+}
 export const requiredBindingsFailure =
   'Required production bindings unavailable; deployment blocked.';
 export class DeploymentValidationError extends Error {
@@ -111,6 +139,8 @@ export class DeploymentValidationError extends Error {
       this.requestId = context.requestId;
     if (/^[0-9a-f]{40}$/.test(context.commitSha ?? ''))
       this.commitSha = context.commitSha;
+    if (this.code === 'WRANGLER_FAILED' && this.operation === 'wrangler.deploy')
+      Object.assign(this, wranglerFields(context));
     if (
       this.code === 'PROVENANCE_UNAVAILABLE' &&
       ['NO_RECORDS', 'NO_ACCEPTED_RECORD'].includes(context.provenanceReason)
@@ -136,10 +166,17 @@ export function diagnostic(error, context = {}) {
       'reason',
       'selector',
       'provenanceReason',
+      'wranglerReason',
+      'exitCode',
+      'upstreamCode',
     ]
       .filter(
         (key) =>
           safe[key] !== undefined &&
+          (!['wranglerReason', 'exitCode', 'upstreamCode'].includes(key) ||
+            (safe.code === 'WRANGLER_FAILED' &&
+              safe.operation === 'wrangler.deploy' &&
+              wranglerFields(safe)[key] === safe[key])) &&
           (!['reason', 'selector'].includes(key) ||
             (safe.code === 'BINDING_MISMATCH' &&
               safe.operation === 'worker.settings' &&

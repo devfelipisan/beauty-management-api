@@ -341,3 +341,23 @@ test('full publication retains actual versions and stops if GitHub registration 
   assert.equal(result.workers[0].version, version);
   assert.equal(result.cloudflare.calls, 0);
 });
+test('native publication failures preserve sanitized cause and exit code in the release report', async () => {
+  const f = fixture();
+  const result = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    publish: () => ({
+      status: 1,
+      stderr: 'Cloudflare API failed [code: 10021] PRIVATE_VALUE',
+    }),
+  });
+  assert.equal(result.failure.code, 'WRANGLER_FAILED');
+  assert.equal(result.failure.wranglerReason, 'CLOUDFLARE_API_ERROR');
+  assert.equal(result.failure.exitCode, 1);
+  assert.equal(result.failure.upstreamCode, 10021);
+  assert.equal(result.workers.length, 1);
+  assert.ok(!JSON.stringify(result).includes('PRIVATE_VALUE'));
+  assert.equal(result.cloudflare.calls, 0);
+});

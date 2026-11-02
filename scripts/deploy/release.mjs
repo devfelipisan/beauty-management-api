@@ -19,7 +19,10 @@ import { readManifest, digest } from './manifest.mjs';
 import { preflight } from './preflight.mjs';
 import { postcheck } from './postcheck.mjs';
 import { diagnostic, fail } from './errors.mjs';
-import { deploymentOutcome } from '../worker-deployment-output.mjs';
+import {
+  deploymentOutcome,
+  wranglerFailure,
+} from '../worker-deployment-output.mjs';
 
 export async function release({
   context,
@@ -85,6 +88,7 @@ export async function release({
           phase: 'publish',
           operation: 'wrangler.deploy',
           worker,
+          ...wranglerFailure(result),
         });
       at = performance.now();
       try {
@@ -244,6 +248,10 @@ export async function releaseMain(args = process.argv.slice(2)) {
       );
     if (report.status !== 'success') {
       console.error(JSON.stringify(report.failure));
+      if (process.env.GITHUB_ACTIONS === 'true')
+        console.error(
+          `::error title=Worker publication failed::${JSON.stringify(report.failure)}`,
+        );
       process.exitCode = 1;
     }
   } catch (error) {

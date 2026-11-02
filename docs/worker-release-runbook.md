@@ -1,5 +1,18 @@
 # Operação protegida dos Workers
 
+## Diagnostico de falha nativa do Wrangler
+
+WRANGLER_FAILED inclui wranglerReason (categoria fixa), exitCode e upstreamCode
+numérico quando disponíveis. A mesma informação sanitizada aparece como anotação
+de erro do GitHub Actions. Nenhuma saída bruta, token, URL assinada ou caminho do
+processo é exposto. Os campos distinguem secrets obrigatórios ausentes, erro de
+autorização, build, argumentos CLI, falha de processo e versão não confirmada.
+Uma categoria não substitui a mensagem original e um código de API não comprova
+sozinho a causa. Os testes e dry-runs não comprovam autorização de publicação.
+
+O parser também ignora cores ANSI ao reconhecer Current Version ID. Uma saída de
+falha nunca é usada como prova de publicação, mesmo que contenha um UUID válido.
+
 ## Politica atual do deploy completo
 
 Por instrução do solicitante, o CI com request worker=all publica Billing →

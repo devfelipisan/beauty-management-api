@@ -1,7 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { deploymentOutcome } from './worker-deployment-output.mjs';
+import {
+  deploymentOutcome,
+  wranglerFailure,
+} from './worker-deployment-output.mjs';
+import { DeploymentValidationError, diagnostic } from './deploy/errors.mjs';
 import { requireRemoteSecrets } from './worker-required-secrets.mjs';
 import {
   configurations,
@@ -67,4 +71,87 @@ test('Wrangler output is allowlisted and failure diagnostics are discarded', () 
     assert.equal(outcome.status, 'failed');
     assert.ok(!JSON.stringify(outcome).includes(sensitive));
   }
+});
+test('colored successful version output is recognized without leaking native logs', () => {
+  const outcome = deploymentOutcome({
+    status: 0,
+    stdout: `Current Version ID: \u001b[32m${version}\u001b[0m\nPRIVATE_VALUE`,
+  });
+  assert.equal(outcome.status, 'published');
+  assert.equal(outcome.version, version);
+  assert.ok(!JSON.stringify(outcome).includes('PRIVATE_VALUE'));
+});
+test('Wrangler failures expose only fixed categories and numeric codes', () => {
+  for (const [result, reason] of [
+    [
+      {
+        status: 1,
+        stderr:
+          'The following required secrets have not been set: AUTH_ISSUER PRIVATE_VALUE',
+      },
+      'MISSING_REQUIRED_SECRETS',
+    ],
+    [
+      { status: 1, stderr: 'Authentication error [code: 10000] PRIVATE_VALUE' },
+      'AUTHORIZATION_FAILED',
+    ],
+    [
+      {
+        status: 1,
+        stderr:
+          'A request to the Cloudflare API failed [code: 10021] PRIVATE_VALUE',
+      },
+      'CLOUDFLARE_API_ERROR',
+    ],
+    [
+      { status: 1, stderr: 'Unknown arguments: private-option PRIVATE_VALUE' },
+      'CLI_ARGUMENT_ERROR',
+    ],
+    [{ status: 1, stderr: 'Build failed PRIVATE_VALUE' }, 'BUILD_FAILED'],
+    [
+      {
+        status: null,
+        error: Object.assign(new Error('PRIVATE_VALUE'), { code: 'ENOBUFS' }),
+      },
+      'OUTPUT_LIMIT',
+    ],
+    [{ status: null, error: new Error('PRIVATE_VALUE') }, 'PROCESS_FAILED'],
+    [{ status: 0, stdout: 'PRIVATE_VALUE' }, 'VERSION_ID_UNCONFIRMED'],
+    [{ status: 1, stderr: 'PRIVATE_VALUE' }, 'UNKNOWN'],
+  ]) {
+    const fields = wranglerFailure(result);
+    assert.equal(fields.wranglerReason, reason);
+    const safe = diagnostic(
+      new DeploymentValidationError('WRANGLER_FAILED', {
+        phase: 'publish',
+        operation: 'wrangler.deploy',
+        worker: 'billing',
+        ...fields,
+      }),
+    );
+    assert.equal(safe.wranglerReason, reason);
+    assert.ok(!JSON.stringify(safe).includes('PRIVATE_VALUE'));
+  }
+  assert.equal(
+    wranglerFailure({ status: 1, stderr: 'API failed [code: 10021]' })
+      .upstreamCode,
+    10021,
+  );
+});
+test('unapproved diagnostic values cannot expose native error strings', () => {
+  const value = new DeploymentValidationError('WRANGLER_FAILED', {
+    operation: 'wrangler.deploy',
+    wranglerReason: 'PRIVATE_VALUE',
+    exitCode: 'PRIVATE_VALUE',
+    upstreamCode: 'PRIVATE_VALUE',
+  });
+  value.wranglerReason = 'PRIVATE_VALUE';
+  value.exitCode = 'PRIVATE_VALUE';
+  assert.ok(!JSON.stringify(diagnostic(value)).includes('PRIVATE_VALUE'));
+  const unrelated = new DeploymentValidationError('REMOTE_HTTP_ERROR', {
+    wranglerReason: 'BUILD_FAILED',
+    exitCode: 1,
+    upstreamCode: 10021,
+  });
+  assert.equal(diagnostic(unrelated).wranglerReason, undefined);
 });
