@@ -56,8 +56,9 @@ Worker correspondente. Só então registra sua proveniência no GitHub. Uma falh
 interrompe os destinos seguintes e conserva o relatório parcial; não há rollback
 automático ou restauração de dados. Registros anteriores confirmados são preservados.
 
-O teste integral observa 19 consultas Cloudflare explícitas: seis leituras iniciais
-dos Workers, um SELECT de migrations D1 e quatro pós-checks por destino. Não há
+O teste integral observa 20 consultas Cloudflare explícitas: seis leituras iniciais
+dos Workers, uma leitura do cron do Operations, um SELECT de migrations D1 e quatro
+pós-checks por destino. Não há
 listagem de secrets ou chamadas R2. Essas contagens não incluem operações internas
 do Wrangler, que pode consultar rotas/domínios quando o Worker foi editado no Dashboard.
 
@@ -145,59 +146,62 @@ Esses testes incluem histórico de migrations ausente, esquema incompleto,
 proveniência indisponível e falhas de publicação/pós-check, usando respostas
 simuladas e sem gastar publicações Cloudflare.
 
-### Cron da outbox: ativação e horário
+### Cron da outbox gerenciado no Operations
 
-O cron fica **desativado por padrão**, inclusive quando `CRONJOB` contém um
-horário mas não há ativação explícita. A configuração versionada usa `crons: []`.
-No GitHub, configure Variables no Environment `production`:
+As variáveis ficam em **Cloudflare → beauty-operations-worker → Settings →
+Variables and Secrets**, como texto (`plain_text`), não como secrets:
 
-| Variável          | Valor                          | Efeito                                              |
-| ----------------- | ------------------------------ | --------------------------------------------------- |
-| `CRONJOB_ENABLED` | ausente, vazia ou `false`      | Não registra Cron Trigger                           |
-| `CRONJOB_ENABLED` | `true`                         | Registra o horário de `CRONJOB`                     |
-| `CRONJOB`         | ausente ou vazia, com ativação | `0 3 * * *`: diariamente às 00h de São Paulo, UTC−3 |
-| `CRONJOB`         | `*/30 * * * *`, com ativação   | A cada 30 minutos                                   |
-| `CRONJOB`         | `0 * * * *`, com ativação      | A cada hora                                         |
+| Variável          | Valor                            | Efeito desejado                              |
+| ----------------- | -------------------------------- | -------------------------------------------- |
+| `CRONJOB_ENABLED` | ausente, vazia ou `false`        | Cron desativado                              |
+| `CRONJOB_ENABLED` | `true`                           | Cron ativado                                 |
+| `CRONJOB`         | ausente ou vazia, quando ativado | Diário às 00h de São Paulo (`0 3 * * *` UTC) |
+| `CRONJOB`         | `*/30 * * * *`, quando ativado   | A cada 30 minutos                            |
+| `CRONJOB`         | `0 * * * *`, quando ativado      | A cada hora                                  |
 
-Cloudflare interpreta cron em **UTC**, não no fuso do navegador. A conversão do
-padrão considera o UTC−3 atual de `America/Sao_Paulo`; não acompanha automaticamente
-uma futura mudança de legislação de horário de verão.
-São aceitos cinco campos numéricos: minuto (0–59), hora (0–23), dia (1–31),
-mês (1–12), dia da semana (1–7, domingo=1), com `*`, listas, intervalos e passos.
-Expressões especiais com nomes de dias/meses, `L`, `W` ou `#` não são aceitas
-por este contrato. Ativação diferente de `true`/`false` ou expressão inválida
-quando ativada bloqueia a publicação.
+São aceitos cinco campos numéricos: minuto (0–59), hora (0–23), dia (1–31), mês
+(1–12) e dia da semana (1–7, domingo=1), com `*`, listas, intervalos e passos.
+Expressões especiais com nomes, `L`, `W` e `#` não fazem parte desse contrato.
+Cloudflare interpreta cron em UTC. O padrão considera o UTC−3 atual de
+`America/Sao_Paulo`, sem conversão automática para mudanças futuras de horário de verão.
 
-As variáveis são lidas pelo processo de deploy, não pelo handler do Worker.
-**Alterar Variables exige novo deploy** para registrar ou remover os triggers;
-mudar uma variável no Dashboard do Worker não altera o agendamento Cloudflare.
-O pós-check compara o horário remoto com o horário solicitado e o GitHub
-Deployment registra os horários efetivos do Operations. Billing e Clinical
-continuam sem Cron Triggers.
-
-Para validar localmente o cenário ativado, sem publicação nem consultas ao R2:
+**As variáveis não alteram os triggers sozinhas.** Após configurar o Worker,
+no WSL e na raiz do projeto, com `CLOUDFLARE_ACCOUNT_ID` e `CLOUDFLARE_API_TOKEN`
+exportados:
 
 ```bash
-CRONJOB_ENABLED=true npm run workers:dry-run
-CRONJOB_ENABLED=true CRONJOB='*/30 * * * *' npm run workers:dry-run
+npm run cron:inspect
+npm run cron:sync
 ```
 
-O handler atual ainda coordena a outbox **financeira, clínica e operacional**.
-Desativar o cron suspende esse processamento agendado; não implementa entrega
-por evento nem uma reconciliação financeira independente. O acionamento por
-evento e a separação das rotinas discutidos anteriormente exigem implementação
-própria antes de depender deles para manter o processamento automático.
+`cron:inspect` faz somente leituras dos settings e schedules do Operations e
+mostra o estado atual e o desejado. `cron:sync` altera exclusivamente o endpoint
+Cloudflare de schedules quando necessário e verifica o resultado. Ausência de
+ativação remove os triggers existentes desse Worker; ativação sem expressão
+registra o padrão diário. O token precisa de Workers Scripts Edit para a escrita.
+O relatório fica em `.cache/cron/result.json`. Não há upload de código, execução
+de migrations, publicação de GitHub Deployments, consultas D1 ou chamadas R2.
+O comando é idempotente e recusa sincronizar se observar uma mudança concorrente
+da política. Uma falha de verificação exige nova inspeção, sem rollback automático.
 
-#### CRONJOB no Dashboard do Worker
+**Editar variáveis no Worker ainda pode gerar uma nova versão na Cloudflare.**
+A sincronização dos triggers usa a API de schedules, separada da publicação de
+código; não evita o versionamento causado pela edição das variáveis. Para mudar
+somente o trigger, o Dashboard/API não exige upload de código, mas o horário deve
+continuar coerente com a política desejada nas variáveis para passar pelos gates.
+As duas variáveis deixaram de ser lidas do GitHub Environment `production`.
 
-`CRONJOB` e `CRONJOB_ENABLED` são variáveis de **deploy** no GitHub Environment
-`production`; não são bindings de runtime do `beauty-operations-worker`.
-Se forem cadastradas em Cloudflare → Worker → Settings → Variables and Secrets,
-o preflight rejeita o binding indevido. O diagnóstico identifica somente os dois
-nomes conhecidos, sem imprimir seus valores nem nomes de bindings arbitrários.
+O Wrangler não recebe `--triggers` e o arquivo de produção do Operations omite
+`triggers`, preservando os schedules existentes. O contrato local bloqueia a
+reintrodução de triggers nesse arquivo. O preflight e o pós-check comparam o
+agendamento remoto com as variáveis do Worker; divergência exige `cron:sync` e
+bloqueia a publicação. O GitHub Deployment registra o horário verificado como
+evidência histórica, sem fixar o horário dos próximos releases. Os gates de
+versão e proveniência continuam obrigatórios: mudanças manuais que gerem uma
+versão sem registro exigem recuperação controlada, nunca proveniência fictícia.
 
-Remover somente esses controles do Worker e configurá-los nas Variables do GitHub.
-Edições manuais de settings podem alterar a versão ativa: conferir a versão e sua
-proveniência com `npm run infra:diagnose:readonly` antes de repetir a publicação.
-Se aparecer `NO_RECORDS`, não remover o gate nem inventar um registro; é necessário
-reconciliar a versão ativa com a última publicação gerenciada antes de prosseguir.
+O handler `scheduled()` retorna sem acessar D1 ou despachar eventos quando
+`CRONJOB_ENABLED` não é `true`. Essa trava não elimina as invocações de um trigger
+antigo; `cron:sync` deve removê-lo para reduzir execuções. O cron ainda coordena a
+outbox financeira, clínica e operacional; o processamento por evento e a
+reconciliação financeira independente continuam fora desta implementação.

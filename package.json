@@ -85,7 +85,9 @@
     "db:seed": "node scripts/seed-local.mjs",
     "db:seed:preview": "node scripts/seed-local.mjs --preview",
     "test:seed": "vitest run --config ./vitest.config.workers.mjs test/workers/development-seed.spec.ts",
-    "deploy:validate": "npm run check:release"
+    "deploy:validate": "npm run check:release",
+    "cron:inspect": "node scripts/infra/manage-cron.mjs",
+    "cron:sync": "node scripts/infra/manage-cron.mjs --apply"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "13.1.0",

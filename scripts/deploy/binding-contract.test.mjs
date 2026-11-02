@@ -373,21 +373,31 @@ test('installed Wrangler upload metadata retains configured service props', () =
   }
 });
 
-test('cron controls placed in Worker settings are identified without allowing them or exposing values', () => {
+test('Worker cron controls accept valid text and reject incompatible types without exposing values', () => {
   for (const name of ['CRONJOB', 'CRONJOB_ENABLED']) {
-    for (const type of ['plain_text', 'secret_text', 'service']) {
-      const state = settings('operations');
-      state.bindings.push({
+    const state = settings('operations');
+    state.bindings.push({
+      name,
+      type: 'plain_text',
+      text: name === 'CRONJOB' ? '0 3 * * *' : 'false',
+    });
+    assert.doesNotThrow(() =>
+      validateSettings(state, 'operations', configurations.operations),
+    );
+    for (const type of ['secret_text', 'service']) {
+      const invalid = settings('operations');
+      invalid.bindings.push({
         name,
         type,
         text: 'private-control-value',
         service: 'private-service',
       });
       assert.throws(
-        () => validateSettings(state, 'operations', configurations.operations),
+        () =>
+          validateSettings(invalid, 'operations', configurations.operations),
         (error) => {
           const result = diagnostic(error);
-          assert.equal(result.code, 'BINDING_MISMATCH');
+          assert.equal(result.code, 'BINDING_TYPE_INVALID');
           assert.equal(result.binding, name);
           assert.equal(result.operation, 'worker.settings');
           assert.ok(!JSON.stringify(result).includes('private-'));
@@ -416,14 +426,14 @@ test('unknown remote binding names stay redacted and cron controls remain forbid
   }
 });
 
-test('deployment-only cron binding stops all uploads during preflight', async () => {
+test('invalid Worker cron activation stops all uploads during preflight', async () => {
   const f = fixture((path) => {
     if (!path.includes('beauty-operations-worker/settings')) return;
     const state = settings('operations');
     state.bindings.push({
       name: 'CRONJOB_ENABLED',
       type: 'plain_text',
-      text: 'false',
+      text: 'invalid-private-value',
     });
     return response(state);
   });
@@ -439,7 +449,7 @@ test('deployment-only cron binding stops all uploads during preflight', async ()
     },
   });
   assert.equal(uploads, 0);
-  assert.equal(report.failure.code, 'BINDING_MISMATCH');
+  assert.equal(report.failure.code, 'BINDING_VALUE_INVALID');
   assert.equal(report.failure.binding, 'CRONJOB_ENABLED');
   assert.equal(report.failure.phase, 'preflight');
   assert.ok(!f.calls.some(({ path }) => path.includes('/r2/')));

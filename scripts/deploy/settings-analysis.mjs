@@ -2,7 +2,7 @@ import {
   requiredProductionText,
   requiredJwtSecretNames,
 } from './config-contract.mjs';
-import { cronVariableNames } from './cron-policy.mjs';
+import { cronVariableNames, workerCronPolicy } from './cron-policy.mjs';
 import { DeploymentValidationError, diagnostic } from './errors.mjs';
 import {
   BindingShapeError,
@@ -31,6 +31,7 @@ function knownNames(name, config, expected, transitions, expectedText) {
     ...Object.keys(config.vars ?? {}),
     ...(config.secrets?.required ?? requiredJwtSecretNames),
     ...transitions.map((t) => t.name),
+    ...(name === 'operations' ? cronVariableNames : []),
   ]);
 }
 function* runtimeChecks(settings, name, context = {}) {
@@ -113,19 +114,18 @@ function* settingsChecks(
     valid.push(binding);
   }
   yield* runtimeChecks({ bindings: valid }, name, { ...scope, expectedText });
+  if (name === 'operations') {
+    try {
+      workerCronPolicy({ bindings: valid }, scope);
+    } catch (cause) {
+      if (!(cause instanceof DeploymentValidationError)) throw cause;
+      yield cause;
+    }
+  }
   const actual = [];
   for (const binding of valid) {
     if (!scope.allowedBindings.has(binding.name)) {
-      // These deployment controls are safe names to identify, but they are
-      // deliberately not accepted as runtime bindings or schedule evidence.
-      yield new DeploymentValidationError('BINDING_MISMATCH', {
-        ...scope,
-        binding: binding.name,
-        allowedBindings: new Set([
-          ...scope.allowedBindings,
-          ...(name === 'operations' ? cronVariableNames : []),
-        ]),
-      });
+      yield error('BINDING_MISMATCH');
       continue;
     }
     try {
