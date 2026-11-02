@@ -229,3 +229,11 @@ test('controlled first publication is an explicit protected workflow with immuta
     ),
   );
 });
+
+test('publication receives optional cron settings from GitHub variables', () => {
+  const env = workflow('deploy-workers').jobs.deploy.steps.find((step) =>
+    step.run?.includes('deploy-workers.mjs'),
+  ).env;
+  assert.equal(env.CRONJOB_ENABLED, '${{ vars.CRONJOB_ENABLED }}');
+  assert.equal(env.CRONJOB, '${{ vars.CRONJOB }}');
+});

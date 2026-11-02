@@ -140,3 +140,19 @@ test('migration inspection does not mistake denied or malformed history for an e
     /denied/,
   );
 });
+
+test('audit uses the attested cron override while preserving the versioned configuration hash', async () => {
+  const f = fixture((path, body) => {
+    if (path.includes('beauty-operations-worker/schedules'))
+      return response({ schedules: [{ cron: '0 3 * * *' }] });
+    if (body?.sql.includes('media_capacity'))
+      return response([{ success: true, results: [capacity] }]);
+  });
+  const provenance = f.github.provenanceByVersion;
+  f.github.provenanceByVersion = async (name) => ({
+    ...(await provenance(name)),
+    ...(name === 'operations' ? { scheduledCrons: ['0 3 * * *'] } : {}),
+  });
+  f.github.file = async (path) => readFileSync(path, 'utf8');
+  assert.equal((await auditInfrastructure({ ...f })).published.length, 3);
+});

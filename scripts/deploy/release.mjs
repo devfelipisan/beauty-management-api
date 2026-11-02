@@ -18,6 +18,7 @@ import { githubClient } from './github-client.mjs';
 import { readManifest, digest } from './manifest.mjs';
 import { preflight } from './preflight.mjs';
 import { postcheck } from './postcheck.mjs';
+import { cronPolicy, scheduledConfiguration } from './cron-policy.mjs';
 import { wranglerDeployArgs } from './wrangler-command.mjs';
 import { diagnostic, fail } from './errors.mjs';
 import {
@@ -36,6 +37,7 @@ export async function release({
   persist = () => {},
   preflightImpl = preflight,
   postcheckImpl = postcheck,
+  cron = cronPolicy(),
 }) {
   const report = {
     requestId: context.requestId,
@@ -46,6 +48,7 @@ export async function release({
     durationsMs: {},
     status: 'running',
     verificationPolicy: 'provenance-and-postcheck',
+    cron,
     eligibility: Object.fromEntries(
       [
         'releaseOrigin',
@@ -97,7 +100,11 @@ export async function release({
           worker,
           versionId: outcome.version,
           commitSha: context.commitSha,
-          configuration: configurations[worker],
+          configuration: scheduledConfiguration(
+            worker,
+            configurations[worker],
+            cron,
+          ),
           transitions: manifest.workers[worker].transitions,
           context,
         });
@@ -116,6 +123,7 @@ export async function release({
           ciRunAttempt: context.ciRunAttempt,
           verifyJobId: context.verifyJobId,
           controlSha: context.controlSha,
+          ...(worker === 'operations' ? { scheduledCrons: cron.crons } : {}),
         });
       } catch (error) {
         record.verification = 'published_unverified';
@@ -195,6 +203,7 @@ export async function releaseMain(args = process.argv.slice(2)) {
       ]),
     );
     const manifest = readManifest();
+    const cron = cronPolicy(process.env);
     const client = cloudflareClient({
       accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
       apiToken: process.env.CLOUDFLARE_API_TOKEN,
@@ -203,7 +212,7 @@ export async function releaseMain(args = process.argv.slice(2)) {
     const publish = (worker, sha) => {
       const result = spawnSync(
         process.execPath,
-        wranglerDeployArgs(worker, sha),
+        wranglerDeployArgs(worker, sha, { cron }),
         { encoding: 'utf8' },
       );
       if (deploymentOutcome(result).status !== 'published') {
@@ -226,6 +235,7 @@ export async function releaseMain(args = process.argv.slice(2)) {
       github,
       publish,
       persist,
+      cron,
     });
     if (process.env.GITHUB_STEP_SUMMARY)
       appendFileSync(
