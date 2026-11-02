@@ -524,3 +524,116 @@ test('unexpected remote schedule blocks release without overwriting it', async (
     ),
   );
 });
+
+test('managed cron changes publish bindings and sync the new schedule before recording provenance', async () => {
+  const { synchronizeCron } = await import('../infra/manage-cron.mjs');
+  const managedCron = { CRONJOB_ENABLED: 'true', CRONJOB: '0 3 * * *' };
+  let bindings = [],
+    schedules = [];
+  const sequence = [],
+    records = [];
+  const f = fixture((path) => {
+    if (path.includes('beauty-operations-worker/settings')) {
+      const state = settings('operations');
+      state.bindings.push(...bindings);
+      return response(state);
+    }
+    if (path.includes('beauty-operations-worker/schedules'))
+      return response({ schedules });
+  });
+  f.github.recordPublished = async (record) => {
+    sequence.push(`record:${record.worker}`);
+    records.push(record);
+    return 1;
+  };
+  const report = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    managedCron,
+    publish: (name) => {
+      sequence.push(`publish:${name}`);
+      if (name === 'operations')
+        bindings = Object.entries(managedCron).map(([name, text]) => ({
+          name,
+          type: 'plain_text',
+          text,
+        }));
+      return published();
+    },
+    reconcileCron: async () => {
+      sequence.push('sync:operations');
+      return synchronizeCron({
+        client: f.client,
+        apply: true,
+        replaceSchedules: async (crons) => {
+          schedules = crons.map((cron) => ({ cron }));
+        },
+      });
+    },
+  });
+  assert.equal(report.status, 'success');
+  assert.deepEqual(report.desiredCronVariables, managedCron);
+  assert.equal(report.cronReconciliation.status, 'updated');
+  assert.ok(
+    sequence.indexOf('publish:operations') <
+      sequence.indexOf('sync:operations'),
+  );
+  assert.ok(
+    sequence.indexOf('sync:operations') < sequence.indexOf('record:operations'),
+  );
+  assert.deepEqual(records.at(-1).scheduledCrons, ['0 3 * * *']);
+  assert.ok(!f.calls.some(({ path }) => path.includes('/r2/')));
+});
+
+test('managed cron variables cannot be silently ignored while reporting a successful Operations release', async () => {
+  const records = [];
+  const f = fixture();
+  f.github.recordPublished = async (record) => {
+    records.push(record);
+    return 1;
+  };
+  const report = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    managedCron: { CRONJOB_ENABLED: 'true', CRONJOB: '0 3 * * *' },
+    publish: published,
+  });
+  assert.equal(report.status, 'published_unverified');
+  assert.equal(report.failure.code, 'BINDING_MISSING');
+  assert.equal(report.failure.binding, 'CRONJOB_ENABLED');
+  assert.ok(!records.some((record) => record.worker === 'operations'));
+});
+
+test('cron reconciliation failure preserves partial publication without inventing Operations provenance', async () => {
+  const f = fixture(),
+    records = [];
+  f.github.recordPublished = async (record) => {
+    records.push(record);
+    return 1;
+  };
+  const report = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    publish: published,
+    reconcileCron: async () =>
+      fail('REMOTE_ACCESS_DENIED', {
+        phase: 'postcheck',
+        operation: 'worker.schedules',
+        worker: 'operations',
+        status: 403,
+      }),
+  });
+  assert.equal(report.status, 'published_unverified');
+  assert.equal(report.failure.operation, 'worker.schedules');
+  assert.equal(report.workers.at(-1).verification, 'published_unverified');
+  assert.deepEqual(
+    records.map((record) => record.worker),
+    ['billing', 'clinical'],
+  );
+});

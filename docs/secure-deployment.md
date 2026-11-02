@@ -30,8 +30,9 @@ do push/PR e rejeita arquivos gerados que divergirem do Git.
 
 Todos os pushes/PRs das branches configuradas passam pelo verify. No automático,
 somente push aprovado em feature/microsservices com alterações relevantes chama
-o release protegido. Alterações apenas em docs, testes, workflows ou ferramentas
-administrativas validam o código, mas não publicam os Workers.
+o release protegido. Alterações apenas em docs, testes ou ferramentas administrativas
+sem relação com o release validam o código, mas não publicam os Workers. Os workflows
+de CI/deploy, scripts do release e a configuração do cron também disparam publicação.
 
 Fontes dos três Workers/domínios/pacotes, dependências, toolchain/configuração de
 build, manifesto de deploy e request.json são alterações relevantes. Exclusões e
@@ -149,8 +150,11 @@ simuladas e sem gastar publicações Cloudflare.
 
 ### Cron da outbox gerenciado no Operations
 
-As variáveis ficam em **Cloudflare → beauty-operations-worker → Settings →
-Variables and Secrets**, como texto (`plain_text`), não como secrets:
+As variáveis continuam em **Cloudflare → beauty-operations-worker → Settings →
+Variables and Secrets**, como texto (`plain_text`). O fluxo normal agora as mantém
+pela configuração versionada `.github/deploy/cron.json`, aplicada pelo Wrangler
+junto da publicação do código e registrada pela mesma proveniência. Não editar
+essas variáveis manualmente no Dashboard como procedimento normal.
 
 | Variável          | Valor                            | Efeito desejado                              |
 | ----------------- | -------------------------------- | -------------------------------------------- |
@@ -166,9 +170,8 @@ Expressões especiais com nomes, `L`, `W` e `#` não fazem parte desse contrato.
 Cloudflare interpreta cron em UTC. O padrão considera o UTC−3 atual de
 `America/Sao_Paulo`, sem conversão automática para mudanças futuras de horário de verão.
 
-**As variáveis não alteram os triggers sozinhas.** Após configurar o Worker,
-no WSL e na raiz do projeto, com `CLOUDFLARE_ACCOUNT_ID` e `CLOUDFLARE_API_TOKEN`
-exportados:
+Para inspecionar ou reconciliar uma divergência excepcional, no WSL e na raiz do
+projeto, com `CLOUDFLARE_ACCOUNT_ID` e `CLOUDFLARE_API_TOKEN` exportados:
 
 ```bash
 npm run cron:inspect
@@ -241,3 +244,38 @@ A sincronização pode ter sucesso e o deploy falhar depois por outro gate. Seu
 resultado fica em artefato próprio `cron-<sha>-<tentativa>`, separado do artefato
 de publicação para preservar o contrato das evidências históricas. O comando
 `npm run cron:sync` continua disponível para gerenciar o agendamento sem deploy.
+
+### Fluxo normal com configuração versionada
+
+1. Alterar código ou `.github/deploy/cron.json` e integrar o PR na `feature/microsservices`.
+2. O CI valida e chama automaticamente a publicação para alterações relevantes.
+3. Aprovar o Environment `production`.
+4. O fluxo seleciona o SHA, valida a proveniência anterior e publica Billing → Clinical → Operations.
+5. No Operations, as variáveis do cron são aplicadas no mesmo upload do código, os triggers
+   são reconciliados automaticamente e o pós-check exige os valores solicitados antes
+   de registrar a nova proveniência.
+
+O arquivo começa com cron desativado e horário diário padrão:
+
+```json
+{
+  "CRONJOB_ENABLED": "false",
+  "CRONJOB": "0 3 * * *"
+}
+```
+
+Para ativar, alterar `CRONJOB_ENABLED` para `"true"` no arquivo e integrar pelo PR.
+Não é necessário cadastrar variáveis pelo Dashboard, copiar SHA, executar
+`cron:sync` manualmente ou iniciar um segundo workflow no caminho normal.
+O arquivo só aceita os dois controles públicos do cron; não adicionar credenciais.
+
+A sincronização anterior ao upload continua reconciliando a política da versão
+ativa. Depois do upload do Operations, uma segunda reconciliação aplica a política
+recém-publicada, e o artefato do cron é atualizado com o resultado final.
+Uma falha depois do upload permanece `published_unverified` e não cria proveniência
+fictícia. Edições fora do fluxo, falhas remotas e migrations pendentes continuam
+exigindo tratamento controlado; não há rollback automático de código ou dados.
+
+O comando manual de deploy permanece para exceções, sem SHA obrigatório.
+Documentação, testes e auditorias sem mudanças no release continuam evitando
+publicações desnecessárias. Migrations mantêm seu fluxo e aprovação específicos.

@@ -3,6 +3,7 @@ import {
   validateSettings,
   workerPath,
 } from './worker-state.mjs';
+import { requiredProductionText } from './config-contract.mjs';
 import { workerCronPolicy } from './cron-policy.mjs';
 import { fail } from './errors.mjs';
 export async function postcheck({
@@ -12,6 +13,7 @@ export async function postcheck({
   configuration,
   context = {},
   transitions = [],
+  expectedCronVariables,
 }) {
   client.invalidate();
   const state = await publishedWorker(client, worker, {
@@ -22,6 +24,14 @@ export async function postcheck({
     transitions,
     phase: 'postcheck',
     context,
+    ...(worker === 'operations' && expectedCronVariables
+      ? {
+          expectedText: {
+            ...requiredProductionText(worker),
+            ...expectedCronVariables,
+          },
+        }
+      : {}),
   });
   if (state.versionId !== versionId)
     fail('PUBLISHED_VERSION_MISMATCH', {

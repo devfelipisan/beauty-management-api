@@ -1,0 +1,4 @@
+{
+  "CRONJOB_ENABLED": "false",
+  "CRONJOB": "0 3 * * *"
+}
