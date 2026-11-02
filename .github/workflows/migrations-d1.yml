@@ -1,0 +1,89 @@
+name: D1 migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Apply migrations after reviewing a previous inspection run
+        type: boolean
+        default: false
+      inspection_run_id:
+        description: Successful inspection run for this exact SHA (required to apply)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  actions: read
+  deployments: write
+
+concurrency:
+  group: beauty-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Validate branch and production configurations
+        run: |
+          test "$GITHUB_REF" = 'refs/heads/feature/microsservices'
+          node --input-type=module <<'NODE'
+          import { workerConfigurations, readConfiguration, validateWorkerConfigurations } from './scripts/worker-deployment-config.mjs';
+          validateWorkerConfigurations(Object.fromEntries(Object.entries(workerConfigurations).map(([name,path])=>[name,readConfiguration(path)])), true);
+          NODE
+      - run: npm run check
+      - run: |
+          node scripts/test-deployment.mjs
+          node scripts/deploy/manifest-check.mjs
+      - name: Check environment approval
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs production-migrations
+  migrations:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production-migrations
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Recheck migration environment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs production-migrations
+      - name: Inspect or apply a reviewed migration set
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_MIGRATIONS_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPLY: ${{ inputs.apply }}
+          INSPECTION_RUN_ID: ${{ inputs.inspection_run_id }}
+        run: |
+          if [ "$APPLY" = true ]; then
+            node scripts/infra/migrations.mjs --apply
+          else
+            node scripts/infra/migrations.mjs
+          fi
+      - name: Preserve migration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migrations-${{ github.sha }}-${{ github.run_attempt }}
+          path: .cache/migrations/result.json
+          if-no-files-found: ignore
