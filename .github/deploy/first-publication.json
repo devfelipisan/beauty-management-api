@@ -7,6 +7,6 @@
   "workers": {
     "billing": { "versionId": "d2e09303-5363-4fae-afd5-50dcf7059f79" },
     "clinical": { "versionId": "630b1fdb-744c-4710-8009-65ec6ac0e4e8" },
-    "operations": { "versionId": "aa99d5b6-382b-4fa3-b18a-29bcf1cdcb15" }
+    "operations": { "versionId": "06976c82-80af-4c49-9fa0-79ad6880eb06" }
   }
 }
