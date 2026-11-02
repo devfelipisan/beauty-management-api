@@ -10,6 +10,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
+    "check:release": "node scripts/check-format-changes.mjs --local && npm run check && node scripts/test-deployment.mjs && node scripts/worker-deployment-config.mjs && node scripts/deploy/manifest-check.mjs",
     "infra:sync:first-publication": "node scripts/infra/sync-first-publication-versions.mjs",
     "infra:diagnose:readonly": "node scripts/infra/local-provenance-check.mjs",
     "build": "tsc --build",

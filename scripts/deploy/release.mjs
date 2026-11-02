@@ -18,6 +18,7 @@ import { githubClient } from './github-client.mjs';
 import { readManifest, digest } from './manifest.mjs';
 import { preflight } from './preflight.mjs';
 import { postcheck } from './postcheck.mjs';
+import { wranglerDeployArgs } from './wrangler-command.mjs';
 import { diagnostic, fail } from './errors.mjs';
 import {
   deploymentOutcome,
@@ -44,9 +45,7 @@ export async function release({
     workers: [],
     durationsMs: {},
     status: 'running',
-    ...(context.worker === 'all'
-      ? { infrastructureVerification: 'not_performed' }
-      : {}),
+    verificationPolicy: 'provenance-and-postcheck',
     eligibility: Object.fromEntries(
       [
         'releaseOrigin',
@@ -93,20 +92,17 @@ export async function release({
         });
       at = performance.now();
       try {
-        if (context.worker !== 'all')
-          await postcheckImpl({
-            client,
-            worker,
-            versionId: outcome.version,
-            commitSha: context.commitSha,
-            configuration: configurations[worker],
-            transitions: manifest.workers[worker].transitions,
-            context,
-          });
-        record.verification =
-          context.worker === 'all' ? 'wrangler_confirmed' : 'passed';
-        if (context.worker !== 'all')
-          record.postcheckDurationMs = performance.now() - at;
+        await postcheckImpl({
+          client,
+          worker,
+          versionId: outcome.version,
+          commitSha: context.commitSha,
+          configuration: configurations[worker],
+          transitions: manifest.workers[worker].transitions,
+          context,
+        });
+        record.verification = 'passed';
+        record.postcheckDurationMs = performance.now() - at;
         record.githubDeploymentId = await github.recordPublished({
           worker,
           versionId: outcome.version,
@@ -120,9 +116,6 @@ export async function release({
           ciRunAttempt: context.ciRunAttempt,
           verifyJobId: context.verifyJobId,
           controlSha: context.controlSha,
-          ...(context.worker === 'all'
-            ? { verificationMethod: 'wrangler' }
-            : {}),
         });
       } catch (error) {
         record.verification = 'published_unverified';
@@ -210,20 +203,7 @@ export async function releaseMain(args = process.argv.slice(2)) {
     const publish = (worker, sha) => {
       const result = spawnSync(
         process.execPath,
-        [
-          resolve('node_modules/wrangler/bin/wrangler.js'),
-          'deploy',
-          '--experimental-provision=false',
-          '--experimental-auto-create=false',
-          '--env',
-          '',
-          '--config',
-          workerConfigurations[worker],
-          '--tag',
-          `git-${sha}`,
-          '--message',
-          `beauty-release ${worker}`,
-        ],
+        wranglerDeployArgs(worker, sha),
         { encoding: 'utf8' },
       );
       if (deploymentOutcome(result).status !== 'published') {

@@ -23,7 +23,7 @@ test('quality gate covers both branches without credentials and chains only auth
   assert.equal(ci.jobs.publish.with.commit_sha, '${{ github.sha }}');
   assert.equal(
     ci.jobs.publish.if,
-    "github.event_name == 'push' && github.ref == 'refs/heads/feature/microsservices' && needs.verify.result == 'success'",
+    "github.event_name == 'push' && github.ref == 'refs/heads/feature/microsservices' && needs.verify.result == 'success' && needs.verify.outputs.deployRequired == 'true'",
   );
   assert.deepEqual(Object.keys(ci.jobs.publish.secrets), [
     'CLOUDFLARE_API_TOKEN',
@@ -33,7 +33,21 @@ test('quality gate covers both branches without credentials and chains only auth
     ci.jobs.publish.secrets.CLOUDFLARE_API_TOKEN,
     '${{ secrets.CLOUDFLARE_API_TOKEN }}',
   );
-  assert.ok(JSON.stringify(ci).includes('scripts/test-deployment.mjs'));
+  assert.ok(JSON.stringify(ci).includes('npm run check:release'));
+  const checks = JSON.parse(readFileSync('package.json', 'utf8')).scripts[
+    'check:release'
+  ];
+  for (const check of [
+    'npm run check',
+    'scripts/test-deployment.mjs',
+    'scripts/worker-deployment-config.mjs',
+    'scripts/deploy/manifest-check.mjs',
+  ])
+    assert.ok(checks.includes(check));
+  assert.equal(
+    ci.jobs.verify.outputs.deployRequired,
+    '${{ steps.changes.outputs.deployRequired }}',
+  );
   assert.ok(JSON.stringify(ci).includes('git diff --exit-code'));
 });
 test('release supports call and dispatch with a protected publication and read-only preparation', () => {
@@ -77,7 +91,7 @@ test('release supports call and dispatch with a protected publication and read-o
     (step) => step.name === 'Validate Cloudflare credentials availability',
   );
   const publication = steps.findIndex(
-    (step) => step.name === 'Publish tested Workers and record results',
+    (step) => step.name === 'Validate provenance, publish and verify Workers',
   );
   assert.ok(availability >= 0 && availability < publication);
   assert.deepEqual(steps[availability].env, {

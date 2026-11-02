@@ -27,17 +27,6 @@ export async function preflight({
   const workers = selectedWorkers(context.worker),
     topology = {},
     published = {};
-  if (context.worker === 'all') {
-    // Full publication validates the candidate locally. It does not attest
-    // previous versions, infrastructure or mixed-version runtime compatibility.
-    simulateRelease(manifest.workers, manifest, []);
-    return {
-      valid: true,
-      validatedWorkers: workers,
-      published,
-      infrastructureVerification: 'not_performed',
-    };
-  }
   // Receivers require valid runtime Text and version/provenance. Their storage
   // readiness and the candidate's unselected structural configuration are separate.
   const needed = new Set(workers);
