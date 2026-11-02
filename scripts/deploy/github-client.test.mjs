@@ -146,6 +146,8 @@ test('latest failed CI attempt blocks release despite an older success', async (
   );
 });
 function provenanceFixture({
+  worker = 'billing',
+  scheduledCrons,
   baseline = false,
   reference = 'approved-record',
   creator = 'github-actions[bot]',
@@ -157,10 +159,11 @@ function provenanceFixture({
 } = {}) {
   const calls = [];
   const payload = {
-    worker: 'billing',
+    worker,
+    ...(scheduledCrons !== undefined ? { scheduledCrons } : {}),
     commitSha: sha,
     versionId: version,
-    packageVersion: manifest.workers.billing.packageVersion,
+    packageVersion: manifest.workers[worker].packageVersion,
     manifestDigest: hash,
     runId: '99',
     baseline,
@@ -210,7 +213,7 @@ function provenanceFixture({
       if (path.includes('/contents/.github/deploy/baseline.json'))
         return file({
           workers: {
-            billing: {
+            [worker]: {
               commitSha: sha,
               versionId: version,
               qualificationReference: reference,
@@ -328,4 +331,63 @@ test('Wrangler-confirmed publication is recorded without claiming infrastructure
     bodies[1].description,
     'Wrangler confirmed publication; infrastructure not inspected',
   );
+});
+
+test('provenance preserves attested Operations schedules and rejects invalid or misplaced overrides', async () => {
+  for (const scheduledCrons of [[], ['0 3 * * *'], ['*/30 * * * *']]) {
+    const proof = await provenanceFixture({
+      worker: 'operations',
+      scheduledCrons,
+    }).client.provenanceByVersion('operations', version);
+    assert.deepEqual(proof.scheduledCrons, scheduledCrons);
+  }
+  for (const [worker, scheduledCrons] of [
+    ['billing', []],
+    ['operations', ['invalid']],
+    ['operations', ['0 3 * * *', '0 4 * * *']],
+  ])
+    await assert.rejects(
+      provenanceFixture({ worker, scheduledCrons }).client.provenanceByVersion(
+        worker,
+        version,
+      ),
+      { code: 'PROVENANCE_UNAVAILABLE' },
+    );
+});
+
+test('publication stores the effective Operations schedule and rejects other owners before writing', async () => {
+  const bodies = [];
+  const client = githubClient({
+    repository: 'owner/beauty',
+    token: 'fixture',
+    fetchImpl: async (_url, options) => {
+      bodies.push(JSON.parse(options.body));
+      return json({ id: 1 });
+    },
+  });
+  const input = {
+    worker: 'operations',
+    commitSha: sha,
+    versionId: version,
+    manifest,
+    runId: '99',
+    releaseOrigin: 'ci',
+    releaseRunAttempt: 1,
+    ciRunId: 99,
+    ciRunAttempt: 1,
+    verifyJobId: 30,
+    controlSha: sha,
+  };
+  for (const scheduledCrons of [[], ['0 3 * * *']]) {
+    bodies.length = 0;
+    await client.recordPublished({ ...input, scheduledCrons });
+    assert.deepEqual(bodies[0].payload.scheduledCrons, scheduledCrons);
+  }
+  bodies.length = 0;
+  for (const patch of [
+    { worker: 'billing', scheduledCrons: [] },
+    { scheduledCrons: [''] },
+  ])
+    await assert.rejects(client.recordPublished({ ...input, ...patch }));
+  assert.equal(bodies.length, 0);
 });

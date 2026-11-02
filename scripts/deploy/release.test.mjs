@@ -466,3 +466,37 @@ test('D1 HTTP 400 blocks every upload and distinguishes absent migration history
     );
   }
 });
+
+test('release verifies the selected cron after publishing and records the effective policy', async () => {
+  const cron = { enabled: true, crons: ['0 3 * * *'] };
+  const f = fixture((path) =>
+    path.includes('beauty-operations-worker/schedules')
+      ? response({ schedules: [{ cron: '0 3 * * *' }] })
+      : undefined,
+  );
+  const report = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    cron,
+    publish: published,
+  });
+  assert.equal(report.status, 'success');
+  assert.deepEqual(report.cron, cron);
+  assert.equal(report.workers.length, 3);
+});
+
+test('unexpected remote schedule blocks release even with a custom cron policy', async () => {
+  const f = fixture();
+  const report = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    cron: { enabled: true, crons: ['0 3 * * *'] },
+    publish: published,
+  });
+  assert.equal(report.status, 'published_unverified');
+  assert.equal(report.failure.code, 'SCHEDULE_MISMATCH');
+});

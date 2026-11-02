@@ -157,3 +157,46 @@ A proveniência reconhece os nomes antigos e novos dos jobs, preservando os
 registros históricos. Caso uma regra de proteção de branch exija o status
 `verify` pelo nome, atualizar essa regra para `Validar código e testes` na
 transição. O ID interno do job continua sendo `verify`.
+
+### Cron da outbox: ativação e horário
+
+O cron fica **desativado por padrão**, inclusive quando `CRONJOB` contém um
+horário mas não há ativação explícita. A configuração versionada usa `crons: []`.
+No GitHub, configure Variables no Environment `production`:
+
+| Variável          | Valor                          | Efeito                                              |
+| ----------------- | ------------------------------ | --------------------------------------------------- |
+| `CRONJOB_ENABLED` | ausente, vazia ou `false`      | Não registra Cron Trigger                           |
+| `CRONJOB_ENABLED` | `true`                         | Registra o horário de `CRONJOB`                     |
+| `CRONJOB`         | ausente ou vazia, com ativação | `0 3 * * *`: diariamente às 00h de São Paulo, UTC−3 |
+| `CRONJOB`         | `*/30 * * * *`, com ativação   | A cada 30 minutos                                   |
+| `CRONJOB`         | `0 * * * *`, com ativação      | A cada hora                                         |
+
+Cloudflare interpreta cron em **UTC**, não no fuso do navegador. A conversão do
+padrão considera o UTC−3 atual de `America/Sao_Paulo`; não acompanha automaticamente
+uma futura mudança de legislação de horário de verão.
+São aceitos cinco campos numéricos: minuto (0–59), hora (0–23), dia (1–31),
+mês (1–12), dia da semana (1–7, domingo=1), com `*`, listas, intervalos e passos.
+Expressões especiais com nomes de dias/meses, `L`, `W` ou `#` não são aceitas
+por este contrato. Ativação diferente de `true`/`false` ou expressão inválida
+quando ativada bloqueia a publicação.
+
+As variáveis são lidas pelo processo de deploy, não pelo handler do Worker.
+**Alterar Variables exige novo deploy** para registrar ou remover os triggers;
+mudar uma variável no Dashboard do Worker não altera o agendamento Cloudflare.
+O pós-check compara o horário remoto com o horário solicitado e o GitHub
+Deployment registra os horários efetivos do Operations. Billing e Clinical
+continuam sem Cron Triggers.
+
+Para validar localmente o cenário ativado, sem publicação nem consultas ao R2:
+
+```bash
+CRONJOB_ENABLED=true npm run workers:dry-run
+CRONJOB_ENABLED=true CRONJOB='*/30 * * * *' npm run workers:dry-run
+```
+
+O handler atual ainda coordena a outbox **financeira, clínica e operacional**.
+Desativar o cron suspende esse processamento agendado; não implementa entrega
+por evento nem uma reconciliação financeira independente. O acionamento por
+evento e a separação das rotinas discutidos anteriormente exigem implementação
+própria antes de depender deles para manter o processamento automático.

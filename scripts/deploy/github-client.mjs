@@ -1,3 +1,4 @@
+import { recordedCrons } from './cron-policy.mjs';
 import { fail } from './errors.mjs';
 import {
   releaseBranch,
@@ -502,7 +503,17 @@ export function githubClient({
         // The successful protected adoption run is the durable attestation.
         // Historical artifacts may expire after qualification; do not depend on their retention.
       }
+      let schedules;
+      if (record.payload.scheduledCrons !== undefined) {
+        if (worker !== 'operations') continue;
+        try {
+          schedules = recordedCrons(record.payload.scheduledCrons);
+        } catch {
+          continue;
+        }
+      }
       return {
+        ...(schedules !== undefined ? { scheduledCrons: schedules } : {}),
         worker,
         commitSha,
         versionId,
@@ -721,7 +732,13 @@ export function githubClient({
     adoptionEvidence: initialEvidence,
     firstPublication,
     verificationMethod,
+    scheduledCrons,
   }) {
+    if (scheduledCrons !== undefined) {
+      if (worker !== 'operations')
+        fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
+      scheduledCrons = recordedCrons(scheduledCrons);
+    }
     if (verificationMethod !== undefined && verificationMethod !== 'wrangler')
       fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
     if (
@@ -765,6 +782,7 @@ export function githubClient({
           manifestDigest: digest(manifest),
           runId: String(runId),
           baseline,
+          ...(scheduledCrons !== undefined ? { scheduledCrons } : {}),
           ...(verificationMethod ? { verificationMethod } : {}),
           ...(releaseOrigin === 'first-publication'
             ? { firstPublication }
