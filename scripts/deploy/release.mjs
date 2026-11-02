@@ -40,6 +40,9 @@ export async function release({
     workers: [],
     durationsMs: {},
     status: 'running',
+    ...(context.worker === 'all'
+      ? { infrastructureVerification: 'not_performed' }
+      : {}),
     eligibility: Object.fromEntries(
       [
         'releaseOrigin',
@@ -85,17 +88,20 @@ export async function release({
         });
       at = performance.now();
       try {
-        await postcheckImpl({
-          client,
-          worker,
-          versionId: outcome.version,
-          commitSha: context.commitSha,
-          configuration: configurations[worker],
-          transitions: manifest.workers[worker].transitions,
-          context,
-        });
-        record.verification = 'passed';
-        record.postcheckDurationMs = performance.now() - at;
+        if (context.worker !== 'all')
+          await postcheckImpl({
+            client,
+            worker,
+            versionId: outcome.version,
+            commitSha: context.commitSha,
+            configuration: configurations[worker],
+            transitions: manifest.workers[worker].transitions,
+            context,
+          });
+        record.verification =
+          context.worker === 'all' ? 'wrangler_confirmed' : 'passed';
+        if (context.worker !== 'all')
+          record.postcheckDurationMs = performance.now() - at;
         record.githubDeploymentId = await github.recordPublished({
           worker,
           versionId: outcome.version,
@@ -109,6 +115,9 @@ export async function release({
           ciRunAttempt: context.ciRunAttempt,
           verifyJobId: context.verifyJobId,
           controlSha: context.controlSha,
+          ...(context.worker === 'all'
+            ? { verificationMethod: 'wrangler' }
+            : {}),
         });
       } catch (error) {
         record.verification = 'published_unverified';

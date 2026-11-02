@@ -298,3 +298,34 @@ test('completed protected adoption becomes durable provenance without retained h
     { code: 'PROVENANCE_UNAVAILABLE' },
   );
 });
+test('Wrangler-confirmed publication is recorded without claiming infrastructure inspection', async () => {
+  const bodies = [];
+  const client = githubClient({
+    repository: 'owner/beauty',
+    token: 'fixture',
+    fetchImpl: async (_url, options) => {
+      bodies.push(JSON.parse(options.body));
+      return json({ id: 1 });
+    },
+  });
+  await client.recordPublished({
+    worker: 'billing',
+    commitSha: sha,
+    versionId: version,
+    manifest,
+    runId: '99',
+    releaseOrigin: 'ci',
+    releaseRunAttempt: 1,
+    ciRunId: 99,
+    ciRunAttempt: 1,
+    verifyJobId: 30,
+    controlSha: sha,
+    verificationMethod: 'wrangler',
+  });
+  assert.equal(bodies[0].payload.verificationMethod, 'wrangler');
+  assert.equal(bodies[0].description, 'Published billing');
+  assert.equal(
+    bodies[1].description,
+    'Wrangler confirmed publication; infrastructure not inspected',
+  );
+});

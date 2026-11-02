@@ -1,5 +1,28 @@
 # Operação protegida dos Workers
 
+## Politica atual do deploy completo
+
+Por instrução do solicitante, o CI com request worker=all publica Billing →
+Clinical → Operations após verify, testes/build e validação local do manifesto e
+dos contratos candidatos. Não exige proveniência das versões anteriores nem faz
+consultas próprias a Workers settings/deployments, D1, R2, capacidade ou exposição
+antes/depois da publicação. O fluxo completo agora realiza zero consultas explícitas
+de infraestrutura pelo orquestrador; as operações nativas de publicação pertencem
+ao Wrangler/Cloudflare e não são contabilizadas como inspeções próprias.
+
+O resultado exige sucesso do Wrangler e um version ID válido, registrando
+verification=wrangler_confirmed e infrastructureVerification=not_performed.
+Os registros GitHub associam SHA, CI, manifesto e versão publicada e indicam
+verificationMethod=wrangler. Isso não comprova readiness, compatibilidade com o código
+antigo durante a troca nem comportamento funcional em produção. Não há alteração
+implícita de migrations ou aprovação fictícia de infraestrutura.
+
+Não é necessário usar a publicação inicial extraordinária para contornar NO_RECORDS
+no deploy completo normal. Deploys individuais e os workflows administrativos
+explícitos conservam suas próprias verificações; não são acionados por worker=all.
+Esta política substitui as exigências anteriores de primeira adoção para o CI de
+publicação completa. A aprovação efetiva de production e o verify continuam exigidos.
+
 ## Escopo atual das verificacoes R2 no deploy
 
 Por autorização explícita do solicitante, primeira publicação controlada e release
@@ -11,8 +34,8 @@ separadamente e não deve ser disparada como parte desta publicação sem autori
 Os bindings declarados da aplicação são preservados, assim como validação de
 Workers, versões, proveniência, configurações, D1/migrations e pós-checks. A mudança
 retira consultas explícitas do orquestrador; não altera o uso do bucket pela aplicação.
-O release normal completo passa de 20 para 19 consultas Cloudflare explícitas no
-teste simulado. Os testes de regressão rejeitam qualquer chamada R2 ou media_capacity
+O release completo normal agora executa zero consultas Cloudflare explícitas de
+infraestrutura no teste simulado. Os testes de regressão rejeitam chamadas R2 ou media_capacity
 durante a primeira publicação.
 
 ## Diagnóstico local somente leitura (WSL/Bash)

@@ -36,7 +36,7 @@ test('active version rejects malformed UUIDs and split traffic', () => {
     });
   }
 });
-test('complete release has one preflight, directed postchecks and per-Worker provenance', async () => {
+test('complete release validates code locally and records Wrangler-confirmed publications without infrastructure queries', async () => {
   const f = fixture(),
     order = [],
     records = [];
@@ -63,8 +63,12 @@ test('complete release has one preflight, directed postchecks and per-Worker pro
   assert.equal(checks, 1);
   assert.deepEqual(order, ['billing', 'clinical', 'operations']);
   assert.equal(records.length, 3);
-  assert.equal(f.client.metrics.calls, 19);
-  assert.equal(f.calls.filter((c) => c.body).length, 1);
+  assert.equal(f.client.metrics.calls, 0);
+  assert.equal(f.calls.filter((c) => c.body).length, 0);
+  assert.ok(
+    records.every((record) => record.verificationMethod === 'wrangler'),
+  );
+  assert.equal(result.infrastructureVerification, 'not_performed');
   assert.ok(
     f.calls.every(
       (c) =>
@@ -75,7 +79,7 @@ test('complete release has one preflight, directed postchecks and per-Worker pro
     ),
   );
 });
-test('complete release accepts Cloudflare production selectors with unchanged metadata call count', async () => {
+test('complete release does not inspect remote service selectors', async () => {
   const f = fixture((path) => {
     if (!path.endsWith('/settings')) return;
     const name = path.match(/beauty-(operations|billing|clinical)-worker/)[1];
@@ -100,7 +104,7 @@ test('complete release accepts Cloudflare production selectors with unchanged me
   });
   assert.equal(result.status, 'success');
   assert.deepEqual(order, ['billing', 'clinical', 'operations']);
-  assert.equal(f.client.metrics.calls, 19);
+  assert.equal(f.client.metrics.calls, 0);
 });
 test('failed second publication retains first proof and stops Operations', async () => {
   const f = fixture(),
@@ -121,7 +125,7 @@ test('failed second publication retains first proof and stops Operations', async
   });
   assert.equal(result.status, 'failed');
   assert.deepEqual(order, ['billing', 'clinical']);
-  assert.equal(result.workers[0].verification, 'passed');
+  assert.equal(result.workers[0].verification, 'wrangler_confirmed');
   assert.equal(result.workers[0].githubDeploymentId, 42);
   assert.equal(result.failure.code, 'WRANGLER_FAILED');
   assert.ok(!JSON.stringify(snapshots).includes('private token'));
@@ -131,7 +135,7 @@ test('postcheck failure retains actual published version and prevents next desti
     order = [];
   const result = await release({
     ...f,
-    context,
+    context: { ...context, worker: 'billing' },
     configurations,
     manifest,
     publish: (name) => {
@@ -197,9 +201,17 @@ test('schema incompatibility blocks before publishing and never writes D1', asyn
       ? response([{ success: true, results: [] }])
       : undefined,
   );
-  await assert.rejects(preflight({ ...f, context, configurations, manifest }), {
-    code: 'SCHEMA_NOT_READY',
-  });
+  await assert.rejects(
+    preflight({
+      ...f,
+      context: { ...context, worker: 'clinical' },
+      configurations,
+      manifest,
+    }),
+    {
+      code: 'SCHEMA_NOT_READY',
+    },
+  );
   assert.ok(
     f.calls
       .filter((c) => c.body)
@@ -280,4 +292,52 @@ test('safe diagnostics exclude unknown upstream data and unapproved fields', () 
     'phase',
     'operation',
   ]);
+});
+test('all Workers publish with no previous provenance and no infrastructure API calls', async () => {
+  const f = fixture();
+  const order = [];
+  f.client.request = async () => assert.fail('must not query infrastructure');
+  f.github.provenanceByVersion = async () =>
+    assert.fail('must not query prior provenance');
+  const result = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    publish: (worker) => {
+      order.push(worker);
+      return published();
+    },
+    postcheckImpl: async () =>
+      assert.fail('must not inspect remote infrastructure'),
+  });
+  assert.equal(result.status, 'success');
+  assert.deepEqual(order, ['billing', 'clinical', 'operations']);
+  assert.ok(
+    result.workers.every(
+      (worker) => worker.verification === 'wrangler_confirmed',
+    ),
+  );
+  assert.equal(result.infrastructureVerification, 'not_performed');
+});
+test('full publication retains actual versions and stops if GitHub registration fails', async () => {
+  const f = fixture();
+  const order = [];
+  f.github.recordPublished = async () => {
+    throw new Error('registration unavailable');
+  };
+  const result = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    publish: (worker) => {
+      order.push(worker);
+      return published();
+    },
+  });
+  assert.deepEqual(order, ['billing']);
+  assert.equal(result.status, 'published_unverified');
+  assert.equal(result.workers[0].version, version);
+  assert.equal(result.cloudflare.calls, 0);
 });

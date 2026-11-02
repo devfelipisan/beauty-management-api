@@ -202,7 +202,7 @@ test('Billing failure preserves identical sanitized CLI, artifact and summary di
     ...f,
     context: {
       mode: 'deploy',
-      worker: 'all',
+      worker: 'billing',
       commitSha: sha,
       requestId: 'service-diagnostic',
     },

@@ -242,13 +242,13 @@ test('partial GitHub registration remains a failed operation with recovery evide
   assert.equal(report.records.length, 1);
   assert.equal(report.workers.length, 3);
 });
-test('normal release still blocks unknown active versions and never falls back to first publication', async () => {
+test('individual release still blocks unknown active versions and never falls back to first publication', async () => {
   const f = scenario();
   f.context = {
     ...f.context,
     releaseOrigin: 'ci',
     mode: 'deploy',
-    worker: 'all',
+    worker: 'billing',
   };
   const report = await release(f);
   assert.equal(report.status, 'failed');

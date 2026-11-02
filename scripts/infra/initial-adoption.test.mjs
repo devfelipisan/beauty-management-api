@@ -187,7 +187,7 @@ test('partial registration failure preserves confirmed records and never reports
   await assert.rejects(initialAdoption(f));
   assert.equal(saved.length, 1);
 });
-test('normal release still requires provenance, including after manual version replacement', async () => {
+test('individual release still requires provenance, including after manual version replacement', async () => {
   const f = fixture();
   f.github.provenanceByVersion = async () => {
     throw Object.assign(new Error('untrusted active version'), {
@@ -199,7 +199,7 @@ test('normal release still requires provenance, including after manual version r
       ...f,
       configurations,
       manifest,
-      context: { ...context, worker: 'all' },
+      context: { ...context, worker: 'billing' },
     }),
     { code: 'PROVENANCE_UNAVAILABLE' },
   );

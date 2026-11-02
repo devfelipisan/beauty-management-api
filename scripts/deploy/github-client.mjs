@@ -714,7 +714,10 @@ export function githubClient({
     controlSha,
     adoptionEvidence: initialEvidence,
     firstPublication,
+    verificationMethod,
   }) {
+    if (verificationMethod !== undefined && verificationMethod !== 'wrangler')
+      fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
     if (
       !baseline &&
       (!['ci', 'manual', 'first-publication'].includes(releaseOrigin) ||
@@ -747,7 +750,7 @@ export function githubClient({
         environment: 'production',
         auto_merge: false,
         required_contexts: [],
-        description: `Verified ${worker}`,
+        description: `${verificationMethod === 'wrangler' ? 'Published' : 'Verified'} ${worker}`,
         payload: {
           worker,
           commitSha,
@@ -756,6 +759,7 @@ export function githubClient({
           manifestDigest: digest(manifest),
           runId: String(runId),
           baseline,
+          ...(verificationMethod ? { verificationMethod } : {}),
           ...(releaseOrigin === 'first-publication'
             ? { firstPublication }
             : {}),
@@ -787,7 +791,10 @@ export function githubClient({
       body: {
         state: 'success',
         auto_inactive: false,
-        description: 'Worker version and manifest verified',
+        description:
+          verificationMethod === 'wrangler'
+            ? 'Wrangler confirmed publication; infrastructure not inspected'
+            : 'Worker version and manifest verified',
       },
     });
     return deployment.id;

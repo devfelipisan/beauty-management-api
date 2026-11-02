@@ -328,7 +328,7 @@ test('the shared diagnostic remains identical in CLI JSON, partial artifacts and
   const report = await release({
     ...f,
     context: {
-      worker: 'all',
+      worker: 'billing',
       mode: 'deploy',
       commitSha: sha,
       requestId: 'diagnostic-proof',

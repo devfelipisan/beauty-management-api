@@ -77,8 +77,7 @@ test('release supports call and dispatch with a protected publication and read-o
     (step) => step.name === 'Validate Cloudflare credentials availability',
   );
   const publication = steps.findIndex(
-    (step) =>
-      step.name === 'Release with one preflight and directed postchecks',
+    (step) => step.name === 'Publish tested Workers and record results',
   );
   assert.ok(availability >= 0 && availability < publication);
   assert.deepEqual(steps[availability].env, {
