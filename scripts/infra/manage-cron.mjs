@@ -107,9 +107,15 @@ export function scheduleWriter({
   };
 }
 
+export function saveCronReport(report) {
+  mkdirSync('.cache/cron', { recursive: true });
+  writeFileSync(
+    '.cache/cron/result.json',
+    JSON.stringify(report, null, 2) + '\n',
+  );
+}
+
 export async function manageCronMain() {
-  const directory = '.cache/cron';
-  mkdirSync(directory, { recursive: true });
   let report;
   try {
     if (process.argv.slice(2).some((arg) => arg !== '--apply'))
@@ -127,10 +133,7 @@ export async function manageCronMain() {
     report = { status: 'failed', failure: diagnostic(error, context) };
     process.exitCode = 1;
   }
-  writeFileSync(
-    `${directory}/result.json`,
-    JSON.stringify(report, null, 2) + '\n',
-  );
+  saveCronReport(report);
   console.log(JSON.stringify(report, null, 2));
 }
 if (

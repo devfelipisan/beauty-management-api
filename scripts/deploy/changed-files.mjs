@@ -18,9 +18,16 @@ export function requiresWorkerDeployment(paths) {
       /^(package(?:-lock)?\.json|\.nvmrc|\.npmrc|tsconfig(?:\.[\w-]+)?\.json|nest-cli\.json)$/.test(
         path,
       ) ||
-      ['scripts/deploy/manifest.json', '.github/deploy/request.json'].includes(
-        path,
-      )
+      /^scripts\/deploy\/.*\.mjs$/.test(path) ||
+      [
+        '.github/workflows/ci.yml',
+        '.github/workflows/deploy-workers.yml',
+        'scripts/infra/manage-cron.mjs',
+        'scripts/workers-dry-run.mjs',
+        'scripts/deploy/manifest.json',
+        '.github/deploy/request.json',
+        '.github/deploy/cron.json',
+      ].includes(path)
     );
   });
 }

@@ -18,6 +18,12 @@ import { githubClient } from './github-client.mjs';
 import { readManifest, digest } from './manifest.mjs';
 import { preflight } from './preflight.mjs';
 import { postcheck } from './postcheck.mjs';
+import { readCronRequest } from './cron-request.mjs';
+import {
+  synchronizeCron,
+  scheduleWriter,
+  saveCronReport,
+} from '../infra/manage-cron.mjs';
 import { wranglerDeployArgs } from './wrangler-command.mjs';
 import { diagnostic, fail } from './errors.mjs';
 import {
@@ -36,6 +42,8 @@ export async function release({
   persist = () => {},
   preflightImpl = preflight,
   postcheckImpl = postcheck,
+  managedCron,
+  reconcileCron = async () => undefined,
 }) {
   const report = {
     requestId: context.requestId,
@@ -47,6 +55,7 @@ export async function release({
     status: 'running',
     verificationPolicy: 'provenance-and-postcheck',
     cronManagement: 'worker-settings-and-triggers',
+    ...(managedCron ? { desiredCronVariables: managedCron } : {}),
     eligibility: Object.fromEntries(
       [
         'releaseOrigin',
@@ -93,12 +102,15 @@ export async function release({
         });
       at = performance.now();
       try {
+        if (worker === 'operations')
+          report.cronReconciliation = await reconcileCron();
         const checked = await postcheckImpl({
           client,
           worker,
           versionId: outcome.version,
           commitSha: context.commitSha,
           configuration: configurations[worker],
+          expectedCronVariables: managedCron,
           transitions: manifest.workers[worker].transitions,
           context,
         });
@@ -199,6 +211,7 @@ export async function releaseMain(args = process.argv.slice(2)) {
       ]),
     );
     const manifest = readManifest();
+    const managedCron = readCronRequest();
     const client = cloudflareClient({
       accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
       apiToken: process.env.CLOUDFLARE_API_TOKEN,
@@ -207,7 +220,7 @@ export async function releaseMain(args = process.argv.slice(2)) {
     const publish = (worker, sha) => {
       const result = spawnSync(
         process.execPath,
-        wranglerDeployArgs(worker, sha),
+        wranglerDeployArgs(worker, sha, { cronVariables: managedCron }),
         { encoding: 'utf8' },
       );
       if (deploymentOutcome(result).status !== 'published') {
@@ -230,6 +243,27 @@ export async function releaseMain(args = process.argv.slice(2)) {
       github,
       publish,
       persist,
+      managedCron,
+      reconcileCron: async () => {
+        try {
+          const result = await synchronizeCron({
+            client,
+            replaceSchedules: scheduleWriter({
+              accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+              apiToken: process.env.CLOUDFLARE_API_TOKEN,
+            }),
+            apply: true,
+          });
+          saveCronReport(result);
+          return result;
+        } catch (error) {
+          saveCronReport({
+            status: 'failed',
+            failure: diagnostic(error, context),
+          });
+          throw error;
+        }
+      },
     });
     if (process.env.GITHUB_STEP_SUMMARY)
       appendFileSync(

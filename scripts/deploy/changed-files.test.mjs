@@ -15,14 +15,14 @@ import {
   deploymentChanges,
 } from './changed-files.mjs';
 
-test('docs, tests and release tooling alone do not publish Workers', () => {
+test('docs, tests and unrelated administrative tools do not publish Workers', () => {
   for (const paths of [
     [],
     ['docs/release.md'],
-    ['README.md', 'scripts/deploy/release.mjs'],
+    ['README.md', 'scripts/infra/audit.mjs'],
     ['domains/billing/test/payment.ts'],
     ['apps/billing-worker/src/payment.spec.ts'],
-    ['.github/workflows/ci.yml'],
+    ['.github/workflows/migrations-d1.yml'],
   ])
     assert.equal(requiresWorkerDeployment(paths), false);
 });
@@ -39,6 +39,13 @@ test('runtime, contracts, dependencies, build settings and release requests requ
     'tsconfig.build.json',
     'scripts/deploy/manifest.json',
     '.github/deploy/request.json',
+    '.github/deploy/cron.json',
+    'scripts/deploy/release.mjs',
+    'scripts/deploy/cron-request.mjs',
+    'scripts/infra/manage-cron.mjs',
+    'scripts/workers-dry-run.mjs',
+    '.github/workflows/ci.yml',
+    '.github/workflows/deploy-workers.yml',
   ])
     assert.equal(requiresWorkerDeployment(['docs/note.md', path]), true, path);
 });
