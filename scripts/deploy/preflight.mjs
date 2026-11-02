@@ -96,17 +96,5 @@ export async function preflight({
       phase: 'preflight',
       operation: 'database.schema',
     });
-  if (workers.includes('operations')) {
-    const bucket = await client.request('/r2/buckets/beauty-r2', {
-      operation: 'bucket.metadata',
-      phase: 'preflight',
-    });
-    if (bucket?.name !== 'beauty-r2')
-      fail('RESOURCE_MISMATCH', {
-        ...context,
-        phase: 'preflight',
-        operation: 'bucket.metadata',
-      });
-  }
   return { valid: true, validatedWorkers: workers, published };
 }

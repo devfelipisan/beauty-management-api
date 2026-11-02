@@ -99,7 +99,8 @@ export async function firstPublication({
       configurations,
       context,
       phase: 'preflight',
-      approveMedia: true,
+      approveMedia: false,
+      checkR2: false,
       bindingTransitions: Object.fromEntries(
         releaseOrder.map((worker) => [
           worker,
@@ -185,7 +186,8 @@ export async function firstPublication({
       client,
       configurations,
       context,
-      approveMedia: true,
+      approveMedia: false,
+      checkR2: false,
     });
     await assertActive(expected);
     for (const worker of releaseOrder) {

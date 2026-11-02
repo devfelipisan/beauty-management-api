@@ -163,16 +163,13 @@ test('empty request, mismatched candidate, missing approval or missing recovery 
     assert.equal(f.records.length, 0);
   }
 });
-test('snapshot drift, incomplete migrations and missing media approvals block all publication', async () => {
-  for (const mode of ['drift', 'schema', 'media']) {
+test('snapshot drift and incomplete migrations block all publication', async () => {
+  for (const mode of ['drift', 'schema']) {
     const f = scenario();
     if (mode === 'drift') f.active.billing = next.billing;
     const request = f.client.request;
     f.client.request = (path, options = {}) => {
-      if (
-        (mode === 'schema' && options.body?.sql.includes('d1_migrations')) ||
-        (mode === 'media' && options.body?.sql.includes('media_capacity'))
-      )
+      if (mode === 'schema' && options.body?.sql.includes('d1_migrations'))
         return Promise.resolve([{ success: true, results: [] }]);
       return request(path, options);
     };
@@ -270,4 +267,16 @@ test('normal trusted topology cannot use exceptional publication and GitHub fail
   assert.equal(report.status, 'failed');
   assert.equal(f.published.length, 0);
   assert.equal(f.records.length, 0);
+});
+test('deployment performs no beauty-r2 or media-capacity requests', async () => {
+  const f = scenario();
+  const request = f.client.request;
+  f.client.request = (path, options = {}) => {
+    assert.ok(!path.includes('/r2/'));
+    assert.ok(!options.body?.sql?.includes('media_capacity'));
+    assert.ok(!options.body?.params?.includes('beauty-r2'));
+    return request(path, options);
+  };
+  assert.equal((await firstPublication(f)).status, 'success');
+  assert.equal(f.records.length, 3);
 });

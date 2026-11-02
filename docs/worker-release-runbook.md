@@ -1,5 +1,20 @@
 # Operação protegida dos Workers
 
+## Escopo atual das verificacoes R2 no deploy
+
+Por autorização explícita do solicitante, primeira publicação controlada e release
+normal não consultam beauty-r2: foram retiradas as leituras de metadados, domínios,
+privacidade e media_capacity desses caminhos. Esses aspectos não são atestados pelo
+deploy. A verificação administrativa completa de infraestrutura permanece disponível
+separadamente e não deve ser disparada como parte desta publicação sem autorização.
+
+Os bindings declarados da aplicação são preservados, assim como validação de
+Workers, versões, proveniência, configurações, D1/migrations e pós-checks. A mudança
+retira consultas explícitas do orquestrador; não altera o uso do bucket pela aplicação.
+O release normal completo passa de 20 para 19 consultas Cloudflare explícitas no
+teste simulado. Os testes de regressão rejeitam qualquer chamada R2 ou media_capacity
+durante a primeira publicação.
+
 ## Diagnóstico local somente leitura (WSL/Bash)
 
 Quando o Bash enxerga variáveis mas Node não, exportar os valores no mesmo terminal.

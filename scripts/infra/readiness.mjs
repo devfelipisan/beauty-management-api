@@ -7,6 +7,7 @@ export async function infrastructureReadiness({
   context = {},
   phase = 'readiness',
   approveMedia = true,
+  checkR2 = true,
   runtimeText = {},
   bindingTransitions = {},
 }) {
@@ -31,6 +32,7 @@ export async function infrastructureReadiness({
       phase,
       operation: 'database.metadata',
     });
+  if (!checkR2) return;
   const bucket = await client.request('/r2/buckets/beauty-r2', {
     operation: 'bucket.metadata',
     phase,

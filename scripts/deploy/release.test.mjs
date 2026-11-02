@@ -63,13 +63,14 @@ test('complete release has one preflight, directed postchecks and per-Worker pro
   assert.equal(checks, 1);
   assert.deepEqual(order, ['billing', 'clinical', 'operations']);
   assert.equal(records.length, 3);
-  assert.equal(f.client.metrics.calls, 20);
+  assert.equal(f.client.metrics.calls, 19);
   assert.equal(f.calls.filter((c) => c.body).length, 1);
   assert.ok(
     f.calls.every(
       (c) =>
         !c.path.includes('/secrets') &&
         !c.path.includes('/domains/') &&
+        !c.path.includes('/r2/') &&
         !c.body?.sql.includes('media_capacity'),
     ),
   );
@@ -99,7 +100,7 @@ test('complete release accepts Cloudflare production selectors with unchanged me
   });
   assert.equal(result.status, 'success');
   assert.deepEqual(order, ['billing', 'clinical', 'operations']);
-  assert.equal(f.client.metrics.calls, 20);
+  assert.equal(f.client.metrics.calls, 19);
 });
 test('failed second publication retains first proof and stops Operations', async () => {
   const f = fixture(),
