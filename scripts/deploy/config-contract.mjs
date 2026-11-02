@@ -59,3 +59,21 @@ export const releaseOrder = Object.freeze([
 ]);
 export const releaseBranch = 'feature/microsservices';
 export const manifestPath = 'scripts/deploy/manifest.json';
+
+export const requiredObservability = Object.freeze({
+  enabled: true,
+  head_sampling_rate: 1,
+  redact_query_string: false,
+  logs: Object.freeze({
+    enabled: true,
+    head_sampling_rate: 0.1,
+    invocation_logs: true,
+    persist: true,
+  }),
+  traces: Object.freeze({
+    enabled: false,
+    head_sampling_rate: 1,
+    persist: true,
+  }),
+  issues: Object.freeze({ enabled: true }),
+});

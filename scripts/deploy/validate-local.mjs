@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import {
@@ -6,6 +7,7 @@ import {
   requiredProductionText,
   selectedWorkers,
   workerSpecifications,
+  requiredObservability,
 } from './config-contract.mjs';
 export function deploymentRequest(value) {
   if (
@@ -98,6 +100,10 @@ export function validateWorkerConfigurations(
     )
       throw new Error(`Missing trusted caller properties: ${name}`);
     if (production) {
+      if (!isDeepStrictEqual(config.observability, requiredObservability))
+        throw new Error(
+          `Invalid production observability configuration: ${name}`,
+        );
       // Authentication values belong only to remote secret bindings, including
       // named environments. Never accept values in a checked-in vars map.
       if (
