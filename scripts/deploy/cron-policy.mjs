@@ -56,15 +56,6 @@ export function cronPolicy(env = {}) {
   return { enabled: true, crons: [fields.join(' ')] };
 }
 
-export function scheduledConfiguration(worker, configuration, policy) {
-  return worker === 'operations'
-    ? {
-        ...configuration,
-        triggers: { ...configuration.triggers, crons: [...policy.crons] },
-      }
-    : configuration;
-}
-
 // Deployment evidence may contain zero or one Operations schedule.
 export function recordedCrons(value) {
   if (
@@ -79,4 +70,42 @@ export function recordedCrons(value) {
   return value.length
     ? cronPolicy({ CRONJOB_ENABLED: 'true', CRONJOB: value[0] }).crons
     : [];
+}
+
+export const cronVariableNames = Object.freeze(['CRONJOB_ENABLED', 'CRONJOB']);
+
+export function workerCronPolicy(settings, context = {}) {
+  const scope = {
+    ...context,
+    worker: 'operations',
+    operation: 'worker.settings',
+    allowedBindings: new Set(cronVariableNames),
+  };
+  if (!Array.isArray(settings?.bindings))
+    fail('REMOTE_RESPONSE_INVALID', scope);
+  const env = {};
+  for (const name of cronVariableNames) {
+    const matches = settings.bindings.filter(
+      (binding) => binding.name === name,
+    );
+    if (matches.length > 1)
+      fail('REMOTE_RESPONSE_INVALID', { ...scope, binding: name });
+    if (!matches.length) continue;
+    if (matches[0].type !== 'plain_text')
+      fail('BINDING_TYPE_INVALID', { ...scope, binding: name });
+    if (typeof matches[0].text !== 'string')
+      fail('BINDING_VALUE_INVALID', { ...scope, binding: name });
+    env[name] = matches[0].text;
+  }
+  if (
+    !['', 'true', 'false'].includes(
+      env.CRONJOB_ENABLED?.trim().toLowerCase() ?? '',
+    )
+  )
+    fail('BINDING_VALUE_INVALID', { ...scope, binding: 'CRONJOB_ENABLED' });
+  try {
+    return cronPolicy(env);
+  } catch {
+    fail('BINDING_VALUE_INVALID', { ...scope, binding: 'CRONJOB' });
+  }
 }

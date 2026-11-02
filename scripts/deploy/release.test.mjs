@@ -63,7 +63,7 @@ test('complete release validates provenance once, postchecks every Worker and ne
   assert.equal(checks, 1);
   assert.deepEqual(order, ['billing', 'clinical', 'operations']);
   assert.equal(records.length, 3);
-  assert.equal(f.client.metrics.calls, 19);
+  assert.equal(f.client.metrics.calls, 20);
   assert.equal(f.calls.filter((c) => c.body).length, 1);
   assert.ok(records.every((record) => record.verificationMethod === undefined));
   assert.equal(result.verificationPolicy, 'provenance-and-postcheck');
@@ -102,7 +102,7 @@ test('complete release accepts normalized production service selectors', async (
   });
   assert.equal(result.status, 'success');
   assert.deepEqual(order, ['billing', 'clinical', 'operations']);
-  assert.equal(f.client.metrics.calls, 19);
+  assert.equal(f.client.metrics.calls, 20);
 });
 test('failed second publication retains first proof and stops Operations', async () => {
   const f = fixture(),
@@ -330,7 +330,7 @@ test('full publication retains actual versions and stops if GitHub registration 
   assert.deepEqual(order, ['billing']);
   assert.equal(result.status, 'published_unverified');
   assert.equal(result.workers[0].version, version);
-  assert.equal(result.cloudflare.calls, 11);
+  assert.equal(result.cloudflare.calls, 12);
 });
 test('native publication failures preserve sanitized cause and exit code in the release report', async () => {
   const f = fixture();
@@ -350,7 +350,7 @@ test('native publication failures preserve sanitized cause and exit code in the 
   assert.equal(result.failure.upstreamCode, 10021);
   assert.equal(result.workers.length, 1);
   assert.ok(!JSON.stringify(result).includes('PRIVATE_VALUE'));
-  assert.equal(result.cloudflare.calls, 7);
+  assert.equal(result.cloudflare.calls, 8);
 });
 test('schema not ready and incompatible active contracts prevent every Worker upload', async () => {
   for (const mode of ['schema', 'contracts']) {
@@ -467,11 +467,45 @@ test('D1 HTTP 400 blocks every upload and distinguishes absent migration history
   }
 });
 
-test('release verifies the selected cron after publishing and records the effective policy', async () => {
-  const cron = { enabled: true, crons: ['0 3 * * *'] };
+test('release preserves and verifies the schedule configured in Worker bindings', async () => {
+  const f = fixture((path) => {
+    if (path.includes('beauty-operations-worker/settings')) {
+      const state = settings('operations');
+      state.bindings.push({
+        name: 'CRONJOB_ENABLED',
+        type: 'plain_text',
+        text: 'true',
+      });
+      return response(state);
+    }
+    if (path.includes('beauty-operations-worker/schedules'))
+      return response({ schedules: [{ cron: '0 3 * * *' }] });
+  });
+  const records = [];
+  f.github.recordPublished = async (record) => {
+    records.push(record);
+    return 1;
+  };
+  const report = await release({
+    ...f,
+    context,
+    configurations,
+    manifest,
+    publish: published,
+  });
+  assert.equal(report.status, 'success');
+  assert.equal(report.cronManagement, 'worker-settings-and-triggers');
+  assert.deepEqual(
+    records.find((record) => record.worker === 'operations').scheduledCrons,
+    ['0 3 * * *'],
+  );
+  assert.equal(report.workers.length, 3);
+});
+
+test('unexpected remote schedule blocks release without overwriting it', async () => {
   const f = fixture((path) =>
     path.includes('beauty-operations-worker/schedules')
-      ? response({ schedules: [{ cron: '0 3 * * *' }] })
+      ? response({ schedules: [{ cron: '*/1 * * * *' }] })
       : undefined,
   );
   const report = await release({
@@ -479,24 +513,14 @@ test('release verifies the selected cron after publishing and records the effect
     context,
     configurations,
     manifest,
-    cron,
     publish: published,
   });
-  assert.equal(report.status, 'success');
-  assert.deepEqual(report.cron, cron);
-  assert.equal(report.workers.length, 3);
-});
-
-test('unexpected remote schedule blocks release even with a custom cron policy', async () => {
-  const f = fixture();
-  const report = await release({
-    ...f,
-    context,
-    configurations,
-    manifest,
-    cron: { enabled: true, crons: ['0 3 * * *'] },
-    publish: published,
-  });
-  assert.equal(report.status, 'published_unverified');
+  assert.equal(report.status, 'failed');
+  assert.equal(report.workers.length, 0);
   assert.equal(report.failure.code, 'SCHEDULE_MISMATCH');
+  assert.ok(
+    f.calls.every(
+      (call) => call.method === 'GET' || call.body?.sql?.startsWith('SELECT'),
+    ),
+  );
 });
