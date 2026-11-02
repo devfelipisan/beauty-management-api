@@ -139,6 +139,15 @@ export class DeploymentValidationError extends Error {
       this.requestId = context.requestId;
     if (/^[0-9a-f]{40}$/.test(context.commitSha ?? ''))
       this.commitSha = context.commitSha;
+    if (
+      this.operation === 'database.schema' &&
+      this.status === 400 &&
+      ((this.code === 'SCHEMA_NOT_READY' &&
+        context.databaseReason === 'MIGRATION_HISTORY_MISSING') ||
+        (this.code === 'REMOTE_HTTP_ERROR' &&
+          context.databaseReason === 'QUERY_REJECTED'))
+    )
+      this.databaseReason = context.databaseReason;
     if (this.code === 'WRANGLER_FAILED' && this.operation === 'wrangler.deploy')
       Object.assign(this, wranglerFields(context));
     if (
@@ -166,6 +175,7 @@ export function diagnostic(error, context = {}) {
       'reason',
       'selector',
       'provenanceReason',
+      'databaseReason',
       'wranglerReason',
       'exitCode',
       'upstreamCode',
@@ -185,6 +195,13 @@ export function diagnostic(error, context = {}) {
           (key !== 'selector' ||
             (safe.reason === 'SELECTOR_MISMATCH' &&
               serviceSelectors.has(safe.selector))) &&
+          (key !== 'databaseReason' ||
+            (safe.operation === 'database.schema' &&
+              safe.status === 400 &&
+              ((safe.code === 'SCHEMA_NOT_READY' &&
+                safe.databaseReason === 'MIGRATION_HISTORY_MISSING') ||
+                (safe.code === 'REMOTE_HTTP_ERROR' &&
+                  safe.databaseReason === 'QUERY_REJECTED')))) &&
           (key !== 'provenanceReason' ||
             (safe.code === 'PROVENANCE_UNAVAILABLE' &&
               ['NO_RECORDS', 'NO_ACCEPTED_RECORD'].includes(

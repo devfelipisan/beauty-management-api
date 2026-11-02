@@ -419,3 +419,50 @@ test('full release stops after a stale published version without touching the ne
   assert.deepEqual(order, ['billing']);
   assert.ok(f.calls.every((call) => !call.path.includes('/r2/')));
 });
+
+test('D1 HTTP 400 blocks every upload and distinguishes absent migration history', async () => {
+  for (const [message, code, databaseReason] of [
+    [
+      'D1_ERROR: no such table: d1_migrations: SQLITE_ERROR',
+      'SCHEMA_NOT_READY',
+      'MIGRATION_HISTORY_MISSING',
+    ],
+    ['SQL rejected; sensitive response', 'REMOTE_HTTP_ERROR', 'QUERY_REJECTED'],
+  ]) {
+    const f = fixture((path) =>
+      path.endsWith('/query')
+        ? {
+            ok: false,
+            status: 400,
+            json: async () => ({
+              success: false,
+              errors: [{ code: 7500, message }],
+            }),
+          }
+        : undefined,
+    );
+    let uploads = 0;
+    const result = await release({
+      ...f,
+      context,
+      configurations,
+      manifest,
+      publish: () => {
+        uploads++;
+        return published();
+      },
+    });
+    assert.equal(result.status, 'failed');
+    assert.equal(result.failure.code, code);
+    assert.equal(result.failure.databaseReason, databaseReason);
+    assert.equal(result.failure.operation, 'database.schema');
+    assert.equal(result.failure.status, 400);
+    assert.ok(!JSON.stringify(result).includes(message));
+    assert.equal(uploads, 0);
+    assert.ok(!f.calls.some(({ path }) => path.includes('/r2/')));
+    assert.equal(
+      f.calls.filter(({ path }) => path.endsWith('/query')).length,
+      1,
+    );
+  }
+});
