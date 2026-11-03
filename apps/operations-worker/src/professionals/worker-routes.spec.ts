@@ -1,6 +1,9 @@
 import { vi } from 'vitest';
 import { handleProfessionals } from './worker-routes.js';
 import type { OperationsComposition } from '../composition-root.js';
+import { listProfessionals } from '../composition-root.js';
+
+vi.mock('../composition-root.js', () => ({ listProfessionals: vi.fn() }));
 
 vi.mock('@beauty/tenancy/adapters/worker-security', () => ({
   workerSecurity: () => ({
@@ -10,12 +13,11 @@ vi.mock('@beauty/tenancy/adapters/worker-security', () => ({
 }));
 
 it('requires professional.read before executing the list use case', async () => {
-  const listProfessionals = vi.fn();
   const response = await handleProfessionals(
     new Request('https://operations.test/tenants/tenant/professionals', {
       headers: { authorization: 'Bearer authenticated' },
     }),
-    { env: {}, listProfessionals } as unknown as OperationsComposition,
+    { env: {} } as unknown as OperationsComposition,
   );
   expect(response?.status).toBe(403);
   expect(await response?.json()).toMatchObject({ code: 'PERMISSION_DENIED' });

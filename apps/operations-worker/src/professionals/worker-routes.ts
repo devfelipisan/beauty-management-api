@@ -1,6 +1,9 @@
 import { ids, json, mappedError, notFound } from '@beauty/cloudflare-runtime';
 import { workerSecurity } from '@beauty/tenancy/adapters/worker-security';
-import type { OperationsComposition } from '../composition-root.js';
+import {
+  listProfessionals,
+  type OperationsComposition,
+} from '../composition-root.js';
 
 export async function handleProfessionals(
   request: Request,
@@ -37,7 +40,8 @@ export async function handleProfessionals(
       : undefined;
     if (limit !== undefined && (!Number.isInteger(limit) || limit < 1))
       return fail('VALIDATION_ERROR', 400);
-    const professionals = await composition.listProfessionals(
+    const professionals = await listProfessionals(
+      composition.env,
       tenantId,
       limit,
       url.searchParams.get('cursor') ?? undefined,

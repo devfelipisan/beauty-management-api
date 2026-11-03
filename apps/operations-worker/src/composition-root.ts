@@ -217,13 +217,19 @@ export function getRuntime(env: OperationsEnv): Runtime {
   return runtime;
 }
 
-export class OperationsComposition {
-  listProfessionals(tenantId: string, limit?: number, cursor?: string) {
-    return new ListProfessionalsUseCase(
-      new D1ProfessionalRepository(this.env.D1_DATABASE),
-    ).execute(tenantId, limit, cursor);
-  }
+// HTTP-only composition must not change the class signatures fingerprinted for RPC.
+export function listProfessionals(
+  env: OperationsEnv,
+  tenantId: string,
+  limit?: number,
+  cursor?: string,
+) {
+  return new ListProfessionalsUseCase(
+    new D1ProfessionalRepository(env.D1_DATABASE),
+  ).execute(tenantId, limit, cursor);
+}
 
+export class OperationsComposition {
   profileImages() {
     return new ProfileImages(
       new D1ProfileImageRepository(this.env.D1_DATABASE),

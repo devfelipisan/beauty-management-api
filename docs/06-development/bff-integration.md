@@ -107,6 +107,25 @@ testes antes de qualquer build; a suíte completa passou com 85 testes físicos,
 197 testes de scripts, configuração e manifesto. O manifesto foi regenerado
 pelo comando oficial `node scripts/deploy/manifest-check.mjs --write` porque
 a assinatura da composição de Operations participa da revisão calculada.
+A fábrica HTTP de listagem fica fora da classe `OperationsComposition`, para
+preservar a revisão RPC anterior à exposição HTTP. O manifesto regenerado
+mantém essa revisão, sem acrescentar revisões aceitas ou alterar o preflight.
 O runtime iniciado com `dev:workers` respondeu 200 em health, identidade,
 contexto, clientes, serviços e profissionais com o mock local, e 401 na leitura
 de profissionais sem token. O seed local foi executado duas vezes com sucesso.
+
+## Correção da compatibilidade no rollout
+
+O release do merge `4b133b5` falhou com `CONTRACT_INCOMPATIBLE` em
+`preflight/github.manifest`, worker Billing. A adição do método HTTP à classe
+de composição alterou a revisão calculada de Operations, embora não alterasse
+RPC. Durante a atualização sequencial, o Billing candidato exigia essa nova
+revisão antes da atualização de Operations.
+
+A fábrica foi movida para uma função de composição HTTP fora da classe. O
+gerador oficial voltou a produzir exatamente o manifesto de `a7bc9df`.
+Uma comparação local com os dois manifestos históricos reproduziu a falha;
+a simulação com o manifesto corrigido passou na ordem Billing → Clinical →
+Operations. A regressão automatizada preserva a revisão RPC anterior e verifica
+essa transição. Não foram alterados o validador, revisões adicionais aceitas,
+migrations ou schema. Essa evidência não verifica o estado remoto do D1.
