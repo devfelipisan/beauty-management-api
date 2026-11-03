@@ -42,6 +42,7 @@ import { D1AppointmentRepository } from '@beauty/operations/modules/appointments
 import { D1AvailabilityRepository } from '@beauty/operations/modules/appointments/infrastructure/d1-availability-repository';
 import { D1CustomerRepository } from '@beauty/operations/modules/customers/infrastructure/d1-customer-repository';
 import { D1ProfessionalRepository } from '@beauty/operations/modules/professionals/infrastructure/d1-professional-repository';
+import { ListProfessionalsUseCase } from '@beauty/operations/modules/professionals/application/use-cases';
 import { D1ProfessionalServiceEligibility } from '@beauty/operations/modules/appointment-eligibility/infrastructure/d1-professional-service-eligibility';
 import { CustomerRestrictionAdapter } from '@beauty/operations/modules/appointment-eligibility/infrastructure/customer-restriction';
 import { ClinicalServiceBindingAssessmentEligibilityAdapter } from '@beauty/operations/modules/appointment-eligibility/infrastructure/clinical-service-binding-assessment-eligibility';
@@ -217,6 +218,12 @@ export function getRuntime(env: OperationsEnv): Runtime {
 }
 
 export class OperationsComposition {
+  listProfessionals(tenantId: string, limit?: number, cursor?: string) {
+    return new ListProfessionalsUseCase(
+      new D1ProfessionalRepository(this.env.D1_DATABASE),
+    ).execute(tenantId, limit, cursor);
+  }
+
   profileImages() {
     return new ProfileImages(
       new D1ProfileImageRepository(this.env.D1_DATABASE),

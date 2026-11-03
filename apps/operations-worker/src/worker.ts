@@ -13,6 +13,7 @@ import {
   type UserRpcAuthorityV1,
 } from '@beauty/tenancy/adapters/rpc-security';
 import { handleServices } from './services/worker-routes.js';
+import { handleProfessionals } from './professionals/worker-routes.js';
 import { serveSwagger } from '@beauty/cloudflare-runtime/swagger';
 import { operationsOpenApi } from './openapi.js';
 import {
@@ -620,6 +621,11 @@ export default class OperationsWorker extends WorkerEntrypoint<
           new OperationsComposition(executionEnv(this.env)),
         );
         if (services) return services;
+        const professionals = await handleProfessionals(
+          request,
+          new OperationsComposition(executionEnv(this.env)),
+        );
+        if (professionals) return professionals;
         const change = await this.appointmentChangeRoute(request);
         if (change) return change;
         const assignment = await this.packageAssignmentRoute(request);

@@ -30,6 +30,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Verify Worker source exports before builds
+        run: npm run test:workers -- test/workers/create-appointment.spec.ts test/workers/tenant-isolation.spec.ts test/workers/service-binding-caller.spec.ts
       - name: Check formatting of changed files
         id: changes
         env:

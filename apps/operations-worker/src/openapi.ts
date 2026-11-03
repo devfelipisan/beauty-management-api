@@ -2,6 +2,7 @@ import { servicePaths } from './services/openapi.js';
 import { profileMediaPaths } from './profile-media-openapi.js';
 import {
   array,
+  boolean,
   document,
   envelope,
   header,
@@ -103,6 +104,46 @@ export const operationsOpenApi = document(
       ),
     },
     ...servicePaths,
+    [`${tenant}/professionals`]: {
+      get: operation(
+        `${tenant}/professionals`,
+        'listProfessionals',
+        'Listar profissionais',
+        'professional.read',
+        {
+          parameters: [
+            query('limit', integer({ minimum: 1 })),
+            query('cursor'),
+          ],
+          response: envelope(
+            array(
+              object(
+                {
+                  id: text(),
+                  tenantId: text(),
+                  name: text(),
+                  status: text({ enum: ['ACTIVE', 'INACTIVE'] }),
+                  publicVisible: boolean,
+                  createdAt: text(),
+                  updatedAt: text(),
+                },
+                [
+                  'id',
+                  'tenantId',
+                  'name',
+                  'status',
+                  'publicVisible',
+                  'createdAt',
+                  'updatedAt',
+                ],
+              ),
+            ),
+          ),
+          description:
+            'Reutiliza ListProfessionalsUseCase. Paginação por id, padrão 20 e máximo 100. Retorna o cadastro do tenant, inclusive inativos; não determina elegibilidade por serviço nem disponibilidade para agendamento.',
+        },
+      ),
+    },
     [`${tenant}/customers`]: {
       get: operation(
         `${tenant}/customers`,
