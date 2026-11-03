@@ -67,6 +67,9 @@ const migrations = await readD1Migrations('./database/d1/migrations');
 
 export default defineConfig({
   resolve: { conditions: ['beauty'] },
+  // Vitest transforms Worker imports through Vite's SSR resolver.
+  // Keep workspace source exports available before any TypeScript build.
+  ssr: { resolve: { conditions: ['beauty', 'workerd', 'module'] } },
   plugins: [
     cloudflareTest(async () => ({
       remoteBindings: false,
