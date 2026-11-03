@@ -233,6 +233,20 @@ test('all is rejected if an intermediate topology is incompatible', () => {
     { code: 'CONTRACT_INCOMPATIBLE' },
   );
 });
+test('professional HTTP reads preserve the pre-existing Operations RPC revision and rollout', () => {
+  // Contract fixture from a7bc9df, before the HTTP-only professional list.
+  // An intentional RPC change requires a separately reviewed compatibility plan.
+  const previousRevision =
+    '5c7e59618844fba5c78057cbe5c4390d08d817c49997b4d500253c0c0080ac54';
+  const current = structuredClone(manifest.workers);
+  current.operations.provided.revision = previousRevision;
+  current.billing.requires.operations = [previousRevision];
+  current.clinical.requires.operations = [previousRevision];
+  assert.equal(manifest.workers.operations.provided.revision, previousRevision);
+  assert.doesNotThrow(() =>
+    simulateRelease(current, manifest, ['billing', 'clinical', 'operations']),
+  );
+});
 test('manifest rejects invented revisions and incomplete transitions', () => {
   const candidate = structuredClone(manifest);
   candidate.workers.billing.provided.revision = 'c'.repeat(64);
