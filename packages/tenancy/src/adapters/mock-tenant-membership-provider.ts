@@ -8,7 +8,7 @@ export class MockTenantMembershipProvider implements TenantMembershipProvider {
       tenantId,
       actorId,
       active: true,
-      roles: ['admin'],
+      roles: ['tenant_admin'],
       permissions: [
         'customer.create', 'customer.read', 'customer.history.read', 'appointment.package.assign', 'clinical.photo.upload', 'clinical.photo.read', 'session.complete', 'receivable.read', 'payment.create', 'payment.read', 'ledger.read',
         'appointment.reschedule', 'appointment.cancel', 'appointment.no-show',

@@ -35,6 +35,7 @@ export async function handleServices(
       );
     const membership = await workerSecurity(
       composition.env,
+      request,
     ).membership.findActiveMembership(identity.actorId, tenantId);
     if (!membership) return fail('TENANT_ACCESS_DENIED', 403);
     // Mutations require their own explicitly granted permission.

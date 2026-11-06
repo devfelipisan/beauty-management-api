@@ -102,3 +102,12 @@ definem o status HTTP desejado para as regras do produto:
 
 Esses achados precisam de correções específicas; a criação da massa não alterou
 regras financeiras, permissões, estados ou mapeamento de erros.
+# Contexto operacional sintético
+
+O seed inclui os atores actor-dev-admin, actor-dev-reception e
+actor-dev-professional, com memberships e grants persistidos no D1 local.
+Administrador e recepção possuem os dois tenants sintéticos; o profissional
+está vinculado a mock-professional-ana no tenant principal. Os grants são
+fixtures explícitas, não defaults do produto nem concessões de produção.
+O admin preserva as permissões do antigo provider mock e acrescenta agenda.read.
+Workers continuam verificando identidade, função e escopo em cada operação.

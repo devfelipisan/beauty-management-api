@@ -1,5 +1,19 @@
 # Contrato inicial de integração do BFF com Operations
 
+## Agenda e função selecionada
+
+A evolução da agenda está documentada em
+[operations-agenda-query](../03-workers/operations-agenda-query.md) e na ADR-0016.
+`agenda.read` cobre leitura operacional mínima, detalhes e conflito, sem grants
+automáticos. Período máximo de 42 dias; página padrão 50, máximo 100.
+As permissões de HTTP/RPC agora são as da função selecionada; contexto ambíguo
+sem seleção é recusado. O escopo profissional persistido permanece obrigatório.
+O contexto não é armazenado no cache compartilhado de composição de segurança.
+
+A integração web da agenda deixa de carregar o dashboard/cadastro completo de
+clientes. Os casos legados sem política RPC aprovada continuam negados, inclusive
+em fixture; seus testes transacionais usam os casos de uso com D1 diretamente.
+
 A especificação executável é `GET /openapi.json` do Operations Worker
 (`apps/operations-worker/src/openapi.ts`). O BFF utiliza seu Service Binding
 para Operations e encaminha o Bearer da sessão; Operations chama Clinical e

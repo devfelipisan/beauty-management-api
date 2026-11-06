@@ -351,6 +351,7 @@ export default class ClinicalWorker extends WorkerEntrypoint<
     if (!identity) return null;
     const membership = await workerSecurity(
       executionEnv(this.env),
+      request,
     ).membership.findActiveMembership(identity.actorId, tenantId);
     if (!membership) throw new Error('TENANT_ACCESS_DENIED');
     return { identity, membership };

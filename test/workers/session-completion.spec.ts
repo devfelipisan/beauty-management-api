@@ -1,7 +1,8 @@
+import { authenticatedTestService } from './authenticated-test-service.js';
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 type Clinical={completeSession(i:Record<string,unknown>):Promise<any>;checkSessionCompletionEligibility(i:Record<string,unknown>):Promise<any>;dispatchOutboxBatch(i:Record<string,unknown>):Promise<any>};
-const db=env.D1_DATABASE;const clinical=env.CLINICAL_SERVICE as unknown as Clinical;const run=crypto.randomUUID();const ids={tenant:`completion-tenant-${run}`,session:`completion-session-${run}`,service:`completion-service-${run}`,customer:`completion-customer-${run}`,professional:`completion-professional-${run}`,appointment:`completion-appointment-${run}`};
+const db=env.D1_DATABASE;const clinical=authenticatedTestService(env.CLINICAL_SERVICE) as unknown as Clinical;const run=crypto.randomUUID();const ids={tenant:`completion-tenant-${run}`,session:`completion-session-${run}`,service:`completion-service-${run}`,customer:`completion-customer-${run}`,professional:`completion-professional-${run}`,appointment:`completion-appointment-${run}`};
 async function seed(){await db.batch([
  db.prepare("INSERT INTO tenants (id,legal_name,display_name,document,timezone,status,created_at,updated_at) VALUES (?, 'Completion Tenant', 'Completion', ?, 'America/Sao_Paulo', 'ACTIVE', ?, ?)").bind(ids.tenant,`8${run.replaceAll('-','').slice(0,13)}`,'2029-01-01','2029-01-01'),
  db.prepare("INSERT INTO customers (id,tenant_id,full_name,status,relationship_profile,blocked_for_new_appointments,created_at,updated_at) VALUES (?,?,'Completion Customer','ACTIVE','NEW',0,?,?)").bind(ids.customer,ids.tenant,'2029-01-01','2029-01-01'),

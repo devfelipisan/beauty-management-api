@@ -106,6 +106,8 @@ describe.each([sourceApi, publicApi])(
             schema: text({ example: 'tenant-dev-001' }),
           }),
           expect.objectContaining({ name: 'resourceId', schema: text() }),
+          expect.objectContaining({ name: 'x-workspace-role', required: false }),
+          expect.objectContaining({ name: 'x-professional-id', required: false }),
           expect.objectContaining({ name: 'Idempotency-Key', required: true }),
           query('filter'),
         ]),

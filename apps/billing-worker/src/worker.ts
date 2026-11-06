@@ -74,6 +74,7 @@ export default class BillingWorker extends WorkerEntrypoint<
             );
           const membership = await workerSecurity(
             executionEnv(this.env),
+            request,
           ).membership.findActiveMembership(identity.actorId, match[1]);
           if (!membership)
             return json(

@@ -1,11 +1,12 @@
+import { authenticatedTestService } from './authenticated-test-service.js';
 import { env } from 'cloudflare:workers';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 type Clinical = { completeSession(input: Record<string, unknown>): Promise<Record<string, unknown>>; dispatchOutboxBatch(input: Record<string, unknown>): Promise<Record<string, unknown>> };
 type Billing = { dispatchOutboxBatch(input: Record<string, unknown>): Promise<Record<string, unknown>> };
 const db = env.D1_DATABASE;
-const clinical = env.CLINICAL_SERVICE as unknown as Clinical;
-const billing = env.BILLING_SERVICE as unknown as Billing;
+const clinical = authenticatedTestService(env.CLINICAL_SERVICE) as unknown as Clinical;
+const billing = authenticatedTestService(env.BILLING_SERVICE) as unknown as Billing;
 const run = crypto.randomUUID();
 const ids = { tenant: `e2e-tenant-${run}`, customer: `e2e-customer-${run}`, service: `e2e-service-${run}`, professional: `e2e-professional-${run}`, appointment: `e2e-appointment-${run}`, session: `e2e-session-${run}`, package: `e2e-package-${run}` };
 

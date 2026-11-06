@@ -1,3 +1,4 @@
+import { authenticatedTestService } from './authenticated-test-service.js';
 import { env } from 'cloudflare:workers';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -6,7 +7,7 @@ type Billing = {
   applyPackageConsumptionRequested(input: Record<string, unknown>): Promise<Record<string, unknown>>;
 };
 const db = env.D1_DATABASE;
-const billing = env.BILLING_SERVICE as unknown as Billing;
+const billing = authenticatedTestService(env.BILLING_SERVICE) as unknown as Billing;
 const run = crypto.randomUUID();
 const tenantA = `isolation-a-${run}`;
 const tenantB = `isolation-b-${run}`;

@@ -1,4 +1,5 @@
 import { dispatchEligibleOutbox } from './outbox-coordinator.js';
+import { agendaRoute } from './agenda-routes.js';
 import { D1ProfileImageRepository } from '@beauty/operations/modules/profile-media/infrastructure/d1-profile-image-repository';
 import { profileMediaRoute } from './profile-media-routes.js';
 import { executionEnv, scopeEntrypoint } from '@beauty/database/d1/invocation';
@@ -139,6 +140,7 @@ async function handle(request: Request, env: OperationsEnv): Promise<Response> {
       );
     const membership = await workerSecurity(
       env,
+      request,
     ).membership.findActiveMembership(identity.actorId, found.tenantId);
     if (!membership)
       return json(
@@ -457,6 +459,7 @@ export default class OperationsWorker extends WorkerEntrypoint<
       );
     const membership = await workerSecurity(
       executionEnv(this.env),
+      request,
     ).membership.findActiveMembership(identity.actorId, match[1]);
     if (!membership)
       return json(
@@ -607,6 +610,8 @@ export default class OperationsWorker extends WorkerEntrypoint<
       executionEnv(this.env).SERVICE_VERSION,
       executionEnv(this.env).OBSERVE_ENABLED === 'true',
       async (request) => {
+        const agenda = await agendaRoute(request, executionEnv(this.env));
+        if (agenda) return agenda;
         const profile = await profileMediaRoute(
           request,
           executionEnv(this.env),

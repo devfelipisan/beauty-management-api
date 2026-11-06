@@ -1,6 +1,11 @@
+import { authenticatedTestService } from './authenticated-test-service.js';
 import { env, exports } from 'cloudflare:workers';
 import { invokeClinicalAssessment, invokeCommercialTerms } from '../../apps/operations-worker/src/worker.js';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+
+beforeAll(async () => {
+  await env.D1_DATABASE.prepare("INSERT INTO tenants (id,legal_name,display_name,document,timezone,status,created_at,updated_at) VALUES ('tenant-dev-001','Runtime fixture','Runtime fixture','runtime-fixture','America/Sao_Paulo','ACTIVE','test','test')").run();
+});
 
 const worker = exports.default as {
   fetch(request: Request): Promise<Response>;
@@ -21,10 +26,10 @@ describe('Operations Worker physical runtime', () => {
   });
 
   it('reaches Clinical and Billing through real service bindings', async () => {
-    const clinical = await invokeClinicalAssessment(env as never, {
+    const clinical = await invokeClinicalAssessment({ ...env, CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE), BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE) } as never, {
       tenantId: 'tenant-dev-001', customerId: 'customer-1', serviceId: 'service-1', professionalId: '',
     });
-    const billing = await invokeCommercialTerms(env as never, {
+    const billing = await invokeCommercialTerms({ ...env, CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE), BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE) } as never, {
       tenantId: 'tenant-dev-001', customerId: 'customer-1', serviceId: 'service-1', basePriceCents: 1000,
     });
 
@@ -33,7 +38,7 @@ describe('Operations Worker physical runtime', () => {
   });
 
   it('reaches a normative READY commercial path through Billing RPC', async () => {
-    const billing = await invokeCommercialTerms(env as never, {
+    const billing = await invokeCommercialTerms({ ...env, CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE), BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE) } as never, {
       tenantId: 'tenant-dev-001', customerId: 'customer-1', serviceId: 'service-1', basePriceCents: 20000,
       commercialContext: { serviceId: 'service-1', category: 'GENERAL', allowsDiscount: false, depositMode: 'PERCENTAGE', depositPercentageBasisPoints: 2000 },
     });

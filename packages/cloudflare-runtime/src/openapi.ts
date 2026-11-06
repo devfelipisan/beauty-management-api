@@ -93,6 +93,23 @@ export function operation(
       })),
       header('x-request-id', 'Identificador opcional da requisição.'),
       header('x-correlation-id', 'Identificador opcional de correlação.'),
+      ...(path.includes('{tenantId}')
+        ? [
+            {
+              ...header(
+                'x-workspace-role',
+                'Função selecionada, validada contra a membership atual. Exigida quando o contexto é ambíguo.',
+              ),
+              schema: text({
+                enum: ['administrator', 'reception', 'professional'],
+              }),
+            },
+            header(
+              'x-professional-id',
+              'Seleção profissional confrontada com o escopo persistido.',
+            ),
+          ]
+        : []),
       ...(options.idempotent
         ? [
             header(

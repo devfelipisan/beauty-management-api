@@ -4,6 +4,18 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./modules/appointments/application/queries/list-tenant-agenda": {
+      "beauty": "./src/modules/appointments/application/queries/list-tenant-agenda.ts",
+      "types": "./dist/modules/appointments/application/queries/list-tenant-agenda.d.ts",
+      "workerd": "./src/modules/appointments/application/queries/list-tenant-agenda.ts",
+      "default": "./dist/modules/appointments/application/queries/list-tenant-agenda.js"
+    },
+    "./modules/appointments/infrastructure/d1-agenda-read-repository": {
+      "beauty": "./src/modules/appointments/infrastructure/d1-agenda-read-repository.ts",
+      "types": "./dist/modules/appointments/infrastructure/d1-agenda-read-repository.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/d1-agenda-read-repository.ts",
+      "default": "./dist/modules/appointments/infrastructure/d1-agenda-read-repository.js"
+    },
     "./infrastructure/outbox/billing-financial-settlement-delivery": {
       "beauty": "./src/infrastructure/outbox/billing-financial-settlement-delivery.ts",
       "types": "./dist/infrastructure/outbox/billing-financial-settlement-delivery.d.ts",

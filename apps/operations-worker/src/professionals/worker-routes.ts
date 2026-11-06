@@ -21,7 +21,7 @@ export async function handleProfessionals(
     const token = request.headers
       .get('authorization')
       ?.match(/^Bearer\s+([^\s]+)$/i)?.[1];
-    const security = workerSecurity(composition.env);
+    const security = workerSecurity(composition.env, request);
     const identity = token ? await security.identity.authenticate(token) : null;
     if (!identity)
       return fail(
@@ -45,6 +45,7 @@ export async function handleProfessionals(
       tenantId,
       limit,
       url.searchParams.get('cursor') ?? undefined,
+      membership.professionalId,
     );
     return json({
       data: professionals.map((item) => ({ id: item.id, ...item.data })),

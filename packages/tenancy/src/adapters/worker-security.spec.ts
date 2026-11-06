@@ -99,7 +99,7 @@ describe('Worker security composition', () => {
         tenantId: 'tenant',
         actorId: 'actor',
         active: true,
-        roles: [],
+        roles: ['reception'],
         permissions: [],
       });
     const env = remote();
@@ -109,6 +109,7 @@ describe('Worker security composition', () => {
       env,
     );
     expect(membership).toHaveBeenLastCalledWith('actor', 'tenant');
+    membership.mockResolvedValueOnce({ tenantId: 'other', actorId: 'actor', active: true, roles: ['reception'], permissions: [] });
     await requireHttpAuthority(
       new Request('https://api.test/v1/me/context', {
         headers: { ...headers, 'x-tenant-id': 'other' },
