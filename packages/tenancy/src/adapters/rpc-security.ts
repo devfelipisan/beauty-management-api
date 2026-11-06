@@ -4,12 +4,11 @@ import {
   type WorkerSecurityEnv,
 } from './worker-security.js';
 import { authorizeActor } from '@beauty/kernel/application/actor-authorization';
+import { resolveWorkspace, type WorkspaceRole } from '../workspace-authority.js';
+import type { UserRpcAuthority } from '@beauty/contracts';
 
-export interface UserRpcAuthorityV1 {
-  version: 1;
-  kind: 'user';
-  token: string;
-}
+/** Compatibility export for existing adapters; wire versions live in contracts. */
+export type UserRpcAuthorityV1 = UserRpcAuthority;
 export interface RpcPolicy {
   permissions?: readonly string[];
   eventType?: string;
@@ -59,8 +58,13 @@ export function userRpcMetadata(request: Request): {
 } {
   return {
     rpcAuthority: {
-      version: 1,
+      version: 2,
       kind: 'user',
+      selection: {
+        tenantId: new URL(request.url).pathname.match(/^\/tenants\/([^/]+)/)?.[1] ?? request.headers.get('x-tenant-id') ?? '',
+        role: (request.headers.get('x-workspace-role') ?? undefined) as WorkspaceRole | undefined,
+        professionalId: request.headers.get('x-professional-id') ?? undefined,
+      },
       token:
         request.headers
           .get('authorization')
@@ -109,7 +113,7 @@ export async function authorizeWorkerRpc(
     throw new Error('VALIDATION_ERROR');
   const input = { ...value } as Record<string, unknown>;
   // Explicit fixture composition is the only exception. Production never takes this path.
-  if (fixtureSecurity(env)) {
+  if (fixtureSecurity(env) && policy.eventType) {
     const authority = input.rpcAuthority as UserRpcAuthorityV1 | undefined;
     delete input.rpcAuthority;
     if (typeof input.actorId === 'string' && typeof input.tenantId === 'string')
@@ -153,18 +157,22 @@ export async function authorizeWorkerRpc(
   const authority = input.rpcAuthority as
     Partial<UserRpcAuthorityV1> | undefined;
   if (
-    authority?.version !== 1 ||
+    !authority ||
+    ![1, 2].includes(authority?.version ?? 0) ||
     authority.kind !== 'user' ||
-    typeof authority.token !== 'string'
+    typeof authority.token !== 'string' ||
+    (authority.version === 2 && (!authority.selection || typeof authority.selection.tenantId !== 'string'))
   )
     throw new Error('AUTHENTICATION_REQUIRED');
   const security = workerSecurity(env);
   const identity = await security.identity.authenticate(authority.token);
   if (!identity) throw new Error('INVALID_AUTHENTICATION');
-  const membership = await security.membership.findActiveMembership(
+  const candidate = await security.membership.findActiveMembership(
     identity.actorId,
     input.tenantId,
   );
+  if (authority.version === 2 && (!authority.selection || authority.selection.tenantId !== input.tenantId)) throw new Error('TENANT_ACCESS_DENIED');
+  const membership = candidate ? resolveWorkspace(candidate, authority.version === 2 ? authority.selection : undefined) : null;
   if (
     !membership ||
     !policy.permissions.some((permission) =>

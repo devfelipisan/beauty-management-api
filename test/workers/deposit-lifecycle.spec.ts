@@ -1,3 +1,4 @@
+import { internalBillingFixture } from './internal-billing-fixture.js';
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 
@@ -9,7 +10,7 @@ type BillingService = {
 };
 
 const db = env.D1_DATABASE;
-const billing = env.BILLING_SERVICE as unknown as BillingService;
+const billing = internalBillingFixture() as unknown as BillingService;
 const run = crypto.randomUUID();
 const tenantId = `deposit-tenant-${run}`;
 

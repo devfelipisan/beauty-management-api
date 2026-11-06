@@ -1,8 +1,9 @@
+import { authenticatedTestService } from './authenticated-test-service.js';
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 
 type ClinicalService={startSession(input:Record<string,unknown>):Promise<{id:string;status:string;appointmentId:string}>;dispatchOutboxBatch(input:{workerId:string;batchSize:number;leaseSeconds:number;now:string}):Promise<{sent:number}>};
-const db=env.D1_DATABASE;const clinical=env.CLINICAL_SERVICE as unknown as ClinicalService;const run=crypto.randomUUID();const tenantId=`session-tenant-${run}`;const appointmentId=`session-appointment-${run}`;
+const db=env.D1_DATABASE;const clinical=authenticatedTestService(env.CLINICAL_SERVICE) as unknown as ClinicalService;const run=crypto.randomUUID();const tenantId=`session-tenant-${run}`;const appointmentId=`session-appointment-${run}`;
 async function seed(){await db.batch([
   db.prepare("INSERT INTO tenants (id, legal_name, display_name, document, timezone, status, created_at, updated_at) VALUES (?, 'Session Tenant', 'Session', ?, 'America/Sao_Paulo', 'ACTIVE', ?, ?)").bind(tenantId,`8${run.replaceAll('-','').slice(0,13)}`,'2028-01-01','2028-01-01'),
   db.prepare("INSERT INTO customers (id, tenant_id, full_name, status, relationship_profile, blocked_for_new_appointments, created_at, updated_at) VALUES (?, ?, 'Session Customer', 'ACTIVE', 'NEW', 0, ?, ?)").bind(`session-customer-${run}`,tenantId,'2028-01-01','2028-01-01'),

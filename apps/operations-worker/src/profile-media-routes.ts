@@ -22,7 +22,7 @@ export async function profileMediaRoute(
       .get('authorization')
       ?.match(/^Bearer\s+([^\s]+)$/i)?.[1];
     if (!token) throw new Error('AUTHENTICATION_REQUIRED');
-    const security = workerSecurity(env),
+    const security = workerSecurity(env, request),
       identity = await security.identity.authenticate(token);
     if (!identity) throw new Error('INVALID_AUTHENTICATION');
     const membership = await security.membership.findActiveMembership(

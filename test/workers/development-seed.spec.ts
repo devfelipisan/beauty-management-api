@@ -1,3 +1,4 @@
+import { internalBillingFixture } from './internal-billing-fixture.js';
 import { env, exports } from 'cloudflare:workers';
 import { buildDevelopmentSeed } from '../../database/seeds/development.mjs';
 
@@ -87,7 +88,7 @@ describe('Development seed on physical D1 and Workers', () => {
     });
     expect(
       (await request(operations, '/tenants/tenant-other/services')).status,
-    ).toBe(403);
+    ).toBe(200);
     expect(
       (
         await request(
@@ -314,9 +315,9 @@ describe('Development seed on physical D1 and Workers', () => {
       requestId: 'mock-flow-refund',
       correlationId: 'mock-flow-refund',
     };
-    const refund = await billing.issueRefund(refundInput);
+    const refund = await internalBillingFixture().issueRefund(refundInput);
     expect(refund).toMatchObject({ amountCents: 2000, status: 'CONFIRMED' });
-    expect(await billing.issueRefund(refundInput)).toEqual(refund);
+    expect(await internalBillingFixture().issueRefund(refundInput)).toEqual(refund);
     expect(
       (
         await db

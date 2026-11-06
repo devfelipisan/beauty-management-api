@@ -76,6 +76,7 @@
     "test": "node ../../scripts/workspace-test.mjs"
   },
   "dependencies": {
+    "@beauty/contracts": "0.0.1",
     "@beauty/authentication": "0.0.1",
     "@beauty/execution-context": "0.0.1",
     "@nestjs/common": "12.2.0",

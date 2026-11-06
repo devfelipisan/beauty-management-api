@@ -7,7 +7,7 @@ import { clinicalOpenApi } from '../../../clinical-worker/src/openapi.js';
 
 describe('HTTP OpenAPI contracts', () => {
   for (const [name, api, count] of [
-    ['operations', operationsOpenApi, 23],
+    ['operations', operationsOpenApi, 26],
     ['billing', billingOpenApi, 2],
     ['clinical', clinicalOpenApi, 20],
   ] as const) {
@@ -31,6 +31,7 @@ describe('HTTP OpenAPI contracts', () => {
               'services/worker-routes.ts',
               'professionals/worker-routes.ts',
               'profile-media-routes.ts',
+              'agenda-routes.ts',
             ]
           : []),
       ]) {

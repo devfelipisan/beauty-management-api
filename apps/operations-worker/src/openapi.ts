@@ -1,4 +1,5 @@
 import { servicePaths } from './services/openapi.js';
+import { agendaPaths } from './agenda-openapi.js';
 import { profileMediaPaths } from './profile-media-openapi.js';
 import {
   array,
@@ -37,6 +38,7 @@ export const operationsOpenApi = document(
   'Beauty — Operations Worker',
   {
     ...profileMediaPaths,
+    ...agendaPaths,
     '/v1/me/tenants': {
       get: operation(
         '/v1/me/tenants',

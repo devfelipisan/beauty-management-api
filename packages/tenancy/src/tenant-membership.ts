@@ -5,4 +5,6 @@ export interface TenantMembership {
   roles: string[];
   permissions: string[];
   professionalId?: string;
+  rolePermissions?: Record<string, readonly string[]>;
+  selectedRole?: 'administrator' | 'reception' | 'professional';
 }

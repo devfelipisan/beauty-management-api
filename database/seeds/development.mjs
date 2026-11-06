@@ -293,6 +293,111 @@ export function buildDevelopmentSeed(
     );
   }
 
+  // Explicit synthetic RBAC fixtures only; production migrations grant nothing.
+  const demoGrants = {
+    tenant_admin: [
+      'agenda.read',
+      'customer.create',
+      'customer.read',
+      'customer.history.read',
+      'professional.create',
+      'professional.read',
+      'service.create',
+      'service.read',
+      'appointment.create',
+      'appointment.confirm',
+      'appointment.check-in',
+      'appointment.reschedule',
+      'appointment.cancel',
+      'appointment.no-show',
+      'appointment.package.assign',
+      'session.start',
+      'session.complete',
+      'receivable.read',
+      'payment.create',
+      'payment.read',
+      'ledger.read',
+      'clinical.photo.upload',
+      'clinical.photo.read',
+      'technical-form.create',
+      'technical-form.publish',
+      'technical-form.read',
+      'session.technical.update',
+      'equipment.create',
+      'equipment.update',
+      'equipment.status.change',
+      'equipment.read',
+      'variation-policy.configure',
+      'intercurrence.report',
+      'intercurrence.resolve',
+      'intercurrence.read',
+    ],
+    reception: [
+      'agenda.read',
+      'customer.read',
+      'professional.read',
+      'service.read',
+      'appointment.create',
+      'appointment.confirm',
+      'appointment.check-in',
+    ],
+    professional: [
+      'agenda.read',
+      'professional.read',
+      'service.read',
+      'session.start',
+      'session.complete',
+    ],
+  };
+  for (const code of new Set(Object.values(demoGrants).flat()))
+    add('permissions', { code }, ['code']);
+  for (const [actor, role] of [
+    ['actor-dev-admin', 'tenant_admin'],
+    ['actor-dev-reception', 'reception'],
+    ['actor-dev-professional', 'professional'],
+  ]) {
+    add('identities', {
+      id: actor,
+      issuer: 'synthetic-local',
+      subject: actor,
+      active: 1,
+      created_at: at,
+      updated_at: at,
+    });
+    for (const tenantId of role === 'professional'
+      ? [primaryTenant]
+      : [primaryTenant, secondaryTenant]) {
+      add('roles', { tenant_id: tenantId, name: role, active: 1 }, [
+        'tenant_id',
+        'name',
+      ]);
+      add(
+        'tenant_memberships',
+        {
+          tenant_id: tenantId,
+          actor_id: actor,
+          active: 1,
+          professional_id:
+            role === 'professional' ? 'mock-professional-ana' : null,
+          created_at: at,
+          updated_at: at,
+        },
+        ['tenant_id', 'actor_id'],
+      );
+      add(
+        'membership_roles',
+        { tenant_id: tenantId, actor_id: actor, role_name: role },
+        ['tenant_id', 'actor_id', 'role_name'],
+      );
+      for (const code of demoGrants[role])
+        add(
+          'role_permissions',
+          { tenant_id: tenantId, role_name: role, permission_code: code },
+          ['tenant_id', 'role_name', 'permission_code'],
+        );
+    }
+  }
+
   // Check global fixture IDs before writing. No fixture may silently adopt another tenant's row.
   const guards = records
     .filter(({ row }) => row.id && row.tenant_id)

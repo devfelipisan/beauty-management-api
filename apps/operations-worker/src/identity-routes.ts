@@ -20,7 +20,7 @@ export async function identityRoute(
       .get('authorization')
       ?.match(/^Bearer\s+([^\s]+)$/i)?.[1];
     if (!token) throw new Error('AUTHENTICATION_REQUIRED');
-    const security = workerSecurity(env);
+    const security = workerSecurity(env, request);
     const identity = await security.identity.authenticate(token);
     if (!identity) throw new Error('INVALID_AUTHENTICATION');
     if (path === '/v1/me/tenants') {
@@ -36,18 +36,6 @@ export async function identityRoute(
       tenantId,
     );
     if (!membership) throw new Error('TENANT_ACCESS_DENIED');
-    const selectedRole = request.headers.get('x-workspace-role');
-    const roleName =
-      selectedRole === 'administrator' ? 'tenant_admin' : selectedRole;
-    if (roleName && !membership.roles.includes(roleName))
-      throw new Error('PERMISSION_DENIED');
-    const selectedProfessional = request.headers.get('x-professional-id');
-    if (
-      (selectedProfessional &&
-        selectedProfessional !== membership.professionalId) ||
-      (selectedRole === 'professional' && !membership.professionalId)
-    )
-      throw new Error('PERMISSION_DENIED');
     const data: MyContextResponse = {
       actorId: identity.actorId,
       tenantId,

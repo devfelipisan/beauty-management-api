@@ -5,7 +5,18 @@ export interface UserRpcAuthorityV1 {
   kind: 'user';
   token: string;
 }
-export type AuthorizedRpcRequest<T> = T & { rpcAuthority: UserRpcAuthorityV1 };
+export interface UserRpcAuthorityV2 {
+  version: 2;
+  kind: 'user';
+  token: string;
+  selection: {
+    tenantId: string;
+    role?: 'administrator' | 'reception' | 'professional';
+    professionalId?: string;
+  };
+}
+export type UserRpcAuthority = UserRpcAuthorityV1 | UserRpcAuthorityV2;
+export type AuthorizedRpcRequest<T> = T & { rpcAuthority: UserRpcAuthority };
 
 export interface WorkspaceOption {
   id: string;
