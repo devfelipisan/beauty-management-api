@@ -234,29 +234,27 @@ export class D1CustomerHistoryRepository implements CustomerHistoryRepository {
       .bind(...args, limit + 1)
       .all<any>();
     const now = new Date().toISOString();
-    const items = rows.results
-      .slice(0, limit)
-      .map((r: any) => ({
-        id: r.id,
-        tenantId: r.tenant_id,
-        customerId: r.customer_id,
-        sessionId: r.session_id,
-        serviceId: r.service_id,
-        professionalId: r.professional_id,
-        status: r.status,
-        recommendedAt: r.recommended_at,
-        recommendedFor: r.recommended_for ?? undefined,
-        intervalValue: r.interval_value ?? undefined,
-        intervalUnit: r.interval_unit ?? undefined,
-        reasonCode: r.reason_code ?? undefined,
-        observation: r.observation ?? undefined,
-        appointmentId: r.appointment_id ?? undefined,
-        createdAt: r.created_at,
-        convertedAt: r.converted_at ?? undefined,
-        overdue:
-          r.status === 'PENDING' &&
-          Boolean(r.recommended_for && r.recommended_for < now),
-      }));
+    const items = rows.results.slice(0, limit).map((r: any) => ({
+      id: r.id,
+      tenantId: r.tenant_id,
+      customerId: r.customer_id,
+      sessionId: r.session_id,
+      serviceId: r.service_id,
+      professionalId: r.professional_id,
+      status: r.status,
+      recommendedAt: r.recommended_at,
+      recommendedFor: r.recommended_for ?? undefined,
+      intervalValue: r.interval_value ?? undefined,
+      intervalUnit: r.interval_unit ?? undefined,
+      reasonCode: r.reason_code ?? undefined,
+      observation: r.observation ?? undefined,
+      appointmentId: r.appointment_id ?? undefined,
+      createdAt: r.created_at,
+      convertedAt: r.converted_at ?? undefined,
+      overdue:
+        r.status === 'PENDING' &&
+        Boolean(r.recommended_for && r.recommended_for < now),
+    }));
     return {
       items,
       nextCursor: rows.results.length > limit ? items.at(-1)?.id : undefined,

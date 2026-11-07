@@ -10,16 +10,12 @@ import type { UnitOfWork } from '@beauty/reliability/unit-of-work/unit-of-work';
 import type { IdempotencyStore } from '@beauty/reliability/idempotency/idempotency-store';
 import { IdempotencyService } from '@beauty/reliability/idempotency/idempotency.service';
 type Billing = {
-  evaluateAppointmentCancellationFinancials(
-    i: any,
-  ): Promise<{
+  evaluateAppointmentCancellationFinancials(i: any): Promise<{
     status: 'READY' | 'BLOCKED';
     reason?: string;
     decision?: AppointmentChangeFinancialDecision;
   }>;
-  evaluateAppointmentNoShowFinancials(
-    i: any,
-  ): Promise<{
+  evaluateAppointmentNoShowFinancials(i: any): Promise<{
     status: 'READY' | 'BLOCKED';
     reason?: string;
     decision?: AppointmentChangeFinancialDecision;

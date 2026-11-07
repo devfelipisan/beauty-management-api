@@ -184,17 +184,15 @@ for (const worker of ['operations', 'clinical', 'billing']) {
         tests.push(
           `if (pm.response.code >= 200 && pm.response.code < 300) { const data = pm.response.json().data; const id = data?.['${capture[1]}'] ?? data?.id; if (id) pm.environment.set('${capture[0]}', id); }`,
         );
-      folders
-        .get(group)
-        .push({
-          name: `${request.method} — ${op.summary}`,
-          request,
-          event: [
-            ...(pre.length ? [script('prerequest', pre)] : []),
-            script('test', tests),
-          ],
-          response: [],
-        });
+      folders.get(group).push({
+        name: `${request.method} — ${op.summary}`,
+        request,
+        event: [
+          ...(pre.length ? [script('prerequest', pre)] : []),
+          script('test', tests),
+        ],
+        response: [],
+      });
     }
   }
   const collection = {
