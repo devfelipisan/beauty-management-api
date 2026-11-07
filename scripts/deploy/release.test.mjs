@@ -239,8 +239,7 @@ test('changed RPC revisions reject unsafe rolling deployment from the previous t
   const previous = {
     operations:
       '5c7e59618844fba5c78057cbe5c4390d08d817c49997b4d500253c0c0080ac54',
-    billing:
-      '730bfad7e91d3b364ce9fcb00276cfa131d8d94b25de53d40a33a2b4052132ba',
+    billing: '730bfad7e91d3b364ce9fcb00276cfa131d8d94b25de53d40a33a2b4052132ba',
     clinical:
       '5ffc4da4a50267a4b4204b92a03c67e6dab44a0b6e57277dd859f1c2f03c9a29',
   };

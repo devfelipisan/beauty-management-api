@@ -54,15 +54,5 @@ if (paths.length) {
     [resolve('node_modules/prettier/bin/prettier.cjs'), '--check', ...paths],
     { stdio: 'inherit' },
   );
-  if (result.status !== 0) {
-    const write = spawnSync(
-      process.execPath,
-      [resolve('node_modules/prettier/bin/prettier.cjs'), '--write', ...paths],
-      { stdio: 'inherit' },
-    );
-    if (write.status === 0) {
-      spawnSync('git', ['diff', '--', ...paths], { stdio: 'inherit' });
-    }
-  }
   process.exitCode = result.status ?? 1;
 }
