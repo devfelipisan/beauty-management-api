@@ -251,22 +251,16 @@ test('changed RPC revisions reject unsafe rolling deployment from the previous t
     for (const dependency of Object.keys(worker.requires))
       worker.requires[dependency] = [previous[dependency]];
 
-  assert.doesNotThrow(() =>
-    simulateRelease(current, { workers: current }, []),
-  );
+  const verifyPrevious = () =>
+    simulateRelease(current, { workers: current }, []);
+  const verifyRollout = () =>
+    simulateRelease(current, manifest, ['billing', 'clinical', 'operations']);
+  assert.doesNotThrow(verifyPrevious);
   assert.notEqual(
     manifest.workers.operations.provided.revision,
     previous.operations,
   );
-  assert.throws(
-    () =>
-      simulateRelease(current, manifest, [
-        'billing',
-        'clinical',
-        'operations',
-      ]),
-    { code: 'CONTRACT_INCOMPATIBLE' },
-  );
+  assert.throws(verifyRollout, { code: 'CONTRACT_INCOMPATIBLE' });
 });
 test('manifest rejects invented revisions and incomplete transitions', () => {
   const candidate = structuredClone(manifest);
