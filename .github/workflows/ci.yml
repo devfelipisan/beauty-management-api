@@ -42,6 +42,9 @@ jobs:
           fi
           node scripts/check-format-changes.mjs "$BASE_SHA" HEAD
           node scripts/deploy/changed-files.mjs "$BASE_SHA" HEAD
+      - name: Inspect deterministic release manifest
+        run: |
+          node --input-type=module -e "import { localManifest } from './scripts/deploy/manifest.mjs'; console.log('MANIFEST_START'); console.log(JSON.stringify(localManifest(), null, 2)); console.log('MANIFEST_END');"
       - name: Verify code, contracts, architecture and local migrations
         run: npm run check:release
       - name: Reject generated drift
