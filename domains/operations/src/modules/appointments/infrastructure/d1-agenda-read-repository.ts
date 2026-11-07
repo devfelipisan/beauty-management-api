@@ -6,6 +6,13 @@ import type {
 } from '../ports/agenda-read-repository.js';
 
 interface Row {
+  tenant_id: string;
+  base_price_cents: number | null;
+  discount_cents: number | null;
+  final_price_cents: number | null;
+  deposit_cents: number | null;
+  created_at: string;
+  updated_at: string;
   id: string;
   customer_id: string;
   customer_name: string | null;
@@ -18,7 +25,7 @@ interface Row {
   status: AgendaAppointment['status'];
   origin: AgendaAppointment['origin'];
 }
-const projection = `SELECT a.id,a.customer_id,c.full_name AS customer_name,
+const projection = `SELECT a.tenant_id,a.base_price_cents,a.discount_cents,a.final_price_cents,a.deposit_cents,a.created_at,a.updated_at,a.id,a.customer_id,c.full_name AS customer_name,
   a.professional_id,p.name AS professional_name,a.service_id,s.name AS service_name,
   a.starts_at,a.ends_at,a.status,a.origin FROM appointments a
   LEFT JOIN customers c ON c.tenant_id=a.tenant_id AND c.id=a.customer_id
@@ -28,6 +35,13 @@ const projection = `SELECT a.id,a.customer_id,c.full_name AS customer_name,
 function map(row: Row): AgendaAppointment {
   return {
     id: row.id,
+    tenantId: row.tenant_id,
+    basePriceCents: row.base_price_cents,
+    discountCents: row.discount_cents,
+    finalPriceCents: row.final_price_cents,
+    depositCents: row.deposit_cents,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
     customer: { id: row.customer_id, displayName: row.customer_name },
     professional: {
       id: row.professional_id,

@@ -1,3 +1,4 @@
+import { catalogEnvelope } from './catalog-openapi.js';
 import { servicePaths } from './services/openapi.js';
 import { agendaPaths } from './agenda-openapi.js';
 import { profileMediaPaths } from './profile-media-openapi.js';
@@ -22,11 +23,12 @@ const customer = object(
     id: text(),
     tenantId: text(),
     fullName: text(),
-    phone: text(),
+    phone: text({ nullable: true }),
     email: text(),
     document: text(),
     status: text(),
     relationshipProfile: text(),
+    blockedForNewAppointments: boolean,
     createdAt: text(),
     updatedAt: text(),
   },
@@ -117,7 +119,7 @@ export const operationsOpenApi = document(
             query('limit', integer({ minimum: 1 })),
             query('cursor'),
           ],
-          response: envelope(
+          response: catalogEnvelope(
             array(
               object(
                 {
@@ -126,6 +128,7 @@ export const operationsOpenApi = document(
                   name: text(),
                   status: text({ enum: ['ACTIVE', 'INACTIVE'] }),
                   publicVisible: boolean,
+                  serviceIds: array(text()),
                   createdAt: text(),
                   updatedAt: text(),
                 },
@@ -135,6 +138,7 @@ export const operationsOpenApi = document(
                   'name',
                   'status',
                   'publicVisible',
+                  'serviceIds',
                   'createdAt',
                   'updatedAt',
                 ],
@@ -142,7 +146,7 @@ export const operationsOpenApi = document(
             ),
           ),
           description:
-            'Reutiliza ListProfessionalsUseCase. Paginação por id, padrão 20 e máximo 100. Retorna o cadastro do tenant, inclusive inativos; não determina elegibilidade por serviço nem disponibilidade para agendamento.',
+            'Leitura com vínculos persistidos e cursor opaco vinculado ao contexto, padrão 20 e máximo 100. Inclui cadastros inativos; não determina elegibilidade nem disponibilidade.',
         },
       ),
     },
@@ -153,9 +157,10 @@ export const operationsOpenApi = document(
         'Listar clientes',
         'customer.read',
         {
-          response: envelope(array(ref('Customer'))),
+          parameters: [query('limit',integer({minimum:1,maximum:100,default:20})),query('cursor')],
+          response: catalogEnvelope(array(ref('Customer'))),
           description:
-            'O handler atual usa a paginação padrão do caso de uso; não lê parâmetros de paginação da URL.',
+            'Páginas com cursor opaco vinculado ao contexto. O array data é preservado e page informa a continuação.',
         },
       ),
     },

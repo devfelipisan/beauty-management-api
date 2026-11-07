@@ -495,6 +495,18 @@
       "types": "./dist/modules/profile-media/domain/profile-image.d.ts",
       "workerd": "./src/modules/profile-media/domain/profile-image.ts",
       "default": "./dist/modules/profile-media/domain/profile-image.js"
+    },
+    "./queries/catalog-page": {
+      "beauty": "./src/application/queries/catalog-page.ts",
+      "types": "./dist/application/queries/catalog-page.d.ts",
+      "workerd": "./src/application/queries/catalog-page.ts",
+      "default": "./dist/application/queries/catalog-page.js"
+    },
+    "./queries/d1-catalog-read-repository": {
+      "beauty": "./src/infrastructure/queries/d1-catalog-read-repository.ts",
+      "types": "./dist/infrastructure/queries/d1-catalog-read-repository.d.ts",
+      "workerd": "./src/infrastructure/queries/d1-catalog-read-repository.ts",
+      "default": "./dist/infrastructure/queries/d1-catalog-read-repository.js"
     }
   },
   "scripts": {

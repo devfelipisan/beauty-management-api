@@ -1,3 +1,4 @@
+import { assertAgendaRead } from '@beauty/contracts';
 import { ids, json, mappedError, notFound } from '@beauty/cloudflare-runtime';
 import { workerSecurity } from '@beauty/tenancy/adapters/worker-security';
 import type { AgendaQuery } from '@beauty/contracts';
@@ -80,6 +81,7 @@ export async function agendaRoute(
       const to = url.searchParams.get('to') ?? '';
       data = await checkAgendaInterval(env, match[2], from, to, authority);
     }
+    if (!interval) assertAgendaRead(data);
     return json({ data, requestId, correlationId });
   } catch (error) {
     return mappedError(error, requestId, correlationId);

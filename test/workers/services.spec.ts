@@ -49,11 +49,11 @@ describe('Services HTTP through Operations Worker', () => {
     ).toBe(403);
     const listed = (await (await send(`${path}?limit=1`)).json()) as {
       data: { id: string }[];
+      page: {hasMore: boolean; nextCursor: string | null};
     };
     expect(listed.data).toHaveLength(1);
-    expect(
-      await (await send(`${path}?cursor=${listed.data[0].id}`)).json(),
-    ).toMatchObject({ data: [] });
+    expect(listed.page).toEqual({ hasMore: false, nextCursor: null });
+    expect((await send(`${path}?cursor=${listed.data[0].id}`)).status).toBe(400);
     expect(
       await (await send(`${path}/${data.id}`, 'DELETE')).json(),
     ).toMatchObject({ code: 'PERMISSION_DENIED' });

@@ -14,6 +14,13 @@ export interface AgendaQuery {
 }
 
 export interface AgendaAppointment {
+  tenantId?: string;
+  basePriceCents?: number | null;
+  discountCents?: number | null;
+  finalPriceCents?: number | null;
+  depositCents?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
   id: string;
   customer: { id: string; displayName: string | null };
   professional: { id: string; displayName: string | null };

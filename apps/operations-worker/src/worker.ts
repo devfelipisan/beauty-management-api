@@ -1,3 +1,4 @@
+import { catalogRoute } from './catalog-routes.js';
 import { dispatchEligibleOutbox } from './outbox-coordinator.js';
 import { agendaRoute } from './agenda-routes.js';
 import { D1ProfileImageRepository } from '@beauty/operations/modules/profile-media/infrastructure/d1-profile-image-repository';
@@ -610,6 +611,8 @@ export default class OperationsWorker extends WorkerEntrypoint<
       executionEnv(this.env).SERVICE_VERSION,
       executionEnv(this.env).OBSERVE_ENABLED === 'true',
       async (request) => {
+        const catalog = await catalogRoute(request, executionEnv(this.env));
+        if (catalog) return catalog;
         const agenda = await agendaRoute(request, executionEnv(this.env));
         if (agenda) return agenda;
         const profile = await profileMediaRoute(

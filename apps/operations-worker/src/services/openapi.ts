@@ -1,3 +1,4 @@
+import { catalogEnvelope } from '../catalog-openapi.js';
 import {
   array,
   boolean,
@@ -32,6 +33,7 @@ const response = object(
     id: text(),
     tenantId: text(),
     ...fields,
+    professionalIds: array(text()),
     status: text({ enum: ['ACTIVE', 'INACTIVE'] }),
     createdAt: text(),
     updatedAt: text(),
@@ -58,7 +60,7 @@ export const servicePaths = {
       'service.read',
       {
         parameters: [query('limit', integer({ minimum: 1 })), query('cursor')],
-        response: envelope(array(response)),
+        response: catalogEnvelope(array(response)),
       },
     ),
     post: operation(

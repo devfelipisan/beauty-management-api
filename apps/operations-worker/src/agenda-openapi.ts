@@ -22,6 +22,13 @@ const reference = object(
   ['id', 'displayName'],
 );
 const fields = {
+  tenantId: text(),
+  basePriceCents: integer({ minimum: 0, nullable: true }),
+  discountCents: integer({ minimum: 0, nullable: true }),
+  finalPriceCents: integer({ minimum: 0, nullable: true }),
+  depositCents: integer({ minimum: 0, nullable: true }),
+  createdAt: text({format: 'date-time'}),
+  updatedAt: text({format: 'date-time'}),
   id: text(),
   customer: reference,
   professional: reference,

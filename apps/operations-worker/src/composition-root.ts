@@ -1,3 +1,11 @@
+import { ReadCatalogPage, type CatalogKind, type CatalogAuthority } from '@beauty/operations/queries/catalog-page';
+import { D1CatalogReadRepository } from '@beauty/operations/queries/d1-catalog-read-repository';
+import { assertCatalogResponse } from '@beauty/contracts';
+export async function readCatalogPage(env: OperationsEnv, kind: CatalogKind, input: {limit?: string; cursor?: string}, authority: CatalogAuthority) {
+  const result = await new ReadCatalogPage(new D1CatalogReadRepository(env.D1_DATABASE)).execute(kind, input, authority);
+  assertCatalogResponse(kind, result);
+  return result;
+}
 import { outboxOwnership } from '@beauty/reliability/outbox/ownership';
 import { ListTenantAgenda, GetAgendaAppointment, agendaPeriod, type AgendaAuthority } from '@beauty/operations/modules/appointments/application/queries/list-tenant-agenda';
 import { D1AgendaReadRepository } from '@beauty/operations/modules/appointments/infrastructure/d1-agenda-read-repository';
