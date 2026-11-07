@@ -2,7 +2,7 @@
 
 Esse PR é o primeiro que introduz persistência real na nova arquitetura, mas ainda **sem implementar Customer, Appointment, Payment ou Session**. O objetivo é provar que a fundação de banco funciona corretamente, respeitando tenancy, arquitetura hexagonal, transações e o orçamento do Cloudflare Free.
 
-A documentação do projeto exige isolamento multiempresa, rastreabilidade, congelamento histórico e idempotência.  A proposta técnica também determina que o domínio permaneça independente da infraestrutura e que acesso a banco ocorra por portas/adapters, preservando transações e consistência. 
+A documentação do projeto exige isolamento multiempresa, rastreabilidade, congelamento histórico e idempotência. A proposta técnica também determina que o domínio permaneça independente da infraestrutura e que acesso a banco ocorra por portas/adapters, preservando transações e consistência.
 
 # PR-04 — Database Foundation + D1 Adapter
 
@@ -175,9 +175,7 @@ Conceitualmente:
 
 ```ts
 export interface TransactionManager {
-  execute<T>(
-    callback: () => Promise<T>,
-  ): Promise<T>;
+  execute<T>(callback: () => Promise<T>): Promise<T>;
 }
 ```
 
@@ -223,8 +221,7 @@ Não espalhar `D1Database` por services.
 Defina token explícito:
 
 ```ts
-export const D1_DATABASE =
-  Symbol('D1_DATABASE');
+export const D1_DATABASE = Symbol('D1_DATABASE');
 ```
 
 ou equivalente já adotado pelo projeto.
@@ -523,7 +520,7 @@ integer cents
 
 e não `REAL`.
 
-A proposta técnica já recomenda evitar ponto flutuante para dinheiro. 
+A proposta técnica já recomenda evitar ponto flutuante para dinheiro.
 
 ## 28. Índices
 
@@ -601,14 +598,8 @@ Estrutura conceitual:
 
 ```ts
 @Module({
-  providers: [
-    D1DatabaseProvider,
-    D1TransactionManager,
-  ],
-  exports: [
-    D1_DATABASE,
-    TRANSACTION_MANAGER,
-  ],
+  providers: [D1DatabaseProvider, D1TransactionManager],
+  exports: [D1_DATABASE, TRANSACTION_MANAGER],
 })
 export class DatabaseModule {}
 ```
@@ -925,7 +916,7 @@ Repository Port
 
 futuramente.
 
-Isso está alinhado ao princípio de desacoplar infraestrutura da aplicação. 
+Isso está alinhado ao princípio de desacoplar infraestrutura da aplicação.
 
 ## 55. Estrutura esperada
 

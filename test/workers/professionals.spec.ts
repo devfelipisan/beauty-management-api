@@ -45,7 +45,11 @@ describe('Professionals HTTP through Operations Worker', () => {
     expect(first.headers.get('x-correlation-id')).toBe(
       'professionals-correlation',
     );
-    expect(await first.json()).toMatchObject({
+    const firstPage = (await first.json()) as {
+      data: { id: string }[];
+      page: { hasMore: boolean; nextCursor: string | null };
+    };
+    expect(firstPage).toMatchObject({
       data: [
         {
           id: 'professionals-a',
@@ -57,12 +61,18 @@ describe('Professionals HTTP through Operations Worker', () => {
       requestId: 'professionals-request',
       correlationId: 'professionals-correlation',
     });
-    expect(await (await send('?cursor=professionals-a')).json()).toMatchObject({
+    expect(firstPage.page.hasMore).toBe(true);
+    expect(
+      await (
+        await send(
+          '?limit=1&cursor=' + encodeURIComponent(firstPage.page.nextCursor!),
+        )
+      ).json(),
+    ).toMatchObject({
       data: [{ id: 'professionals-b', status: 'INACTIVE' }],
+      page: { hasMore: false, nextCursor: null },
     });
-    expect(await (await send('?cursor=professionals-b')).json()).toMatchObject({
-      data: [],
-    });
+    expect((await send('?cursor=professionals-b')).status).toBe(400);
   });
 
   it('rejects unauthenticated and cross-tenant reads', async () => {

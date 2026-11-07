@@ -2,7 +2,7 @@ Com o **PR-25 concluído**, o próximo PR deve tratar exatamente os fluxos opera
 
 # PR-26 — Appointment Rescheduling + Cancellation + No-show Financial Effects
 
-Esse é o próximo passo correto porque as regras normativas já determinam que reagendamento preserve histórico e valide novamente o horário, que cancelamento avalie sinal, pagamentos, créditos, pacote e política da empresa antes de concluir, e que falta nunca gere sessão concluída nem consuma pacote automaticamente.  
+Esse é o próximo passo correto porque as regras normativas já determinam que reagendamento preserve histórico e valide novamente o horário, que cancelamento avalie sinal, pagamentos, créditos, pacote e política da empresa antes de concluir, e que falta nunca gere sessão concluída nem consuma pacote automaticamente.
 
 O fluxo alvo fica:
 
@@ -130,8 +130,6 @@ créditos
 pacote
 política de cancelamento
 ```
-
- 
 
 Portanto não hardcode:
 
@@ -265,7 +263,7 @@ Use contratos + Service Binding.
 
 # 9. Primeiro fluxo: RescheduleAppointment
 
-A proposta técnica já lista `RescheduleAppointment` como caso de uso típico. 
+A proposta técnica já lista `RescheduleAppointment` como caso de uso típico.
 
 Criar:
 
@@ -419,7 +417,7 @@ deve ser derivado de Service/duração congelada apropriada.
 
 # 16. Estado após reagendamento
 
-A documentação possui estado `Reagendado`, mas o fluxo posterior precisa continuar operacional. 
+A documentação possui estado `Reagendado`, mas o fluxo posterior precisa continuar operacional.
 
 Não criar um estado terminal acidental.
 
@@ -618,8 +616,6 @@ origin:
   SYSTEM_EXPIRATION
 ```
 
-
-
 `responsible actor` vem do contexto quando humano.
 
 ---
@@ -632,8 +628,6 @@ origin:
 COMPLETED
 → cancellation BLOCKED
 ```
-
-
 
 Correção posterior deve usar fluxo financeiro/administrativo.
 
@@ -986,7 +980,7 @@ Usar CAS/replay.
 
 # 48. Transfer Deposit
 
-Para cancelamento + novo Appointment, RN-SIN-007 permite transferência. 
+Para cancelamento + novo Appointment, RN-SIN-007 permite transferência.
 
 Mas esse é um fluxo mais complexo.
 
@@ -1128,7 +1122,7 @@ e bloquear/mandar para reconciliação.
 
 # 57. Liberar horário
 
-`RN-CAN-004` exige liberação após cancelamento. 
+`RN-CAN-004` exige liberação após cancelamento.
 
 Na arquitetura atual, provavelmente o status `CANCELED` deve deixar de ocupar Scheduling.
 
@@ -1406,7 +1400,7 @@ noShowCountInConfiguredWindow
 
 A política deve usar threshold configurável.
 
-A documentação sugere que perfil “Com faltas recorrentes” depende de quantidade no período configurado. 
+A documentação sugere que perfil “Com faltas recorrentes” depende de quantidade no período configurado.
 
 ---
 
@@ -1461,7 +1455,7 @@ como PR-22.
 
 # 78. Cancelamento também pode impactar perfil
 
-`RN-PER-006/007` diz que faltas ou cancelamentos fora da política podem influenciar perfil e que cancelamento é evento relevante para reclassificação. 
+`RN-PER-006/007` diz que faltas ou cancelamentos fora da política podem influenciar perfil e que cancelamento é evento relevante para reclassificação.
 
 Não classificar todo cancelamento como negativo.
 
@@ -1718,7 +1712,7 @@ refund
 credit
 ```
 
-como eventos mínimos de auditoria. 
+como eventos mínimos de auditoria.
 
 Garanta todos.
 
@@ -2748,7 +2742,7 @@ Next PR:
 
 # Próximo PR depois do PR-26
 
-Depois deste PR, a **Fase 4 — Agenda** estará muito mais próxima de fechamento completo, já que reagendamento, cancelamento e falta fazem parte explicitamente dessa fase. 
+Depois deste PR, a **Fase 4 — Agenda** estará muito mais próxima de fechamento completo, já que reagendamento, cancelamento e falta fazem parte explicitamente dessa fase.
 
 O próximo candidato então passa a ser:
 
@@ -2769,6 +2763,6 @@ return pending/overdue
 package expiry warnings
 ```
 
-Mas eu manteria automações inicialmente através de processamento agendado mínimo e bounded, já que o produto prevê expiração automática do sinal como processamento agendado, sem exigir um mecanismo pesado. 
+Mas eu manteria automações inicialmente através de processamento agendado mínimo e bounded, já que o produto prevê expiração automática do sinal como processamento agendado, sem exigir um mecanismo pesado.
 
 Portanto, o **próximo PR correto é o PR-26 — Appointment Rescheduling + Cancellation + No-show Financial Effects**. O ponto principal agora não é apenas adicionar três endpoints: é garantir que cada mudança do Appointment produza **um plano financeiro congelado e auditável**, reutilizando Refund/Internal Credit sem deletar histórico, preservando zero consumo automático de pacote e garantindo por CAS/constraints que races como `cancelamento × check-in` ou `falta × check-in` tenham sempre apenas um vencedor lógico.

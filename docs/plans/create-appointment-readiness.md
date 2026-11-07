@@ -4,23 +4,23 @@
 
 O gate físico de Clinical foi fechado sem criar `POST /appointments` ou qualquer fluxo de persistência de Appointment.
 
-| Gate | Resultado |
-| --- | ---: |
-| Worker runtime, HTTP bridge e autenticação existentes | PASS |
-| D1 e migrations 0001–0005 | PASS |
-| Tenant/context isolation | PASS |
-| Scheduling concurrency | PASS |
-| Reliability e idempotência | PASS |
-| Clinical RPC real | PASS |
-| Clinical D1 APTO | PASS |
-| Clinical D1 APTO_COM_RESTRICOES | PASS |
-| Clinical D1 NAO_APTO | PASS |
-| Assessment validity e latest selection | PASS |
-| Assessment cross-tenant/service/customer | PASS |
-| `requiresAssessment=false` short-circuit | PASS |
-| AppointmentEligibility fully eligible | PASS |
-| Billing RPC e CommercialTerms READY | PASS |
-| Discount e Deposit Policy | PASS |
+| Gate                                                  | Resultado |
+| ----------------------------------------------------- | --------: |
+| Worker runtime, HTTP bridge e autenticação existentes |      PASS |
+| D1 e migrations 0001–0005                             |      PASS |
+| Tenant/context isolation                              |      PASS |
+| Scheduling concurrency                                |      PASS |
+| Reliability e idempotência                            |      PASS |
+| Clinical RPC real                                     |      PASS |
+| Clinical D1 APTO                                      |      PASS |
+| Clinical D1 APTO_COM_RESTRICOES                       |      PASS |
+| Clinical D1 NAO_APTO                                  |      PASS |
+| Assessment validity e latest selection                |      PASS |
+| Assessment cross-tenant/service/customer              |      PASS |
+| `requiresAssessment=false` short-circuit              |      PASS |
+| AppointmentEligibility fully eligible                 |      PASS |
+| Billing RPC e CommercialTerms READY                   |      PASS |
+| Discount e Deposit Policy                             |      PASS |
 
 ### Evidências executáveis
 

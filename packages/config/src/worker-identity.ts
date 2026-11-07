@@ -6,4 +6,5 @@ export const WORKER_IDENTITIES = {
   async: 'beauty-async-worker',
 } as const;
 
-export type WorkerIdentity = (typeof WORKER_IDENTITIES)[keyof typeof WORKER_IDENTITIES];
+export type WorkerIdentity =
+  (typeof WORKER_IDENTITIES)[keyof typeof WORKER_IDENTITIES];

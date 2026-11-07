@@ -25,17 +25,17 @@ Você está trabalhando no projeto:
 A arquitetura oficial é:
 
 Frontend
-  ↓
+↓
 BFF Worker
-  ↓
+↓
 Business Workers
-  ↓
+↓
 Application
-  ↓
+↓
 Domain
-  ↓
+↓
 Ports
-  ↓
+↓
 Infrastructure
 
 A Business API é a única autoridade de negócio.
@@ -147,14 +147,14 @@ pwd
 git status
 git branch --show-current
 git log -10 --oneline
-````
+```
 
 Se houver alterações locais não relacionadas:
 
-* não sobrescrever;
-* não resetar;
-* não apagar;
-* registrar no relatório.
+- não sobrescrever;
+- não resetar;
+- não apagar;
+- registrar no relatório.
 
 Não usar:
 
@@ -247,12 +247,12 @@ grep -R "@Injectable()" apps libs src 2>/dev/null || true
 
 Inspecionar especialmente:
 
-* `AppService`;
-* `ExampleService`;
-* `DemoService`;
-* `MockService`;
-* services que somente retornam string;
-* services sem consumidor real.
+- `AppService`;
+- `ExampleService`;
+- `DemoService`;
+- `MockService`;
+- services que somente retornam string;
+- services sem consumidor real.
 
 Classificar:
 
@@ -280,11 +280,11 @@ Inspecionar todos os `AppModule`.
 
 Identificar:
 
-* controllers registrados;
-* providers registrados;
-* imports reais;
-* módulos mortos;
-* dependências transitórias.
+- controllers registrados;
+- providers registrados;
+- imports reais;
+- módulos mortos;
+- dependências transitórias.
 
 Não manter `AppController` ou `AppService` apenas porque foram criados pelo Nest CLI.
 
@@ -297,9 +297,7 @@ Se existir algo equivalente a:
 ```ts
 @Controller()
 export class AppController {
-  constructor(
-    private readonly appService: AppService,
-  ) {}
+  constructor(private readonly appService: AppService) {}
 
   @Get()
   getHello(): string {
@@ -379,9 +377,9 @@ temporariamente, até gerar o Health.
 
 Preservar imports transversais válidos já existentes, por exemplo:
 
-* ConfigModule;
-* ObservabilityModule;
-* infraestrutura validada.
+- ConfigModule;
+- ObservabilityModule;
+- infraestrutura validada.
 
 Não remover fundação válida.
 
@@ -506,9 +504,7 @@ export class HealthController {
     return {
       status: 'ok' as const,
       service: 'operations-worker',
-      version:
-        process.env.APP_VERSION ??
-        'development',
+      version: process.env.APP_VERSION ?? 'development',
     };
   }
 }
@@ -553,9 +549,9 @@ router responde
 
 Não aplicar:
 
-* AuthenticationGuard;
-* TenantGuard;
-* PermissionGuard.
+- AuthenticationGuard;
+- TenantGuard;
+- PermissionGuard.
 
 O Health precisa ser simples e acessível à infraestrutura.
 
@@ -567,10 +563,10 @@ Não retornar informações sensíveis.
 
 `GET /health` não deve:
 
-* criar AuditEvent;
-* criar OutboxEvent;
-* reservar idempotency key;
-* acessar UnitOfWork.
+- criar AuditEvent;
+- criar OutboxEvent;
+- reservar idempotency key;
+- acessar UnitOfWork.
 
 Health é observabilidade técnica.
 
@@ -584,9 +580,7 @@ Cada `AppModule` deve importar o Health:
 
 ```ts
 @Module({
-  imports: [
-    HealthModule,
-  ],
+  imports: [HealthModule],
 })
 export class AppModule {}
 ```
@@ -594,19 +588,15 @@ export class AppModule {}
 Se já houver:
 
 ```ts
-ConfigModule
-ObservabilityModule
+ConfigModule;
+ObservabilityModule;
 ```
 
 preservar:
 
 ```ts
 @Module({
-  imports: [
-    ConfigModule,
-    ObservabilityModule,
-    HealthModule,
-  ],
+  imports: [ConfigModule, ObservabilityModule, HealthModule],
 })
 export class AppModule {}
 ```
@@ -639,7 +629,7 @@ Seguir a documentação já adotada pelo projeto:
 createObserveModule({
   // trace id generation
   // error source context
-})
+});
 ```
 
 e:
@@ -647,16 +637,16 @@ e:
 ```ts
 ObserveModule.forRoot({
   // remaining configuration
-})
+});
 ```
 
 Preservar:
 
-* requestId;
-* correlationId;
-* traceId;
-* service;
-* version.
+- requestId;
+- correlationId;
+- traceId;
+- service;
+- version.
 
 ---
 
@@ -686,16 +676,16 @@ Não gerar volume inútil de telemetria.
 
 Health não pode retornar:
 
-* tenant;
-* user;
-* email;
-* phone;
-* CPF;
-* tokens;
-* database URL;
-* secret;
-* environment dump;
-* Cloudflare binding names sensíveis.
+- tenant;
+- user;
+- email;
+- phone;
+- CPF;
+- tokens;
+- database URL;
+- secret;
+- environment dump;
+- Cloudflare binding names sensíveis.
 
 Também não logar esses dados.
 
@@ -780,10 +770,10 @@ grep -R "@Injectable()" apps libs src 2>/dev/null || true
 
 Confirmar que não restaram:
 
-* HelloWorldService;
-* AppService sem função;
-* DemoService;
-* Provider morto.
+- HelloWorldService;
+- AppService sem função;
+- DemoService;
+- Provider morto.
 
 Não remover providers de infraestrutura real.
 
@@ -799,9 +789,9 @@ npm run lint
 
 Corrigir:
 
-* unused imports;
-* dead providers;
-* broken module references.
+- unused imports;
+- dead providers;
+- broken module references.
 
 Não realizar refatoração ampla.
 
@@ -1032,14 +1022,14 @@ Inspecionar completamente.
 
 Remover:
 
-* logs temporários;
-* comentários temporários;
-* arquivo demo;
-* import morto;
-* código comentado;
-* TODO sem contexto;
-* secret;
-* artefato gerado acidentalmente.
+- logs temporários;
+- comentários temporários;
+- arquivo demo;
+- import morto;
+- código comentado;
+- TODO sem contexto;
+- secret;
+- artefato gerado acidentalmente.
 
 ---
 
@@ -1108,12 +1098,12 @@ Sanitização Arquitetural + Health Baseline.
 
 Informar:
 
-* Workers existentes;
-* Controllers encontrados;
-* Services encontrados;
-* endpoints existentes;
-* scaffold identificado;
-* endpoints funcionais preservados.
+- Workers existentes;
+- Controllers encontrados;
+- Services encontrados;
+- endpoints existentes;
+- scaffold identificado;
+- endpoints funcionais preservados.
 
 ## Removido
 
@@ -1125,20 +1115,20 @@ Não listar o que não foi alterado.
 
 Listar componentes importantes mantidos:
 
-* config;
-* observability;
-* contracts;
-* database foundation;
-* migrations;
-* business code.
+- config;
+- observability;
+- contracts;
+- database foundation;
+- migrations;
+- business code.
 
 ## Criado
 
 Listar:
 
-* HealthModule;
-* HealthController;
-* testes.
+- HealthModule;
+- HealthController;
+- testes.
 
 ## Endpoints finais
 
@@ -1190,11 +1180,11 @@ por requisição de Health.
 
 Informar:
 
-* trace correlation;
-* requestId;
-* correlationId;
-* health ignore/sampling;
-* ausência de PII.
+- trace correlation;
+- requestId;
+- correlationId;
+- health ignore/sampling;
+- ausência de PII.
 
 ## Testes
 

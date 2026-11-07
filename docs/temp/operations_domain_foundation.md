@@ -1,4 +1,4 @@
-Com base no relatório pós-implementação, o **PR-05 cumpriu corretamente o papel de materializar o primeiro Business Worker sem avançar prematuramente para domínio**. Isso confirma exatamente o estado que o próximo PR precisa assumir: `operations-worker` existe, tem health, reutiliza config/observability/auth/tenancy, a decisão D1 foi formalizada no ADR-0009, e ainda não há domínio funcional, migration funcional ou binding D1. Esse baseline está consistente com o plano anterior. 
+Com base no relatório pós-implementação, o **PR-05 cumpriu corretamente o papel de materializar o primeiro Business Worker sem avançar prematuramente para domínio**. Isso confirma exatamente o estado que o próximo PR precisa assumir: `operations-worker` existe, tem health, reutiliza config/observability/auth/tenancy, a decisão D1 foi formalizada no ADR-0009, e ainda não há domínio funcional, migration funcional ou binding D1. Esse baseline está consistente com o plano anterior.
 
 A principal conclusão é:
 
@@ -309,9 +309,7 @@ Exemplo:
 export interface TenantRepository {
   findById(id: string): Promise<Tenant | null>;
 
-  findByDocument(
-    document: string,
-  ): Promise<Tenant | null>;
+  findByDocument(document: string): Promise<Tenant | null>;
 
   create(tenant: Tenant): Promise<void>;
 
@@ -451,7 +449,7 @@ findById(
 Não:
 
 ```ts
-findById(professionalId)
+findById(professionalId);
 ```
 
 ---
@@ -668,7 +666,7 @@ diferente de:
 RelationshipProfile
 ```
 
-Essa separação já foi explicitamente registrada no planejamento do PR-05. 
+Essa separação já foi explicitamente registrada no planejamento do PR-05.
 
 ---
 
@@ -720,7 +718,7 @@ somente conforme necessidade.
 
 # 28. Duplicidade de Customer
 
-As regras de cliente exigem detecção de possíveis duplicidades por atributos como telefone/documento/e-mail e combinações de identificação. Não coloque isso no controller. 
+As regras de cliente exigem detecção de possíveis duplicidades por atributos como telefone/documento/e-mail e combinações de identificação. Não coloque isso no controller.
 
 Fluxo:
 
@@ -1348,7 +1346,7 @@ audit
 future notifications
 ```
 
-e as regras do produto exigem idempotência para agendamento. 
+e as regras do produto exigem idempotência para agendamento.
 
 Já um cadastro de `Service` ou `Professional` é menos perigoso para validar o primeiro vertical slice de D1.
 

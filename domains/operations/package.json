@@ -4,6 +4,18 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./modules/appointments/application/queries/list-tenant-agenda": {
+      "beauty": "./src/modules/appointments/application/queries/list-tenant-agenda.ts",
+      "types": "./dist/modules/appointments/application/queries/list-tenant-agenda.d.ts",
+      "workerd": "./src/modules/appointments/application/queries/list-tenant-agenda.ts",
+      "default": "./dist/modules/appointments/application/queries/list-tenant-agenda.js"
+    },
+    "./modules/appointments/infrastructure/d1-agenda-read-repository": {
+      "beauty": "./src/modules/appointments/infrastructure/d1-agenda-read-repository.ts",
+      "types": "./dist/modules/appointments/infrastructure/d1-agenda-read-repository.d.ts",
+      "workerd": "./src/modules/appointments/infrastructure/d1-agenda-read-repository.ts",
+      "default": "./dist/modules/appointments/infrastructure/d1-agenda-read-repository.js"
+    },
     "./infrastructure/outbox/billing-financial-settlement-delivery": {
       "beauty": "./src/infrastructure/outbox/billing-financial-settlement-delivery.ts",
       "types": "./dist/infrastructure/outbox/billing-financial-settlement-delivery.d.ts",
@@ -483,6 +495,18 @@
       "types": "./dist/modules/profile-media/domain/profile-image.d.ts",
       "workerd": "./src/modules/profile-media/domain/profile-image.ts",
       "default": "./dist/modules/profile-media/domain/profile-image.js"
+    },
+    "./queries/catalog-page": {
+      "beauty": "./src/application/queries/catalog-page.ts",
+      "types": "./dist/application/queries/catalog-page.d.ts",
+      "workerd": "./src/application/queries/catalog-page.ts",
+      "default": "./dist/application/queries/catalog-page.js"
+    },
+    "./queries/d1-catalog-read-repository": {
+      "beauty": "./src/infrastructure/queries/d1-catalog-read-repository.ts",
+      "types": "./dist/infrastructure/queries/d1-catalog-read-repository.d.ts",
+      "workerd": "./src/infrastructure/queries/d1-catalog-read-repository.ts",
+      "default": "./dist/infrastructure/queries/d1-catalog-read-repository.js"
     }
   },
   "scripts": {

@@ -20,17 +20,17 @@ No Swagger, use **Authorize: actor-dev-admin** e **tenantId: tenant-dev-001**.
 
 ## Conteúdo
 
-| Dados | Quantidade | Cobertura |
-| --- | ---: | --- |
-| Tenants | 2 | Principal autorizado e outro para isolamento |
-| Clientes | 14 | Perfis de relacionamento, dados opcionais, inativo, bloqueado e casos de avaliação |
-| Profissionais | 4 | Ativos, inativo e habilitações diferentes |
-| Serviços | 7 | Consulta, avaliação, procedimento, sinal, desconto, inativo e outro tenant |
-| Licenças | 2 | Admissão habilitada, sem inventar limites de plano |
-| Avaliações | 6 | APTO válido, APTO vencido e NAO_APTO |
-| Política de desconto | 1 | Exemplo sintético LOYAL, restrito a um serviço |
-| Ficha técnica | 1 + 2 campos | Observação obrigatória e campo numérico opcional |
-| Equipamentos | 2 | Disponível e manutenção, com vínculos de serviço |
+| Dados                |   Quantidade | Cobertura                                                                          |
+| -------------------- | -----------: | ---------------------------------------------------------------------------------- |
+| Tenants              |            2 | Principal autorizado e outro para isolamento                                       |
+| Clientes             |           14 | Perfis de relacionamento, dados opcionais, inativo, bloqueado e casos de avaliação |
+| Profissionais        |            4 | Ativos, inativo e habilitações diferentes                                          |
+| Serviços             |            7 | Consulta, avaliação, procedimento, sinal, desconto, inativo e outro tenant         |
+| Licenças             |            2 | Admissão habilitada, sem inventar limites de plano                                 |
+| Avaliações           |            6 | APTO válido, APTO vencido e NAO_APTO                                               |
+| Política de desconto |            1 | Exemplo sintético LOYAL, restrito a um serviço                                     |
+| Ficha técnica        | 1 + 2 campos | Observação obrigatória e campo numérico opcional                                   |
+| Equipamentos         |            2 | Disponível e manutenção, com vínculos de serviço                                   |
 
 Nomes são fictícios e identificados como sintéticos. E-mails usam `example.test`;
 não há CPF/CNPJ ou telefones reais. Valores monetários, percentuais e prazos são
@@ -102,3 +102,13 @@ definem o status HTTP desejado para as regras do produto:
 
 Esses achados precisam de correções específicas; a criação da massa não alterou
 regras financeiras, permissões, estados ou mapeamento de erros.
+
+# Contexto operacional sintético
+
+O seed inclui os atores actor-dev-admin, actor-dev-reception e
+actor-dev-professional, com memberships e grants persistidos no D1 local.
+Administrador e recepção possuem os dois tenants sintéticos; o profissional
+está vinculado a mock-professional-ana no tenant principal. Os grants são
+fixtures explícitas, não defaults do produto nem concessões de produção.
+O admin preserva as permissões do antigo provider mock e acrescenta agenda.read.
+Workers continuam verificando identidade, função e escopo em cada operação.

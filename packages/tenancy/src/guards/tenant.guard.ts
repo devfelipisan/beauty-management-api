@@ -9,9 +9,13 @@ import {
 import type { Request } from 'express';
 import type { ExecutionContext as RequestExecutionContext } from '@beauty/execution-context';
 import type { AuthenticatedIdentity } from '@beauty/authentication/authenticated-identity';
-import { TENANT_MEMBERSHIP_PROVIDER, type TenantMembershipProvider } from '../ports/tenant-membership-provider.js';
+import {
+  TENANT_MEMBERSHIP_PROVIDER,
+  type TenantMembershipProvider,
+} from '../ports/tenant-membership-provider.js';
 import type { TenantContext } from '../tenant-context.js';
 import type { TenantMembership } from '../tenant-membership.js';
+import { resolveWorkspace } from '../workspace-authority.js';
 
 type TenantRequest = Request & {
   user?: AuthenticatedIdentity;
@@ -29,7 +33,8 @@ export class TenantGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<TenantRequest>();
-    if (!request.user) throw new UnauthorizedException({ code: 'AUTHENTICATION_REQUIRED' });
+    if (!request.user)
+      throw new UnauthorizedException({ code: 'AUTHENTICATION_REQUIRED' });
 
     const candidateTenantId = request.params?.tenantId;
     if (typeof candidateTenantId !== 'string' || !candidateTenantId) {
@@ -44,12 +49,21 @@ export class TenantGuard implements CanActivate {
       throw new ForbiddenException({ code: 'TENANT_ACCESS_DENIED' });
     }
 
-    request.tenantMembership = membership;
+    try {
+      request.tenantMembership = resolveWorkspace(membership, {
+        tenantId: candidateTenantId,
+        role: request.get?.('x-workspace-role'),
+        professionalId: request.get?.('x-professional-id'),
+      });
+    } catch {
+      throw new ForbiddenException({ code: 'PERMISSION_DENIED' });
+    }
     request.tenantContext = {
       tenantId: membership.tenantId,
       actorId: membership.actorId,
     };
-    if (request.executionContext) request.executionContext.tenantId = membership.tenantId;
+    if (request.executionContext)
+      request.executionContext.tenantId = membership.tenantId;
     return true;
   }
 }

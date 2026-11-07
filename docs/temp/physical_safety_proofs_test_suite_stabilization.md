@@ -8,7 +8,7 @@ atomicidade/reliability
 isolamento multiempresa concorrente
 ```
 
-Isso não é apenas qualidade técnica. A especificação exige mecanismo transacional para criação de agendamento + reserva do horário, revalidação de disponibilidade no backend, prevenção de execução parcial e idempotência para endpoints críticos.  O isolamento entre empresas também é uma invariância central do sistema. 
+Isso não é apenas qualidade técnica. A especificação exige mecanismo transacional para criação de agendamento + reserva do horário, revalidação de disponibilidade no backend, prevenção de execução parcial e idempotência para endpoints críticos. O isolamento entre empresas também é uma invariância central do sistema.
 
 Portanto, o próximo PR deve ser:
 
@@ -480,7 +480,7 @@ deve obter apenas:
 Customer A
 ```
 
-RN-GER-002 exige que uma empresa jamais visualize ou altere dados da outra. 
+RN-GER-002 exige que uma empresa jamais visualize ou altere dados da outra.
 
 ---
 
@@ -542,10 +542,7 @@ Tenant B / Actor B
 Executar simultaneamente:
 
 ```ts
-await Promise.all([
-  requestA(),
-  requestB(),
-]);
+await Promise.all([requestA(), requestB()]);
 ```
 
 ---
@@ -590,11 +587,11 @@ em produção.
 
 Use:
 
-* spy test-only;
-* instrumentation;
-* response headers já existentes;
-* fake provider controlado;
-* logs capturados no harness.
+- spy test-only;
+- instrumentation;
+- response headers já existentes;
+- fake provider controlado;
+- logs capturados no harness.
 
 ---
 
@@ -640,9 +637,9 @@ Tenant leakage é blocker P0.
 
 Esse é o maior blocker histórico desde o PR-08.
 
-A regra funcional determina que o mesmo profissional não pode ter compromissos sobrepostos e que a duração integral precisa ser considerada. 
+A regra funcional determina que o mesmo profissional não pode ter compromissos sobrepostos e que a duração integral precisa ser considerada.
 
-Além disso, a especificação exige revalidar a disponibilidade no backend antes de confirmar. 
+Além disso, a especificação exige revalidar a disponibilidade no backend antes de confirmar.
 
 ---
 
@@ -709,7 +706,7 @@ SELECT count(...)
 = 1
 ```
 
-A criação de agendamento e reserva do horário é explicitamente classificada como operação crítica atômica. 
+A criação de agendamento e reserva do horário é explicitamente classificada como operação crítica atômica.
 
 ---
 
@@ -863,7 +860,7 @@ Não improvisar dentro do PR.
 
 # 38. Próximo proof: Reliability físico
 
-A especificação exige que falhas não deixem operações críticas parcialmente concluídas. 
+A especificação exige que falhas não deixem operações críticas parcialmente concluídas.
 
 Agora precisamos verificar o `UnitOfWork` real.
 
@@ -926,7 +923,7 @@ outboxEvents        1
 idempotencyStatus   COMPLETED
 ```
 
-Auditoria precisa existir para criação de agendamento e outras mutações críticas segundo a especificação. 
+Auditoria precisa existir para criação de agendamento e outras mutações críticas segundo a especificação.
 
 ---
 
@@ -1001,7 +998,7 @@ critical operation
 does not become partially committed
 ```
 
-RNF-017 exige exatamente isso. 
+RNF-017 exige exatamente isso.
 
 ---
 
@@ -1019,7 +1016,7 @@ antes de qualquer fluxo autoritativo.
 
 # 48. Idempotência física
 
-A especificação exige que operações críticas sejam protegidas contra repetição acidental. 
+A especificação exige que operações críticas sejam protegidas contra repetição acidental.
 
 Testar a implementação existente no D1.
 
@@ -1301,7 +1298,7 @@ documento
 assessment clinical payload
 ```
 
-Logs seguros são requisito explícito. 
+Logs seguros são requisito explícito.
 
 ---
 
@@ -1629,8 +1626,6 @@ permite desconto
 preço mínimo
 ```
 
-
-
 E Discount possui regras como:
 
 ```text
@@ -1639,8 +1634,6 @@ não ultrapassar operação
 não reduzir abaixo do mínimo
 respeitar limite de autorização
 ```
-
-
 
 Portanto provavelmente será possível materializar políticas sem inventar percentuais.
 

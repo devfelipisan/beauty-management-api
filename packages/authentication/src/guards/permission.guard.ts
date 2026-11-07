@@ -27,7 +27,12 @@ export class PermissionGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<RequestWithMembership>();
     const membership = request.tenantMembership;
-    if (!membership?.active || !required.every((permission) => membership.permissions.includes(permission))) {
+    if (
+      !membership?.active ||
+      !required.every((permission) =>
+        membership.permissions.includes(permission),
+      )
+    ) {
       throw new ForbiddenException({ code: 'PERMISSION_DENIED' });
     }
     return true;

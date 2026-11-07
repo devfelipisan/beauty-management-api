@@ -1,8 +1,8 @@
 Considerando os relatórios pós-implementação do **PR-05** e do **PR-06**, o próximo PR deve ser o **PR-07 — Reliability Foundation**.
 
-O motivo é claro: agora já existem mutações reais em `Tenant`, `Professional`, `Service` e `Customer`, com ports tenant-aware, adapters D1, controllers, autenticação, tenancy e migration funcional.  O passo seguinte não deveria ser `Appointment` ainda, porque o domínio exige idempotência em operações críticas, rastreabilidade, preservação histórica e consistência transacional. A especificação canônica exige explicitamente proteção contra dupla execução e duplicação de agendamentos, sessões, pagamentos, sinal, pacote e outros fluxos.
+O motivo é claro: agora já existem mutações reais em `Tenant`, `Professional`, `Service` e `Customer`, com ports tenant-aware, adapters D1, controllers, autenticação, tenancy e migration funcional. O passo seguinte não deveria ser `Appointment` ainda, porque o domínio exige idempotência em operações críticas, rastreabilidade, preservação histórica e consistência transacional. A especificação canônica exige explicitamente proteção contra dupla execução e duplicação de agendamentos, sessões, pagamentos, sinal, pacote e outros fluxos.
 
-A proposta arquitetural também estabelece o padrão `mutação + auditoria + outbox + idempotência` dentro da mesma fronteira transacional. 
+A proposta arquitetural também estabelece o padrão `mutação + auditoria + outbox + idempotência` dentro da mesma fronteira transacional.
 
 # PR-07 — Reliability Foundation
 
@@ -78,7 +78,7 @@ database/d1/migrations/
 └── 0001_operations_foundation.sql
 ```
 
-O relatório do PR-06 confirma também que foram implementados isolation por tenant, proteção Professional–Service cross-tenant e controllers finos. 
+O relatório do PR-06 confirma também que foram implementados isolation por tenant, proteção Professional–Service cross-tenant e controllers finos.
 
 ---
 
@@ -263,9 +263,7 @@ Contrato conceitual:
 ```ts
 export interface UnitOfWork {
   execute<T>(
-    operation: (
-      context: TransactionContext,
-    ) => Promise<T>,
+    operation: (context: TransactionContext) => Promise<T>,
   ): Promise<T>;
 }
 ```
@@ -326,7 +324,7 @@ COMMIT
 
 como no PostgreSQL.
 
-A proposta original dependia justamente dessas garantias para operações concorrentes. 
+A proposta original dependia justamente dessas garantias para operações concorrentes.
 
 Portanto o PR-07 deve documentar claramente:
 
@@ -391,10 +389,7 @@ export interface IdempotencyRecord {
 
   requestHash: string;
 
-  status:
-    | 'PROCESSING'
-    | 'COMPLETED'
-    | 'FAILED';
+  status: 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
   response?: unknown;
 
@@ -640,7 +635,7 @@ safe changes
 opaque actor
 ```
 
-A arquitetura técnica original recomenda audit append-only sem fotos ou informações clínicas completas. 
+A arquitetura técnica original recomenda audit append-only sem fotos ou informações clínicas completas.
 
 ---
 
@@ -679,11 +674,7 @@ export interface OutboxEvent {
 
   payload: Record<string, unknown>;
 
-  status:
-    | 'PENDING'
-    | 'PROCESSING'
-    | 'PUBLISHED'
-    | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'PUBLISHED' | 'FAILED';
 
   createdAt: string;
 }
@@ -952,17 +943,13 @@ E exportar apenas os tokens/ports necessários.
 Pode usar:
 
 ```ts
-export const UNIT_OF_WORK =
-  Symbol('UNIT_OF_WORK');
+export const UNIT_OF_WORK = Symbol('UNIT_OF_WORK');
 
-export const IDEMPOTENCY_STORE =
-  Symbol('IDEMPOTENCY_STORE');
+export const IDEMPOTENCY_STORE = Symbol('IDEMPOTENCY_STORE');
 
-export const AUDIT_WRITER =
-  Symbol('AUDIT_WRITER');
+export const AUDIT_WRITER = Symbol('AUDIT_WRITER');
 
-export const OUTBOX_WRITER =
-  Symbol('OUTBOX_WRITER');
+export const OUTBOX_WRITER = Symbol('OUTBOX_WRITER');
 ```
 
 Não espalhar strings mágicas.
@@ -1538,7 +1525,7 @@ npx wrangler d1 migrations apply \
 
 ou comando equivalente à configuração real.
 
-O PR-06 deixou Wrangler preparado, então o PR-07 deve finalmente executar migration local se o ambiente já estiver funcional. 
+O PR-06 deixou Wrangler preparado, então o PR-07 deve finalmente executar migration local se o ambiente já estiver funcional.
 
 ---
 
@@ -1551,8 +1538,6 @@ Vitest bloqueado
 Lint bloqueado
 Wrangler não instalado no ambiente
 ```
-
-
 
 Essas pendências agora precisam ser tratadas como gate.
 

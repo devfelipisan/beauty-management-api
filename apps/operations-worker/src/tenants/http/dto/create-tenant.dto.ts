@@ -1,1 +1,6 @@
-export class CreateTenantDto { legalName!: string; displayName!: string; document!: string; timezone!: string; }
+export class CreateTenantDto {
+  legalName!: string;
+  displayName!: string;
+  document!: string;
+  timezone!: string;
+}

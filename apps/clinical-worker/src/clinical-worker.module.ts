@@ -9,7 +9,16 @@ import { ReliabilityModule } from '@beauty/reliability';
 import { D1RuntimeModule } from './d1-runtime.module.js';
 
 @Module({
-  imports: [RuntimeConfigModule, ObservabilityModule, AuthenticationModule, TenancyModule, ReliabilityModule, D1RuntimeModule, HealthModule, AssessmentsModule],
+  imports: [
+    RuntimeConfigModule,
+    ObservabilityModule,
+    AuthenticationModule,
+    TenancyModule,
+    ReliabilityModule,
+    D1RuntimeModule,
+    HealthModule,
+    AssessmentsModule,
+  ],
   controllers: [],
   providers: [],
 })

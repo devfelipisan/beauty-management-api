@@ -1,1 +1,6 @@
-export class CreateCustomerDto { fullName!: string; phone?: string; email?: string; document?: string; }
+export class CreateCustomerDto {
+  fullName!: string;
+  phone?: string;
+  email?: string;
+  document?: string;
+}

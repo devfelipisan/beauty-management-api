@@ -10,7 +10,11 @@ describe('DepositStateMachine', () => {
   });
 
   it('rejects transitions from terminal states', () => {
-    expect(() => machine.transition('CONFIRMED', 'expire')).toThrowError(expect.objectContaining({ code: 'DEPOSIT_TRANSITION_NOT_ALLOWED' }));
-    expect(() => machine.transition('EXPIRED', 'confirm')).toThrowError(expect.objectContaining({ code: 'DEPOSIT_TRANSITION_NOT_ALLOWED' }));
+    expect(() => machine.transition('CONFIRMED', 'expire')).toThrowError(
+      expect.objectContaining({ code: 'DEPOSIT_TRANSITION_NOT_ALLOWED' }),
+    );
+    expect(() => machine.transition('EXPIRED', 'confirm')).toThrowError(
+      expect.objectContaining({ code: 'DEPOSIT_TRANSITION_NOT_ALLOWED' }),
+    );
   });
 });

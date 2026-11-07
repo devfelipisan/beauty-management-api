@@ -3,6 +3,7 @@ import type { AuthenticatedIdentity } from '@beauty/authentication/authenticated
 import type { IdentityDirectory } from '@beauty/authentication/adapters/jwt-identity-provider';
 import type { TenantMembershipProvider } from '../ports/tenant-membership-provider.js';
 import type { TenantMembership } from '../tenant-membership.js';
+import { workspaceRole } from '../workspace-authority.js';
 
 export class D1TenantMembershipProvider
   implements TenantMembershipProvider, IdentityDirectory
@@ -44,14 +45,7 @@ export class D1TenantMembershipProvider
     >();
     for (const row of result.results) {
       // Presentation aliases for the roles documented by the Web contract; this grants nothing.
-      const code =
-        row.role_name === 'tenant_admin'
-          ? 'administrator'
-          : row.role_name === 'reception'
-            ? 'reception'
-            : row.role_name === 'professional'
-              ? 'professional'
-              : null;
+      const code = workspaceRole(row.role_name);
       if (!code || (code === 'professional' && !row.professional_id)) continue;
       const tenant = tenants.get(row.id) ?? {
         id: row.id,
@@ -119,10 +113,18 @@ export class D1TenantMembershipProvider
         permission_code: string | null;
       }>();
     if (!result.results.length) return null;
+    const rolePermissions: Record<string, string[]> = Object.create(null);
+    for (const row of result.results) {
+      if (!row.role_name) continue;
+      const grants = (rolePermissions[row.role_name] ??= []);
+      if (row.permission_code && !grants.includes(row.permission_code))
+        grants.push(row.permission_code);
+    }
     return {
       tenantId,
       actorId,
       active: true,
+      rolePermissions,
       professionalId: result.results[0].professional_id ?? undefined,
       roles: [
         ...new Set(

@@ -47,7 +47,7 @@ describe('TenantGuard', () => {
       active: true,
       actorId: 'actor',
       tenantId: 'tenant',
-      roles: [],
+      roles: ['reception'],
       permissions: [],
     });
     const request = {
@@ -66,7 +66,7 @@ describe('TenantGuard', () => {
             tenantId,
             actorId,
             active: true,
-            roles: ['admin'],
+            roles: ['tenant_admin'],
             permissions: ['appointment.create'],
           }
         : null,

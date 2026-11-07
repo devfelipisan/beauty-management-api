@@ -3,8 +3,9 @@ import type { IdentityProvider } from '@beauty/authentication/ports/identity-pro
 import { JwtIdentityProvider } from '@beauty/authentication/adapters/jwt-identity-provider';
 import { MockIdentityProvider } from '@beauty/authentication/adapters/mock-identity-provider';
 import type { TenantMembershipProvider } from '../ports/tenant-membership-provider.js';
-import { MockTenantMembershipProvider } from './mock-tenant-membership-provider.js';
 import { D1TenantMembershipProvider } from './d1-tenant-membership-provider.js';
+import { resolveWorkspace } from '../workspace-authority.js';
+export { resolveWorkspace } from '../workspace-authority.js';
 
 export interface WorkerSecurityEnv {
   D1_DATABASE: D1DatabaseLike;
@@ -46,7 +47,7 @@ export async function requireHttpAuthority(
     .get('authorization')
     ?.match(/^Bearer\s+([^\s]+)$/i)?.[1];
   if (!token) throw new Error('AUTHENTICATION_REQUIRED');
-  const security = workerSecurity(env);
+  const security = workerSecurity(env, request);
   const identity = await security.identity.authenticate(token);
   if (!identity) throw new Error('INVALID_AUTHENTICATION');
   const tenantId = path.startsWith('/tenants/')
@@ -62,14 +63,41 @@ export async function requireHttpAuthority(
     throw new Error('TENANT_ACCESS_DENIED');
 }
 
-export function workerSecurity(env: WorkerSecurityEnv): Security {
+export function workerSecurity(
+  env: WorkerSecurityEnv,
+  request?: Request,
+): Security {
+  if (request) {
+    const security = workerSecurity(env);
+    return {
+      identity: security.identity,
+      membership: {
+        async findActiveMembership(actorId, tenantId) {
+          const membership = await security.membership.findActiveMembership(
+            actorId,
+            tenantId,
+          );
+          if (!membership) return null;
+          const selectedTenant = request.headers.get('x-tenant-id');
+          if (selectedTenant && selectedTenant !== tenantId)
+            throw new Error('TENANT_ACCESS_DENIED');
+          return resolveWorkspace(membership, {
+            tenantId,
+            role: request.headers.get('x-workspace-role') ?? undefined,
+            professionalId:
+              request.headers.get('x-professional-id') ?? undefined,
+          });
+        },
+      },
+    };
+  }
   const existing = cache.get(env);
   if (existing) return existing;
   let security: Security;
   if (fixtureSecurity(env)) {
     security = {
       identity: new MockIdentityProvider(),
-      membership: new MockTenantMembershipProvider(),
+      membership: new D1TenantMembershipProvider(env.D1_DATABASE),
     };
   } else if (
     env.AUTH_PROVIDER === 'jwt' &&

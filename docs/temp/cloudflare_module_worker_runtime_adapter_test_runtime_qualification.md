@@ -123,8 +123,8 @@ O Module Worker precisa ser chamado pelo runtime através de:
 
 ```ts
 export default {
-  async fetch(request, env, ctx) {}
-}
+  async fetch(request, env, ctx) {},
+};
 ```
 
 ou `WorkerEntrypoint`. ([Documentação do Desenvolvedor Cloudflare][1])
@@ -393,7 +393,7 @@ Preferir padrão:
 let runtimePromise: Promise<Runtime> | undefined;
 
 function getRuntime(env: Env) {
-  return runtimePromise ??= bootstrapRuntime(env);
+  return (runtimePromise ??= bootstrapRuntime(env));
 }
 ```
 
@@ -902,7 +902,7 @@ A resposta esperada continua a mesma.
 Não vale chamar:
 
 ```ts
-new HealthController().health()
+new HealthController().health();
 ```
 
 como prova de runtime.
@@ -1926,15 +1926,15 @@ e só depois PR-12.
 
 A mudança principal é esta: **o próximo PR agora deve transformar o backend Nest compilável em Workers Cloudflare reais**. O erro de `default export` não é um detalhe de build; ele demonstra que a fronteira de runtime ainda não foi implementada. Cloudflare exige Module Worker entrypoints, enquanto Nest standalone por si só não preserva o pipeline HTTP. ([Documentação do Desenvolvedor Cloudflare][1]) Portanto esse PR precisa resolver essa fronteira explicitamente antes de qualquer novo endpoint de negócio.
 
-[1]: https://developers.cloudflare.com/workers/reference/how-workers-works/?utm_source=chatgpt.com "How Workers works · Cloudflare Workers docs"
-[2]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/?utm_source=chatgpt.com "Service bindings - RPC (WorkerEntrypoint) · Cloudflare Workers docs"
-[3]: https://docs.nestjs.com/application-context?utm_source=chatgpt.com "Standalone applications | NestJS - A progressive Node.js framework"
-[4]: https://www.npmjs.com/package/%40cloudflare/workers-types?utm_source=chatgpt.com "@cloudflare/workers-types - npm"
-[5]: https://docs.nestjs.com/faq/http-adapter?utm_source=chatgpt.com "HTTP adapter - FAQ | NestJS - A progressive Node.js framework"
-[6]: https://developers.cloudflare.com/workers/runtime-apis/fetch/?utm_source=chatgpt.com "Fetch · Cloudflare Workers docs"
-[7]: https://developers.cloudflare.com/workers/runtime-apis/bindings/?utm_source=chatgpt.com "Bindings (env) · Cloudflare Workers docs"
-[8]: https://developers.cloudflare.com/workers/runtime-apis/nodejs/?utm_source=chatgpt.com "Node.js compatibility · Cloudflare Workers docs"
-[9]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/?utm_source=chatgpt.com "Service bindings - Runtime APIs · Cloudflare Workers docs"
-[10]: https://developers.cloudflare.com/workers/get-started/guide/?utm_source=chatgpt.com "Get started - CLI · Cloudflare Workers docs"
-[11]: https://hono.dev/docs/getting-started/cloudflare-workers?utm_source=chatgpt.com "Cloudflare Workers - Hono"
-[12]: https://developers.cloudflare.com/workers/framework-guides/web-apps/more-web-frameworks/hono/?utm_source=chatgpt.com "Hono · Cloudflare Workers docs"
+[1]: https://developers.cloudflare.com/workers/reference/how-workers-works/?utm_source=chatgpt.com 'How Workers works · Cloudflare Workers docs'
+[2]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/?utm_source=chatgpt.com 'Service bindings - RPC (WorkerEntrypoint) · Cloudflare Workers docs'
+[3]: https://docs.nestjs.com/application-context?utm_source=chatgpt.com 'Standalone applications | NestJS - A progressive Node.js framework'
+[4]: https://www.npmjs.com/package/%40cloudflare/workers-types?utm_source=chatgpt.com '@cloudflare/workers-types - npm'
+[5]: https://docs.nestjs.com/faq/http-adapter?utm_source=chatgpt.com 'HTTP adapter - FAQ | NestJS - A progressive Node.js framework'
+[6]: https://developers.cloudflare.com/workers/runtime-apis/fetch/?utm_source=chatgpt.com 'Fetch · Cloudflare Workers docs'
+[7]: https://developers.cloudflare.com/workers/runtime-apis/bindings/?utm_source=chatgpt.com 'Bindings (env) · Cloudflare Workers docs'
+[8]: https://developers.cloudflare.com/workers/runtime-apis/nodejs/?utm_source=chatgpt.com 'Node.js compatibility · Cloudflare Workers docs'
+[9]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/?utm_source=chatgpt.com 'Service bindings - Runtime APIs · Cloudflare Workers docs'
+[10]: https://developers.cloudflare.com/workers/get-started/guide/?utm_source=chatgpt.com 'Get started - CLI · Cloudflare Workers docs'
+[11]: https://hono.dev/docs/getting-started/cloudflare-workers?utm_source=chatgpt.com 'Cloudflare Workers - Hono'
+[12]: https://developers.cloudflare.com/workers/framework-guides/web-apps/more-web-frameworks/hono/?utm_source=chatgpt.com 'Hono · Cloudflare Workers docs'

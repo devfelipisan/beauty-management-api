@@ -7,4 +7,3 @@ Implementação da fundação de evidências fotográficas clínicas no Clinical
 - Upload usa intent `PENDING_UPLOAD`, uma PUT em streaming e finalização `AVAILABLE`.
 - Falhas deixam estado recuperável; reconciliação é explícita e limitada.
 - Não há hard delete, URL pública, multipart, thumbnail, outbox ou conclusão de sessão.
-

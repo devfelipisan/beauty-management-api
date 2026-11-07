@@ -87,3 +87,5 @@ Decisão: [ADR-0014](docs/adr/0014-npm-workspaces-domain-boundaries.md).
 - Requisitos transversais: `docs/05-cross-cutting/`
 - Desenvolvimento e operação: `docs/06-development/` e `docs/07-operations/`
 - Instruções do Codex: `.codex/`
+
+[Contratos de leitura Web/BFF](docs/workspace-read-contracts.md).

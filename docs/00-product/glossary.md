@@ -13,4 +13,3 @@
 - **BFF:** composição orientada ao frontend, sem autoridade de domínio.
 
 `Deposit status ≠ Appointment status ≠ Confirmation status`.
-

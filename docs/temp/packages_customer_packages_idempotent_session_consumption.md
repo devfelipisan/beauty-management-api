@@ -1,6 +1,6 @@
 Com o **PR-22 concluído**, o próximo PR deve fechar a próxima parte explícita de `RN-CONC-002`: **pacotes e consumo de sessão**.
 
-A documentação normativa determina que um pacote possua cliente, serviço, quantidade, valores, validade, saldo e status; que uma unidade só seja consumida quando a sessão for concluída; que o saldo nunca fique negativo; que a mesma sessão não possa consumir duas unidades; e que cada consumo seja rastreável até uma sessão específica.  A proposta técnica também já posiciona `packages`, `customer_packages` e `package_movements` como entidades próprias e inclui `package_movements` na operação lógica de conclusão de sessão.
+A documentação normativa determina que um pacote possua cliente, serviço, quantidade, valores, validade, saldo e status; que uma unidade só seja consumida quando a sessão for concluída; que o saldo nunca fique negativo; que a mesma sessão não possa consumir duas unidades; e que cada consumo seja rastreável até uma sessão específica. A proposta técnica também já posiciona `packages`, `customer_packages` e `package_movements` como entidades próprias e inclui `package_movements` na operação lógica de conclusão de sessão.
 
 # PR-23 — Packages + Customer Packages + Idempotent Session Consumption
 
@@ -173,7 +173,7 @@ PackageMovement
 = alteração histórica de saldo
 ```
 
-A documentação técnica já prevê `packages`, `customer_packages` e `package_movements` separadamente. 
+A documentação técnica já prevê `packages`, `customer_packages` e `package_movements` separadamente.
 
 ---
 
@@ -255,7 +255,7 @@ Não inventar categorias/fidelidade/campanhas neste PR.
 
 # 8. O desconto do pacote é congelado
 
-`RN-PAC-007` determina que pacote vendido com desconto não deve receber novo desconto por sessão. 
+`RN-PAC-007` determina que pacote vendido com desconto não deve receber novo desconto por sessão.
 
 Portanto:
 
@@ -344,7 +344,7 @@ EXPIRED
 CANCELED
 ```
 
-Correspondendo a `RN-PAC-002`. 
+Correspondendo a `RN-PAC-002`.
 
 Não adicionar:
 
@@ -376,7 +376,7 @@ ACTIVE + remaining=0
 → invalid / should transition COMPLETED
 ```
 
-Saldo nunca negativo é obrigatório por `RN-PAC-004`. 
+Saldo nunca negativo é obrigatório por `RN-PAC-004`.
 
 ---
 
@@ -580,7 +580,7 @@ quando `session_id` estiver presente.
 
 `RN-PAC-005` diz:
 
-> a mesma sessão não poderá consumir duas unidades. 
+> a mesma sessão não poderá consumir duas unidades.
 
 Não confie apenas em `Idempotency-Key`.
 
@@ -881,7 +881,7 @@ session not previously consumed
 
 # 36. Service compatibility
 
-`RN-PAC-001` associa Package a um serviço. 
+`RN-PAC-001` associa Package a um serviço.
 
 Logo:
 
@@ -1080,7 +1080,7 @@ remaining = -1
 
 # 46. Esse teste é obrigatório
 
-`RN-PAC-004` não é apenas validação de entidade; é propriedade concorrente. 
+`RN-PAC-004` não é apenas validação de entidade; é propriedade concorrente.
 
 ---
 
@@ -1387,7 +1387,7 @@ Appointment commercial snapshot
 
 precisa refletir que a sessão será coberta por pacote?
 
-A regra diz pacote vendido com desconto não recebe novo desconto por sessão. 
+A regra diz pacote vendido com desconto não recebe novo desconto por sessão.
 
 Isso implica que não devemos cobrar novamente a sessão como venda normal.
 
@@ -1667,7 +1667,7 @@ No Clinical completion local transaction:
 Session COMPLETED
 Audit
 Outbox SessionCompleted
-Outbox PackageConsumptionRequested? 
+Outbox PackageConsumptionRequested?
 Idempotency
 ```
 
@@ -2006,7 +2006,7 @@ PACKAGE_CONSUMED
 
 ao customer history.
 
-Isso atende a parte de pacotes de `RN-HIS-001`. 
+Isso atende a parte de pacotes de `RN-HIS-001`.
 
 ---
 
@@ -2234,7 +2234,7 @@ CustomerPackageCreated
 
 se Operations timeline precisar registrar compra de pacote.
 
-A timeline normativa inclui pacotes. 
+A timeline normativa inclui pacotes.
 
 ---
 
@@ -2344,7 +2344,7 @@ Não depender exclusivamente de eventId.
 
 A mesma Session não deveria consumir dois pacotes, salvo regra futura.
 
-`RN-PAC-005` diz “a mesma sessão não poderá consumir duas unidades”, o que sugere unicidade global do consumo da Session, não apenas por pacote. 
+`RN-PAC-005` diz “a mesma sessão não poderá consumir duas unidades”, o que sugere unicidade global do consumo da Session, não apenas por pacote.
 
 Portanto eu prefiro constraint:
 
@@ -2399,8 +2399,6 @@ no-show
 → no automatic consumption
 ```
 
-
-
 Nosso trigger é:
 
 ```text
@@ -2450,7 +2448,7 @@ sessionId required
 
 para consumption.
 
-Esse é `RN-PAC-008`. 
+Esse é `RN-PAC-008`.
 
 ---
 
@@ -2954,7 +2952,7 @@ dry-runs
 [ ] commercial snapshot immutable
 ```
 
-Isso cobre `RN-PAC-001/002`. 
+Isso cobre `RN-PAC-001/002`.
 
 ---
 
@@ -2976,7 +2974,7 @@ Isso cobre `RN-PAC-001/002`.
 [ ] completed package cannot consume
 ```
 
-Cobre `RN-PAC-003/004`. 
+Cobre `RN-PAC-003/004`.
 
 ---
 
@@ -3010,7 +3008,7 @@ Cobre `RN-PAC-005`.
 [ ] only SessionCompleted path triggers consumption
 ```
 
-Cobre `RN-PAC-006`. 
+Cobre `RN-PAC-006`.
 
 ---
 
@@ -3164,7 +3162,7 @@ Financial balance       PENDING
 FULL RN-CONC-002        NOT YET
 ```
 
-A regra normativa inclui expressamente o consumo do pacote e saldo financeiro no conjunto de efeitos da conclusão. 
+A regra normativa inclui expressamente o consumo do pacote e saldo financeiro no conjunto de efeitos da conclusão.
 
 ---
 
@@ -3356,7 +3354,7 @@ Cron expiration
 
 Depois desse PR, o único grande componente que ainda impede o fechamento normativo de `RN-CONC-002` será o **saldo financeiro**.
 
-A própria documentação define que o financeiro do MVP controla recebimentos; permite dinheiro, Pix, débito, crédito, transferência e crédito interno; suporta pagamento parcial; considera sinal confirmado no saldo; proíbe exclusão de pagamentos; e exige que estorno produza movimento inverso. 
+A própria documentação define que o financeiro do MVP controla recebimentos; permite dinheiro, Pix, débito, crédito, transferência e crédito interno; suporta pagamento parcial; considera sinal confirmado no saldo; proíbe exclusão de pagamentos; e exige que estorno produza movimento inverso.
 
 Portanto o próximo passo deverá ser:
 
@@ -3385,4 +3383,4 @@ LedgerMovement
 
 e somente depois do PR-24 será possível fazer uma **nova qualificação específica de `RN-CONC-002`**.
 
-A recomendação principal para o **PR-23** é não tratá-lo como um simples CRUD de pacote. O ponto crítico é construir três garantias físicas: **saldo nunca negativo, uma mesma Session nunca consome duas unidades e todo consumo gera um `PackageMovement` rastreável**. A documentação exige explicitamente essas três propriedades. 
+A recomendação principal para o **PR-23** é não tratá-lo como um simples CRUD de pacote. O ponto crítico é construir três garantias físicas: **saldo nunca negativo, uma mesma Session nunca consome duas unidades e todo consumo gera um `PackageMovement` rastreável**. A documentação exige explicitamente essas três propriedades.

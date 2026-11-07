@@ -12,10 +12,14 @@ describe('RequestIdMiddleware', () => {
       headers: {},
     } as never;
     const headers = new Map<string, string>();
-    const response = { setHeader: (key: string, value: string) => headers.set(key, value) } as never;
+    const response = {
+      setHeader: (key: string, value: string) => headers.set(key, value),
+    } as never;
     let called = false;
 
-    new RequestIdMiddleware().use(request, response, () => { called = true; });
+    new RequestIdMiddleware().use(request, response, () => {
+      called = true;
+    });
 
     expect((request as { requestId: string }).requestId).toBe('request-123');
     expect(headers.get('x-request-id')).toBe('request-123');

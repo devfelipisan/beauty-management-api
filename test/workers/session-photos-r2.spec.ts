@@ -1,3 +1,4 @@
+import { authenticatedTestService } from './authenticated-test-service.js';
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 
@@ -11,7 +12,9 @@ type ClinicalService = {
   ): Promise<any>;
 };
 const db = env.D1_DATABASE;
-const clinical = env.CLINICAL_SERVICE as unknown as ClinicalService;
+const clinical = authenticatedTestService(
+  env.CLINICAL_SERVICE,
+) as unknown as ClinicalService;
 const run = crypto.randomUUID();
 const tenantId = `photo-tenant-${run}`;
 const sessionId = `photo-session-${run}`;

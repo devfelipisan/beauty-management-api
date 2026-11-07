@@ -6,6 +6,12 @@ import { TenancyModule } from '@beauty/tenancy';
 import { RuntimeConfigModule } from '@beauty/config';
 
 @Module({
-  imports: [RuntimeConfigModule, ObservabilityModule, AuthenticationModule, TenancyModule, HealthModule],
+  imports: [
+    RuntimeConfigModule,
+    ObservabilityModule,
+    AuthenticationModule,
+    TenancyModule,
+    HealthModule,
+  ],
 })
 export class AppModule {}

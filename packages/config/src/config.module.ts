@@ -5,7 +5,12 @@ import { RuntimeConfigService } from './runtime-config.service.js';
 
 @Global()
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, validationSchema: environmentSchema })],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: environmentSchema,
+    }),
+  ],
   providers: [RuntimeConfigService],
   exports: [RuntimeConfigService],
 })

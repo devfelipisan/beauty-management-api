@@ -1,5 +1,7 @@
 import { env, exports } from 'cloudflare:workers';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { D1AvailabilityRepository } from '@beauty/operations/modules/appointments/infrastructure/d1-availability-repository';
+import { TimeInterval } from '@beauty/operations/modules/appointments/domain/time-interval';
 
 const worker = exports.default as {
   fetch(request: Request): Promise<Response>;
@@ -117,6 +119,24 @@ describe('appointment reschedule authoritative flow', () => {
     );
     expect(first.status).toBe(200);
     const original = await first.json();
+    const availability = new D1AvailabilityRepository(env.D1_DATABASE);
+    expect(
+      await availability.findExisting(
+        tenantId,
+        professionalId,
+        TimeInterval.create(body.startsAt, '2028-06-10T12:00:00.000Z'),
+      ),
+    ).toHaveLength(1);
+    expect(
+      await availability.findExisting(
+        tenantId,
+        professionalId,
+        TimeInterval.create(
+          '2028-06-10T09:00:00.000Z',
+          '2028-06-10T10:00:00.000Z',
+        ),
+      ),
+    ).toHaveLength(0);
     const conflict = await req(
       `/tenants/${tenantId}/appointments`,
       'POST',
@@ -130,6 +150,9 @@ describe('appointment reschedule authoritative flow', () => {
       },
     );
     expect(conflict.status).toBe(409);
+    // The same authoritative create flow must be able to reserve the old slot.
+    const replacementId = await createAt('2028-06-10T09:00:00.000Z');
+    expect(replacementId).not.toBe(id);
     await env.D1_DATABASE.prepare(
       "UPDATE appointments SET status='COMPLETED' WHERE tenant_id=? AND id=?",
     )

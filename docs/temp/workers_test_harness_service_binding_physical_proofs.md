@@ -915,10 +915,7 @@ ou IDs únicos por iteração.
 Em cada slot:
 
 ```ts
-await Promise.allSettled([
-  reserve(candidate),
-  reserve(candidate),
-]);
+await Promise.allSettled([reserve(candidate), reserve(candidate)]);
 ```
 
 ---
@@ -1823,8 +1820,8 @@ Se, ao contrário, o Billing já conseguir devolver `READY` com uma configuraç�
 
 Em resumo: **o próximo PR deve deixar de depender do discovery visual do `wrangler dev` e transformar a topologia inteira em uma suíte física automatizada sobre o runtime oficial de testes da Cloudflare**. A plataforma hoje recomenda a integração Workers/Vitest para testes no `workerd` e um harness específico para integration tests multi-Worker, justamente o tipo de prova que este projeto agora precisa. ([Cloudflare Docs][2])
 
-[1]: https://developers.cloudflare.com/workers/local-development/multi-workers/?utm_source=chatgpt.com "Developing with multiple Workers · Cloudflare Workers docs"
-[2]: https://developers.cloudflare.com/workers/testing/vitest-integration/?utm_source=chatgpt.com "Vitest integration · Cloudflare Workers docs"
-[3]: https://developers.cloudflare.com/workers/testing/?utm_source=chatgpt.com "Testing · Cloudflare Workers docs"
-[4]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/?utm_source=chatgpt.com "Service bindings - RPC (WorkerEntrypoint) · Cloudflare Workers docs"
-[5]: https://developers.cloudflare.com/workers/local-development/?utm_source=chatgpt.com "Local development · Cloudflare Workers docs"
+[1]: https://developers.cloudflare.com/workers/local-development/multi-workers/?utm_source=chatgpt.com 'Developing with multiple Workers · Cloudflare Workers docs'
+[2]: https://developers.cloudflare.com/workers/testing/vitest-integration/?utm_source=chatgpt.com 'Vitest integration · Cloudflare Workers docs'
+[3]: https://developers.cloudflare.com/workers/testing/?utm_source=chatgpt.com 'Testing · Cloudflare Workers docs'
+[4]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/?utm_source=chatgpt.com 'Service bindings - RPC (WorkerEntrypoint) · Cloudflare Workers docs'
+[5]: https://developers.cloudflare.com/workers/local-development/?utm_source=chatgpt.com 'Local development · Cloudflare Workers docs'

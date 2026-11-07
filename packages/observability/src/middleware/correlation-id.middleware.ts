@@ -1,7 +1,10 @@
 import { Injectable, type NestMiddleware } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NextFunction, Request, Response } from 'express';
-import { ExecutionContextFactory, type ExecutionContext } from '@beauty/execution-context';
+import {
+  ExecutionContextFactory,
+  type ExecutionContext,
+} from '@beauty/execution-context';
 import { resolveSafeId } from './request-id.middleware.js';
 
 @Injectable()

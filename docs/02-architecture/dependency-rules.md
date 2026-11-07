@@ -11,4 +11,3 @@ Casos de uso não recebem repositories concretos nem SDKs de persistência.
 Nest compõe classes puras por factories; Cloudflare compõe casos de uso no
 `composition-root.ts`. Contratos de integração ficam em `@beauty/contracts`.
 O CI verifica essas fronteiras com testes arquiteturais.
-

@@ -2,14 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { eligibleOutboxOwners, outboxOwnership } from './ownership.js';
 describe('consolidated outbox eligibility', () => {
   it('uses a single query and maps only events owned by the dispatchers', async () => {
-    const all = vi
-      .fn()
-      .mockResolvedValue({
-        results: [
-          { event_type: 'SessionCompleted' },
-          { event_type: 'RefundIssued' },
-        ],
-      });
+    const all = vi.fn().mockResolvedValue({
+      results: [
+        { event_type: 'SessionCompleted' },
+        { event_type: 'RefundIssued' },
+      ],
+    });
     const bind = vi.fn(() => ({ all }));
     const prepare = vi.fn(() => ({ bind }));
     expect(

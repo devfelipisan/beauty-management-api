@@ -1881,7 +1881,7 @@ return {
   status: 'READY',
   discountCents: 0,
   deposit: undefined,
-}
+};
 ```
 
 não qualifica Production behavior.

@@ -6,14 +6,10 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "**/*.spec.ts",
-    "**/*.e2e-spec.ts"
-  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.spec.ts", "**/*.e2e-spec.ts"],
   "references": [
+    { "path": "../../packages/contracts" },
     {
       "path": "../../packages/execution-context"
     },

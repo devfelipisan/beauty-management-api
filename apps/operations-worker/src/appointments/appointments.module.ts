@@ -9,5 +9,26 @@ import { TenancyModule } from '@beauty/tenancy';
 import { AuthenticationModule } from '@beauty/authentication';
 import { UnavailableCommercialTerms } from '@beauty/operations/modules/appointments/infrastructure/unavailable-commercial-terms';
 import { COMMERCIAL_TERMS } from '@beauty/operations/modules/appointments/ports/commercial-terms-port';
-@Module({ imports:[TenancyModule, AuthenticationModule], controllers:[AppointmentsController], providers:[D1AppointmentRepository,D1AvailabilityRepository,UnavailableCommercialTerms,{provide:APPOINTMENT_REPOSITORY,useExisting:D1AppointmentRepository},{provide:AVAILABILITY_REPOSITORY,useExisting:D1AvailabilityRepository},{provide:COMMERCIAL_TERMS,useExisting:UnavailableCommercialTerms},{ provide: CheckProfessionalAvailabilityUseCase, inject: [AVAILABILITY_REPOSITORY], useFactory: (repository: ConstructorParameters<typeof CheckProfessionalAvailabilityUseCase>[0]) => new CheckProfessionalAvailabilityUseCase(repository) }], exports:[APPOINTMENT_REPOSITORY,AVAILABILITY_REPOSITORY,COMMERCIAL_TERMS] })
+@Module({
+  imports: [TenancyModule, AuthenticationModule],
+  controllers: [AppointmentsController],
+  providers: [
+    D1AppointmentRepository,
+    D1AvailabilityRepository,
+    UnavailableCommercialTerms,
+    { provide: APPOINTMENT_REPOSITORY, useExisting: D1AppointmentRepository },
+    { provide: AVAILABILITY_REPOSITORY, useExisting: D1AvailabilityRepository },
+    { provide: COMMERCIAL_TERMS, useExisting: UnavailableCommercialTerms },
+    {
+      provide: CheckProfessionalAvailabilityUseCase,
+      inject: [AVAILABILITY_REPOSITORY],
+      useFactory: (
+        repository: ConstructorParameters<
+          typeof CheckProfessionalAvailabilityUseCase
+        >[0],
+      ) => new CheckProfessionalAvailabilityUseCase(repository),
+    },
+  ],
+  exports: [APPOINTMENT_REPOSITORY, AVAILABILITY_REPOSITORY, COMMERCIAL_TERMS],
+})
 export class AppointmentsModule {}

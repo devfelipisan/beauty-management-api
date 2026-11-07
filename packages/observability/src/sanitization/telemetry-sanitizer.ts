@@ -1,9 +1,34 @@
 const SENSITIVE_KEYS = new Set([
-  'password', 'passwd', 'secret', 'authorization', 'cookie', 'setcookie',
-  'token', 'accesstoken', 'refreshtoken', 'cpf', 'document', 'email', 'phone',
-  'medical', 'allergy', 'medication', 'technicalrecord', 'technicalnotes',
-  'name', 'address', 'rawrequest', 'rawresponse', 'creditcard', 'paymenttoken',
-  'photo', 'file', 'proof', 'receipt', 'signedurl', 'presignedurl',
+  'password',
+  'passwd',
+  'secret',
+  'authorization',
+  'cookie',
+  'setcookie',
+  'token',
+  'accesstoken',
+  'refreshtoken',
+  'cpf',
+  'document',
+  'email',
+  'phone',
+  'medical',
+  'allergy',
+  'medication',
+  'technicalrecord',
+  'technicalnotes',
+  'name',
+  'address',
+  'rawrequest',
+  'rawresponse',
+  'creditcard',
+  'paymenttoken',
+  'photo',
+  'file',
+  'proof',
+  'receipt',
+  'signedurl',
+  'presignedurl',
 ]);
 
 function normalizeKey(key: string): string {
@@ -23,7 +48,8 @@ export class TelemetrySanitizer {
   }
 
   private sanitizeValue(value: unknown): unknown {
-    if (Array.isArray(value)) return value.map((item) => this.sanitizeValue(item));
+    if (Array.isArray(value))
+      return value.map((item) => this.sanitizeValue(item));
     if (value && typeof value === 'object') {
       return this.sanitize(value as Record<string, unknown>);
     }

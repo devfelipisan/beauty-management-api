@@ -1,3 +1,4 @@
+import type { D1DatabaseLike } from '@beauty/database/d1/d1.types';
 import type { TransactionalWriteContext } from '@beauty/reliability/unit-of-work/transactional-write-context';
 /// <reference types="@cloudflare/workers-types" />
 import { Customer, type CustomerProps } from '../domain/customer.js';
@@ -16,7 +17,7 @@ type Row = {
   updated_at: string;
 };
 export class D1CustomerRepository implements CustomerRepository {
-  constructor(private readonly db: D1Database) {}
+  constructor(private readonly db: D1DatabaseLike) {}
   private async write(
     sql: string,
     params: unknown[],

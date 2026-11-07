@@ -1,4 +1,4 @@
-Com o **PR-15 concluído e `gate:pr15 = PASS`**, o próximo PR deve iniciar a **Fase 5 — Atendimento** do MVP. A documentação coloca explicitamente a sequência `check-in → iniciar sessão → registrar parâmetros/equipamento/potência → concluir sessão`, e também exige que duplo clique não crie duas sessões.  
+Com o **PR-15 concluído e `gate:pr15 = PASS`**, o próximo PR deve iniciar a **Fase 5 — Atendimento** do MVP. A documentação coloca explicitamente a sequência `check-in → iniciar sessão → registrar parâmetros/equipamento/potência → concluir sessão`, e também exige que duplo clique não crie duas sessões.
 
 Portanto, o próximo PR deve ser:
 
@@ -35,7 +35,7 @@ Appointment
 IN_PROGRESS
 ```
 
-O PR deve **parar aqui**. Registro de parâmetros, equipamentos, potência, fotos, intercorrências e conclusão ficam para os PRs seguintes. Isso mantém a decomposição coerente com os requisitos `RF-031` a `RF-038`. 
+O PR deve **parar aqui**. Registro de parâmetros, equipamentos, potência, fotos, intercorrências e conclusão ficam para os PRs seguintes. Isso mantém a decomposição coerente com os requisitos `RF-031` a `RF-038`.
 
 ---
 
@@ -109,7 +109,7 @@ Out of scope
 
 # 3. Ownership: Session pertence ao Clinical Worker
 
-A documentação trata sessão, ficha técnica, potência, equipamentos e intercorrências como parte do atendimento técnico. 
+A documentação trata sessão, ficha técnica, potência, equipamentos e intercorrências como parte do atendimento técnico.
 
 Portanto:
 
@@ -167,7 +167,7 @@ find apps/clinical-worker/src \
 grep -R "Session" apps/clinical-worker/src libs -n || true
 ```
 
-O plano histórico menciona Session FSM como conceito arquitetural, então pode já existir algum contrato ou scaffold. Não criar duplicado. 
+O plano histórico menciona Session FSM como conceito arquitetural, então pode já existir algum contrato ou scaffold. Não criar duplicado.
 
 ---
 
@@ -250,7 +250,7 @@ Não adicionar dezenas de campos técnicos antes do PR de ficha.
 
 # 9. Congelar referências históricas
 
-A regra geral exige preservar informações utilizadas nas operações técnicas como estavam naquele momento, inclusive profissional responsável, equipamento e campos técnicos. 
+A regra geral exige preservar informações utilizadas nas operações técnicas como estavam naquele momento, inclusive profissional responsável, equipamento e campos técnicos.
 
 Para o PR-16, ao menos:
 
@@ -347,13 +347,13 @@ CompleteSession
 
 fica fora.
 
-A conclusão possui regras muito mais pesadas: campos obrigatórios, equipamento, parâmetros, resultado, reação, orientações, retorno, fotos quando obrigatórias e intercorrências não tratadas. 
+A conclusão possui regras muito mais pesadas: campos obrigatórios, equipamento, parâmetros, resultado, reação, orientações, retorno, fotos quando obrigatórias e intercorrências não tratadas.
 
 ---
 
 # 14. Session só nasce de Appointment
 
-`RF-031` é explícito: o profissional inicia uma sessão **a partir do agendamento**. 
+`RF-031` é explícito: o profissional inicia uma sessão **a partir do agendamento**.
 
 Portanto não expor:
 
@@ -534,7 +534,7 @@ session.start
 
 somente se o modelo atual não possuir uma equivalente.
 
-A documentação atribui ao profissional a execução do atendimento, enquanto recepção é operacional/comercial. 
+A documentação atribui ao profissional a execução do atendimento, enquanto recepção é operacional/comercial.
 
 Não autorizar recepção implicitamente.
 
@@ -630,7 +630,7 @@ Operations e Clinical devem usar as mesmas foundations.
 
 # 29. `Idempotency-Key` obrigatório
 
-A especificação é explícita: duplo clique não pode criar duas sessões. 
+A especificação é explícita: duplo clique não pode criar duas sessões.
 
 Logo:
 
@@ -757,7 +757,7 @@ Não abrir UnitOfWork Clinical e chamar Operations dentro dele.
 
 # 36. Unicidade Session por Appointment
 
-A regra de confiabilidade exige que duplo clique não crie duas sessões. 
+A regra de confiabilidade exige que duplo clique não crie duas sessões.
 
 Além de Idempotency-Key, crie proteção física:
 
@@ -892,7 +892,7 @@ Na mesma UnitOfWork do Clinical:
 SessionStarted
 ```
 
-Audit deve registrar a ação de início da sessão; esse evento é explicitamente obrigatório na especificação. 
+Audit deve registrar a ação de início da sessão; esse evento é explicitamente obrigatório na especificação.
 
 Metadata segura:
 
@@ -1003,7 +1003,7 @@ Idempotency by eventId
 
 Se ainda não existe status equivalente, revisar a FSM oficial.
 
-A proposta técnica usa explicitamente `appointment.status = in_progress` durante conclusão de sessão. 
+A proposta técnica usa explicitamente `appointment.status = in_progress` durante conclusão de sessão.
 
 Logo a transição:
 
@@ -1195,7 +1195,7 @@ EXPIRED
 
 não iniciam Session.
 
-O fluxo documental é confirmação → check-in → iniciar sessão. 
+O fluxo documental é confirmação → check-in → iniciar sessão.
 
 ---
 
@@ -1233,7 +1233,7 @@ A avaliação obrigatória já foi validada no momento da criação do Appointme
 
 Mas entre agendamento e sessão ela pode expirar ou surgir contraindicação.
 
-A documentação sugere que novo atendimento deve respeitar restrições/intercorrências ativas. 
+A documentação sugere que novo atendimento deve respeitar restrições/intercorrências ativas.
 
 Neste PR, eu não reexecutaria toda eligibility automaticamente sem regra explícita.
 
@@ -1299,7 +1299,7 @@ Não bloquear StartSession apenas porque nenhum equipamento foi escolhido ainda,
 
 Não exigir preenchimento para iniciar.
 
-RN-CAM-004 só proíbe **concluir** com campos obrigatórios faltando. 
+RN-CAM-004 só proíbe **concluir** com campos obrigatórios faltando.
 
 Portanto:
 
@@ -1401,7 +1401,7 @@ appointmentId
 
 na URL.
 
-Esse isolamento é requisito geral obrigatório. 
+Esse isolamento é requisito geral obrigatório.
 
 ---
 
@@ -2305,6 +2305,6 @@ CompleteSession
 + Package/History/Return integration
 ```
 
-Essa decomposição é importante porque **`CompleteSession` não pode ser implementado cedo demais**. A especificação exige que a conclusão valide campos obrigatórios, equipamento quando necessário, parâmetros, reação, orientações, retorno, fotos obrigatórias e intercorrências pendentes, além de ser única e atomicamente consistente. 
+Essa decomposição é importante porque **`CompleteSession` não pode ser implementado cedo demais**. A especificação exige que a conclusão valide campos obrigatórios, equipamento quando necessário, parâmetros, reação, orientações, retorno, fotos obrigatórias e intercorrências pendentes, além de ser única e atomicamente consistente.
 
 Portanto, o próximo PR correto é **PR-16 — Session Foundation + StartSession Authoritative Flow**, terminando deliberadamente com `Session = IN_PROGRESS` e deixando o registro técnico para o PR seguinte.

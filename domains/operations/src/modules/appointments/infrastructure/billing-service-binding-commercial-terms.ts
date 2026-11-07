@@ -1,4 +1,16 @@
-import type { CalculateCommercialTermsRequest, CommercialTermsResponse } from '@beauty/contracts';
+import type {
+  CalculateCommercialTermsRequest,
+  CommercialTermsResponse,
+} from '@beauty/contracts';
 import type { CommercialTermsPort } from '../ports/commercial-terms-port.js';
-export interface BillingServiceBinding { calculateCommercialTerms(input:CalculateCommercialTermsRequest):Promise<CommercialTermsResponse>; }
-export class BillingServiceBindingCommercialTermsAdapter implements CommercialTermsPort { constructor(private readonly binding:BillingServiceBinding){} calculate(input:CalculateCommercialTermsRequest){return this.binding.calculateCommercialTerms(input);} }
+export interface BillingServiceBinding {
+  calculateCommercialTerms(
+    input: CalculateCommercialTermsRequest,
+  ): Promise<CommercialTermsResponse>;
+}
+export class BillingServiceBindingCommercialTermsAdapter implements CommercialTermsPort {
+  constructor(private readonly binding: BillingServiceBinding) {}
+  calculate(input: CalculateCommercialTermsRequest) {
+    return this.binding.calculateCommercialTerms(input);
+  }
+}

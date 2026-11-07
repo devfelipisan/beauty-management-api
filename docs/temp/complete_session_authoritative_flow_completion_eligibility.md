@@ -1657,9 +1657,7 @@ Response conceitual:
 ```json
 {
   "status": "BLOCKED",
-  "reasons": [
-    "REQUIRED_PHOTO_MISSING"
-  ]
+  "reasons": ["REQUIRED_PHOTO_MISSING"]
 }
 ```
 

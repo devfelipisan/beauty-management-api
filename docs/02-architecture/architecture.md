@@ -13,4 +13,3 @@ outros contextos nem aplicações. Ver ADR-0014.
 
 O isolamento atual é de código e deploy. Os três Workers ainda compartilham
 o banco D1 e as migrations; o isolamento físico de dados exige uma etapa própria.
-

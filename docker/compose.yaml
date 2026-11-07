@@ -9,7 +9,7 @@
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-beauty_local_password}
 
     ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
 
     volumes:
       - postgres_data:/var/lib/postgresql
@@ -18,8 +18,8 @@
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-beauty} -d ${POSTGRES_DB:-beauty_management}",
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-beauty} -d ${POSTGRES_DB:-beauty_management}',
         ]
       interval: 5s
       timeout: 5s

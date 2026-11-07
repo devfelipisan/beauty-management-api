@@ -9,6 +9,15 @@ import { ReliabilityModule } from '@beauty/reliability';
 import { BillingD1RuntimeModule } from './billing-d1-runtime.module.js';
 
 @Module({
-  imports: [RuntimeConfigModule, ObservabilityModule, AuthenticationModule, TenancyModule, BillingD1RuntimeModule, ReliabilityModule, HealthModule, CommercialTermsModule],
+  imports: [
+    RuntimeConfigModule,
+    ObservabilityModule,
+    AuthenticationModule,
+    TenancyModule,
+    BillingD1RuntimeModule,
+    ReliabilityModule,
+    HealthModule,
+    CommercialTermsModule,
+  ],
 })
 export class BillingWorkerModule {}

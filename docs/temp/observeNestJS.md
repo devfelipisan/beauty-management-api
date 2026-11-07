@@ -4,11 +4,11 @@ Atue como um engenheiro de software sênior, especialista em NestJS, TypeScript,
 
 Sua tarefa é implementar a fundação de observabilidade do projeto utilizando `@nestjs/observe`, seguindo estritamente a documentação oficial do NestJS:
 
-* `https://docs.nestjs.com/observability/overview`
-* `https://docs.nestjs.com/observability/sdk`
-* `https://docs.nestjs.com/observability/manual-instrumentation`
-* `https://docs.nestjs.com/observability/distributed-tracing`
-* `https://docs.nestjs.com/cli/usages`
+- `https://docs.nestjs.com/observability/overview`
+- `https://docs.nestjs.com/observability/sdk`
+- `https://docs.nestjs.com/observability/manual-instrumentation`
+- `https://docs.nestjs.com/observability/distributed-tracing`
+- `https://docs.nestjs.com/cli/usages`
 
 A observabilidade deve ser tratada como preocupação arquitetural transversal e obrigatória para API, workers, jobs, integrações e operações relevantes.
 
@@ -20,19 +20,19 @@ Não transforme observabilidade em dependência do domínio.
 
 Implementar uma fundação reutilizável que permita identificar e correlacionar:
 
-* HTTP requests;
-* traces;
-* logs;
-* erros não tratados;
-* erros tratados;
-* jobs;
-* workers;
-* integrações externas;
-* runtime metrics;
-* releases;
-* contexto técnico da requisição;
-* contexto semântico das operações;
-* propagação de trace entre serviços.
+- HTTP requests;
+- traces;
+- logs;
+- erros não tratados;
+- erros tratados;
+- jobs;
+- workers;
+- integrações externas;
+- runtime metrics;
+- releases;
+- contexto técnico da requisição;
+- contexto semântico das operações;
+- propagação de trace entre serviços.
 
 A arquitetura final deve seguir conceitualmente:
 
@@ -376,7 +376,7 @@ Modificar o bootstrap real da aplicação.
 Configurar:
 
 ```typescript
-instrument: ObserveInstrument
+instrument: ObserveInstrument;
 ```
 
 em:
@@ -517,7 +517,7 @@ Criar interceptor global.
 Registrar preferencialmente usando:
 
 ```typescript
-APP_INTERCEPTOR
+APP_INTERCEPTOR;
 ```
 
 para permitir Dependency Injection.
@@ -527,8 +527,8 @@ O interceptor NÃO deve criar manualmente o trace principal.
 O interceptor NÃO deve recriar APM usando:
 
 ```typescript
-Date.now()
-performance.now()
+Date.now();
+performance.now();
 ```
 
 sem necessidade específica.
@@ -560,7 +560,7 @@ Utilizar metadata do NestJS.
 O interceptor deve ler o valor com:
 
 ```typescript
-Reflector
+Reflector;
 ```
 
 e adicionar a operação ao contexto observável.
@@ -603,20 +603,14 @@ Contrato mínimo:
 
 ```typescript
 export interface ObservabilityPort {
-  createSpan<T>(
-    name: string,
-    callback: () => Promise<T>,
-  ): Promise<T>;
+  createSpan<T>(name: string, callback: () => Promise<T>): Promise<T>;
 
   captureHandledError(
     error: unknown,
     attributes?: Record<string, string | number | boolean>,
   ): Promise<void>;
 
-  setAttribute(
-    key: string,
-    value: string | number | boolean,
-  ): void;
+  setAttribute(key: string, value: string | number | boolean): void;
 
   currentTraceId(): string | null;
 }
@@ -625,7 +619,7 @@ export interface ObservabilityPort {
 Criar token de DI:
 
 ```typescript
-OBSERVABILITY_PORT
+OBSERVABILITY_PORT;
 ```
 
 A camada de aplicação deverá depender dessa abstração quando observabilidade manual for realmente necessária.

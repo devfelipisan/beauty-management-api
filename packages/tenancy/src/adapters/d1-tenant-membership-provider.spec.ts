@@ -47,6 +47,7 @@ describe('D1 membership row mapping (unit)', () => {
       professionalId: 'professional',
       roles: ['professional'],
       permissions: ['session.complete'],
+      rolePermissions: { professional: ['session.complete'] },
     });
     expect(f.bind).toHaveBeenLastCalledWith('tenant', 'actor');
     f.all.mockResolvedValue({

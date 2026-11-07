@@ -1,6 +1,6 @@
 Sim. Antes de iniciar os bounded contexts e endpoints funcionais, eu faria uma **sanitização arquitetural explícita do `beauty-management-api`**, deixando cada Worker em um estado mínimo, executável, observável e verificável, com **somente o endpoint de Health como superfície HTTP inicial**.
 
-Isso é coerente com a estratégia de construir primeiro a fundação e só depois acelerar os módulos funcionais.  Também reduz o risco de carregar para a nova arquitetura controllers, services e endpoints gerados por scaffold que acabem virando dependências acidentais. A arquitetura deve preservar a separação `interface → application → domain`, mantendo infraestrutura e framework fora do domínio. 
+Isso é coerente com a estratégia de construir primeiro a fundação e só depois acelerar os módulos funcionais. Também reduz o risco de carregar para a nova arquitetura controllers, services e endpoints gerados por scaffold que acabem virando dependências acidentais. A arquitetura deve preservar a separação `interface → application → domain`, mantendo infraestrutura e framework fora do domínio.
 
 Eu trataria isso como um PR independente:
 
@@ -110,9 +110,7 @@ e algo semelhante a:
 ```ts
 @Controller()
 export class AppController {
-  constructor(
-    private readonly appService: AppService,
-  ) {}
+  constructor(private readonly appService: AppService) {}
 
   @Get()
   getHello(): string {
@@ -307,7 +305,7 @@ CompleteSessionUseCase
 RegisterPaymentUseCase
 ```
 
-A proposta arquitetural já prevê casos de uso explícitos como `CreateAppointment`, `ConfirmDeposit`, `StartSession`, `CompleteSession`, `RegisterPayment` e outros, desacoplados do framework. 
+A proposta arquitetural já prevê casos de uso explícitos como `CreateAppointment`, `ConfirmDeposit`, `StartSession`, `CompleteSession`, `RegisterPayment` e outros, desacoplados do framework.
 
 Por isso o scaffold:
 
@@ -364,9 +362,7 @@ Depois da sanitização:
 
 ```ts
 @Module({
-  imports: [
-    HealthModule,
-  ],
+  imports: [HealthModule],
 })
 export class AppModule {}
 ```
@@ -808,7 +804,7 @@ e outros fatos de negócio.
 
 Health é telemetria técnica.
 
-A arquitetura distingue claramente rastreabilidade/auditoria de infraestrutura e regras de negócio. 
+A arquitetura distingue claramente rastreabilidade/auditoria de infraestrutura e regras de negócio.
 
 ---
 
@@ -1021,9 +1017,7 @@ Depois:
 
 ```ts
 @Module({
-  imports: [
-    HealthModule,
-  ],
+  imports: [HealthModule],
 })
 export class AppModule {}
 ```
@@ -1133,9 +1127,7 @@ Mas sem falhar caso `GIT_SHA` não exista localmente.
 Por exemplo:
 
 ```ts
-version:
-  process.env.APP_VERSION ??
-  'development'
+version: process.env.APP_VERSION ?? 'development';
 ```
 
 ---
@@ -1498,6 +1490,6 @@ Port
 Adapter
 ```
 
-Essa abordagem é particularmente adequada para este projeto porque as regras funcionais reais são numerosas e críticas — multi-tenancy, histórico imutável, sinal independente da presença, idempotência, rastreabilidade e estados próprios de agendamento/sessão.  Começar a nova arquitetura sobre um runtime limpo reduz bastante a possibilidade de reaproveitar acidentalmente handlers ou services incompatíveis com essas fronteiras.
+Essa abordagem é particularmente adequada para este projeto porque as regras funcionais reais são numerosas e críticas — multi-tenancy, histórico imutável, sinal independente da presença, idempotência, rastreabilidade e estados próprios de agendamento/sessão. Começar a nova arquitetura sobre um runtime limpo reduz bastante a possibilidade de reaproveitar acidentalmente handlers ou services incompatíveis com essas fronteiras.
 
 **Portanto: sim, eu faria a sanitização antes do PR-01 funcional, mas trataria a remoção como cirúrgica: limpar scaffold/demo e preservar qualquer fundação ou domínio já válido. O primeiro contrato público de cada Worker seria apenas `GET /health`, barato, sem banco e sem fan-out.**

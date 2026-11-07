@@ -25,12 +25,8 @@
             "header": [],
             "url": {
               "raw": "{{operationsUrl}}/health",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "health"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["health"],
               "query": []
             },
             "description": "\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
@@ -72,14 +68,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/v1/me/tenants",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "v1",
-                "me",
-                "tenants"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["v1", "me", "tenants"],
               "query": []
             },
             "description": "Exige identidade e membership; o handler não verifica uma permissão adicional.\n\nExige Bearer válido. Não lista empresas de outra identidade nem concede papéis.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
@@ -143,14 +133,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/v1/me/context",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "v1",
-                "me",
-                "context"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["v1", "me", "context"],
               "query": []
             },
             "description": "Exige identidade e membership; o handler não verifica uma permissão adicional.\n\nExige Bearer e x-tenant-id. Seletores x-workspace-role e x-professional-id são confrontados com o vínculo atual.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
@@ -199,14 +183,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services?limit={{limit}}&cursor={{cursor}}",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "services"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "services"],
               "query": [
                 {
                   "key": "limit",
@@ -265,14 +243,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "services"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "services"],
               "query": []
             },
             "description": "Permissão existente: `service.create`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
@@ -326,15 +298,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services/{{serviceId}}",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "services",
-                "{{serviceId}}"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "services", "{{serviceId}}"],
               "query": []
             },
             "description": "Permissão existente: `service.read`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
@@ -382,15 +347,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services/{{serviceId}}",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "services",
-                "{{serviceId}}"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "services", "{{serviceId}}"],
               "query": []
             },
             "description": "Permissão existente: `service.update`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias. Atualização exige service.update, sem concessão automática.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
@@ -443,15 +401,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/services/{{serviceId}}",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "services",
-                "{{serviceId}}"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "services", "{{serviceId}}"],
               "query": []
             },
             "description": "Permissão existente: `service.deactivate`.\n\nReutiliza os casos de uso do cadastro Nest. As escritas legadas são uma instrução D1 por recurso; não possuem contrato de idempotência, auditoria ou outbox. Esta exposição não acrescenta essas garantias. Desativação lógica para INACTIVE, sem exclusão física. Desativação exige service.deactivate, sem concessão automática.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
@@ -500,14 +451,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/customers",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "customers"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "customers"],
               "query": []
             },
             "description": "Permissão existente: `customer.read`.\n\nO handler atual usa a paginação padrão do caso de uso; não lê parâmetros de paginação da URL.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar."
@@ -551,9 +496,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/customers/{{customerId}}",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -607,9 +550,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/customers/{{customerId}}",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -668,9 +609,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/customers/{{customerId}}/history?from={{from}}&to={{to}}&serviceId={{serviceId}}&professionalId={{professionalId}}&eventType={{eventType}}&status={{status}}&cursor={{cursor}}&limit={{limit}}",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -775,14 +714,8 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments",
-              "host": [
-                "{{operationsUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "appointments"
-              ],
+              "host": ["{{operationsUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "appointments"],
               "query": []
             },
             "description": "Permissão existente: `appointment.create`.\n\nClientes, profissionais, serviços, disponibilidade, licença e avaliação precisam estar configurados. O Swagger não cria essas dependências.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
@@ -845,9 +778,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/confirm",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -916,9 +847,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/check-in",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -987,9 +916,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/no-show",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -1058,9 +985,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/reschedule",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -1129,9 +1054,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/cancel",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -1200,9 +1123,7 @@
             ],
             "url": {
               "raw": "{{operationsUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/package",
-              "host": [
-                "{{operationsUrl}}"
-              ],
+              "host": ["{{operationsUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",

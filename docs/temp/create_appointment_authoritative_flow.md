@@ -60,7 +60,7 @@ COMMIT
 201 Created
 ```
 
-Isso corresponde diretamente ao contrato funcional: `RN-AGE-001` estabelece todas as pré-condições de criação e `RN-AGE-002` exige empresa, cliente, serviço, profissional, data/horários, duração, preço-base, desconto, preço final, sinal, origem e status.  A documentação também exige congelamento histórico dos valores utilizados e proteção idempotente contra dois agendamentos por repetição da mesma operação. 
+Isso corresponde diretamente ao contrato funcional: `RN-AGE-001` estabelece todas as pré-condições de criação e `RN-AGE-002` exige empresa, cliente, serviço, profissional, data/horários, duração, preço-base, desconto, preço final, sinal, origem e status. A documentação também exige congelamento histórico dos valores utilizados e proteção idempotente contra dois agendamentos por repetição da mesma operação.
 
 ---
 
@@ -247,7 +247,7 @@ origin
 status
 ```
 
-A preservação histórica de preço-base, política de desconto, perfil do cliente, desconto, preço final e regra do sinal é requisito explícito do domínio. 
+A preservação histórica de preço-base, política de desconto, perfil do cliente, desconto, preço final e regra do sinal é requisito explícito do domínio.
 
 ---
 
@@ -374,7 +374,7 @@ TimeInterval
 endsAt
 ```
 
-A regra exige ocupação do intervalo completo do agendamento. 
+A regra exige ocupação do intervalo completo do agendamento.
 
 ---
 
@@ -402,7 +402,7 @@ Billing Worker
 CommercialTerms
 ```
 
-A arquitetura consolidada determina que frontend e BFF não sejam autoridades para desconto, sinal ou estado de negócio. 
+A arquitetura consolidada determina que frontend e BFF não sejam autoridades para desconto, sinal ou estado de negócio.
 
 ---
 
@@ -487,7 +487,7 @@ REFERRAL
 MANUAL
 ```
 
-RN-AGE-004 enumera essas origens funcionais. 
+RN-AGE-004 enumera essas origens funcionais.
 
 Não adicionar:
 
@@ -519,7 +519,7 @@ request rejected
 
 pelo error contract escolhido.
 
-A documentação técnica coloca explicitamente `JWT + Idempotency-Key` antes da reserva da idempotência e da mutação crítica. 
+A documentação técnica coloca explicitamente `JWT + Idempotency-Key` antes da reserva da idempotência e da mutação crítica.
 
 ---
 
@@ -619,7 +619,7 @@ different hash
 → IDEMPOTENCY_KEY_CONFLICT
 ```
 
-A idempotência de operações críticas é requisito central do domínio. 
+A idempotência de operações críticas é requisito central do domínio.
 
 ---
 
@@ -671,7 +671,7 @@ Availability
 Conflict
 ```
 
-RN-AGE-001 exige justamente esse conjunto de pré-condições. 
+RN-AGE-001 exige justamente esse conjunto de pré-condições.
 
 ---
 
@@ -874,7 +874,7 @@ nasce:
 AWAITING_CONFIRMATION
 ```
 
-Isso decorre do fluxo oficial `Aguardando sinal → Aguardando confirmação → Confirmado` e da possibilidade de o sinal não ser exigido. 
+Isso decorre do fluxo oficial `Aguardando sinal → Aguardando confirmação → Confirmado` e da possibilidade de o sinal não ser exigido.
 
 Não tornar `CONFIRMED` estado inicial.
 
@@ -913,7 +913,7 @@ Depois de Admission + CommercialTerms:
 UnitOfWork.execute(...)
 ```
 
-A proposta técnica determina que mutação, auditoria, outbox e idempotência façam parte da mesma fronteira lógica da operação crítica. 
+A proposta técnica determina que mutação, auditoria, outbox e idempotência façam parte da mesma fronteira lógica da operação crítica.
 
 ---
 
@@ -1113,7 +1113,7 @@ depositCents/absence
 
 Nunca recalcular ao consultar Appointment.
 
-RN-GER-004 determina que alterações futuras de preço, perfil e política não podem alterar automaticamente operações anteriores. 
+RN-GER-004 determina que alterações futuras de preço, perfil e política não podem alterar automaticamente operações anteriores.
 
 ---
 
@@ -1206,7 +1206,7 @@ assessment payload
 JWT
 ```
 
-A proposta técnica exige auditoria append-only e payload sem fotos ou dados clínicos completos. 
+A proposta técnica exige auditoria append-only e payload sem fotos ou dados clínicos completos.
 
 ---
 
@@ -1403,7 +1403,7 @@ Não inventar uma nova permissão se já existe uma permission canônica para cr
 
 O pipeline deve exigir a permission correspondente à Recepção/Admin conforme configuração existente.
 
-A especificação funcional explicitamente permite que a recepção crie agendamentos. 
+A especificação funcional explicitamente permite que a recepção crie agendamentos.
 
 ---
 
@@ -1699,7 +1699,7 @@ Consultar Appointment novamente.
 
 Os valores históricos devem continuar iguais.
 
-Isso é RN-GER-004/RN-DES-003 na prática. 
+Isso é RN-GER-004/RN-DES-003 na prática.
 
 ---
 
@@ -1775,7 +1775,7 @@ Resultado:
 no Appointment
 ```
 
-A licença suspensa não pode criar novos agendamentos. 
+A licença suspensa não pode criar novos agendamentos.
 
 ---
 
@@ -1911,7 +1911,7 @@ Professional B
 
 Testar cada referência individualmente.
 
-RN-GER-002 exige isolamento de agendamentos, clientes, profissionais, serviços e demais registros operacionais. 
+RN-GER-002 exige isolamento de agendamentos, clientes, profissionais, serviços e demais registros operacionais.
 
 ---
 
@@ -2170,7 +2170,7 @@ ConfirmDeposit
 
 tratará mudança de Deposit/Appointment.
 
-RN-AGE estabelece a independência entre status de sinal e presença. 
+RN-AGE estabelece a independência entre status de sinal e presença.
 
 ---
 
@@ -2844,6 +2844,6 @@ deposit confirmed
 AWAITING_CONFIRMATION
 ```
 
-A especificação já determina que o status do sinal seja independente da presença e que o fluxo de Appointment inclua `Aguardando sinal → Aguardando confirmação`. 
+A especificação já determina que o status do sinal seja independente da presença e que o fluxo de Appointment inclua `Aguardando sinal → Aguardando confirmação`.
 
 Portanto, **o ciclo PR-11.x está encerrado**. O próximo PR correto é definitivamente o **PR-12 — CreateAppointment Authoritative Flow**. Ele deve ser tratado como a composição das fundações já provadas, e não como um novo exercício de arquitetura. Se surgir necessidade de recriar idempotência, eligibility, CommercialTerms, concurrency ou runtime dentro desse PR, isso deve ser considerado um sinal de regressão arquitetural, porque essas capacidades já estão qualificadas.

@@ -11,7 +11,7 @@ Mas com uma regra fundamental:
 
 > **autenticação identifica quem é o usuário; autorização determina se ele pode agir naquele tenant e naquele recurso.**
 
-A documentação funcional exige isolamento total entre empresas, menor privilégio, usuário ativo, vínculo com tenant e permissões coerentes com o papel.  A proposta técnica também deixa claro que validar apenas o JWT não é suficiente: a aplicação precisa verificar membership atual e permissão no tenant, porque claims podem ficar desatualizadas. 
+A documentação funcional exige isolamento total entre empresas, menor privilégio, usuário ativo, vínculo com tenant e permissões coerentes com o papel. A proposta técnica também deixa claro que validar apenas o JWT não é suficiente: a aplicação precisa verificar membership atual e permissão no tenant, porque claims podem ficar desatualizadas.
 
 # PR-03 — Tenancy + Authentication Foundation
 
@@ -343,7 +343,7 @@ essas informações devem ser tratadas no máximo como hints.
 
 A autorização real deve verificar o estado atual.
 
-A proposta técnica diz explicitamente que identidade autenticada não basta para autorizar; membership e permissão devem ser verificadas no tenant. 
+A proposta técnica diz explicitamente que identidade autenticada não basta para autorizar; membership e permissão devem ser verificadas no tenant.
 
 ---
 
@@ -359,9 +359,7 @@ Contrato conceitual:
 
 ```ts
 export interface IdentityProvider {
-  authenticate(
-    token: string,
-  ): Promise<AuthenticatedIdentity | null>;
+  authenticate(token: string): Promise<AuthenticatedIdentity | null>;
 }
 ```
 
@@ -818,7 +816,7 @@ Essas decisões continuam em:
 Application / Domain Policy
 ```
 
-A documentação diferencia autorização do contexto de regras de negócio. 
+A documentação diferencia autorização do contexto de regras de negócio.
 
 ---
 
@@ -978,7 +976,7 @@ findById(
 e não:
 
 ```ts
-findById(id)
+findById(id);
 ```
 
 quando o dado for tenant-owned.
@@ -1004,7 +1002,7 @@ Mas architecture tests podem validar que futuramente interfaces tenant-owned inc
 
 # 36. User status
 
-A documentação determina que usuário inativo não pode autenticar, criar operações, alterar registros ou acessar áreas restritas. 
+A documentação determina que usuário inativo não pode autenticar, criar operações, alterar registros ou acessar áreas restritas.
 
 Portanto o membership/identity resolution precisa ter capacidade futura de representar:
 
@@ -1043,7 +1041,7 @@ Se membership estiver inativo:
 deny
 ```
 
-Isso implementa o princípio de menor privilégio especificado para usuários. 
+Isso implementa o princípio de menor privilégio especificado para usuários.
 
 ---
 
@@ -1095,7 +1093,7 @@ phone
 CPF
 ```
 
-A proposta técnica recomenda identificadores técnicos/opacos e proíbe PII sensível na observabilidade. 
+A proposta técnica recomenda identificadores técnicos/opacos e proíbe PII sensível na observabilidade.
 
 ---
 
@@ -1345,9 +1343,7 @@ Errado:
 ```ts
 @Injectable()
 export class AuthenticationGuard {
-  constructor(
-    private supabaseClient: SupabaseClient,
-  ) {}
+  constructor(private supabaseClient: SupabaseClient) {}
 }
 ```
 
@@ -1598,7 +1594,7 @@ tenant license check
 
 Isso é regra operacional/comercial e deve entrar junto do domínio/platform policy apropriado.
 
-A documentação exige licença válida para operar, mas isso não significa que deva ser implementada como Guard genérico prematuramente. 
+A documentação exige licença válida para operar, mas isso não significa que deva ser implementada como Guard genérico prematuramente.
 
 ---
 
@@ -1874,7 +1870,7 @@ sem alterar Guards.
 
 Quando cache existir, deverá ter TTL curto e invalidação coerente.
 
-Porque a documentação exige que mudanças de perfil/permissão tenham efeito atual e sejam auditadas. 
+Porque a documentação exige que mudanças de perfil/permissão tenham efeito atual e sejam auditadas.
 
 ---
 

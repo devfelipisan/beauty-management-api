@@ -1,1 +1,13 @@
-export interface SessionCompletionFacts { inProgress:boolean; technicalRequired:boolean; technicalComplete:boolean; powerRequired:boolean; powerSatisfied:boolean; equipmentRequired:boolean; equipmentSatisfied:boolean; photoRequired:boolean; photoSatisfied:boolean; openIntercurrencesCount:number; openVariationAlertsCount:number; }
+export interface SessionCompletionFacts {
+  inProgress: boolean;
+  technicalRequired: boolean;
+  technicalComplete: boolean;
+  powerRequired: boolean;
+  powerSatisfied: boolean;
+  equipmentRequired: boolean;
+  equipmentSatisfied: boolean;
+  photoRequired: boolean;
+  photoSatisfied: boolean;
+  openIntercurrencesCount: number;
+  openVariationAlertsCount: number;
+}

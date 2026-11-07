@@ -15,6 +15,21 @@ import { AppointmentEligibilityModule } from './appointment-eligibility/appointm
 import { LicensingModule } from './licensing/licensing.module.js';
 
 @Module({
-  imports: [RuntimeConfigModule, ObservabilityModule, AuthenticationModule, TenancyModule, HealthModule, D1RuntimeModule, ReliabilityModule, TenantsModule, ProfessionalsModule, ServicesModule, CustomersModule, LicensingModule, AppointmentsModule, AppointmentEligibilityModule],
+  imports: [
+    RuntimeConfigModule,
+    ObservabilityModule,
+    AuthenticationModule,
+    TenancyModule,
+    HealthModule,
+    D1RuntimeModule,
+    ReliabilityModule,
+    TenantsModule,
+    ProfessionalsModule,
+    ServicesModule,
+    CustomersModule,
+    LicensingModule,
+    AppointmentsModule,
+    AppointmentEligibilityModule,
+  ],
 })
 export class OperationsWorkerModule {}

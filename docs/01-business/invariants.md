@@ -8,4 +8,3 @@
 - `INV-SIN-001`: deposit não excede o preço final.
 - `INV-SES-001`: sessão não conclui sem campos técnicos obrigatórios.
 - `INV-PAG-001`: refund cria movimento inverso e preserva o original.
-
