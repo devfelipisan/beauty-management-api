@@ -4,7 +4,7 @@
     "operations": {
       "packageVersion": "0.0.1",
       "provided": {
-        "revision": "5c7e59618844fba5c78057cbe5c4390d08d817c49997b4d500253c0c0080ac54",
+        "revision": "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54",
         "rpcMethods": [
           "appointmentChangeRoute",
           "packageAssignmentRoute",
@@ -36,10 +36,10 @@
       },
       "requires": {
         "clinical": [
-          "5ffc4da4a50267a4b4204b92a03c67e6dab44a0b6e57277dd859f1c2f03c9a29"
+          "a49fe9e0c37eb4fb4c3c2330dce03d8f63e6882e3be7387978185d9a1e736ec6"
         ],
         "billing": [
-          "730bfad7e91d3b364ce9fcb00276cfa131d8d94b25de53d40a33a2b4052132ba"
+          "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc"
         ]
       },
       "minMigration": "0030",
@@ -63,7 +63,7 @@
     "billing": {
       "packageVersion": "0.0.1",
       "provided": {
-        "revision": "730bfad7e91d3b364ce9fcb00276cfa131d8d94b25de53d40a33a2b4052132ba",
+        "revision": "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc",
         "rpcMethods": [
           "calculateCommercialTerms",
           "createDepositForAppointment",
@@ -94,7 +94,7 @@
       },
       "requires": {
         "operations": [
-          "5c7e59618844fba5c78057cbe5c4390d08d817c49997b4d500253c0c0080ac54"
+          "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54"
         ]
       },
       "minMigration": "0026",
@@ -117,7 +117,7 @@
     "clinical": {
       "packageVersion": "0.0.1",
       "provided": {
-        "revision": "5ffc4da4a50267a4b4204b92a03c67e6dab44a0b6e57277dd859f1c2f03c9a29",
+        "revision": "a49fe9e0c37eb4fb4c3c2330dce03d8f63e6882e3be7387978185d9a1e736ec6",
         "rpcMethods": [
           "handleReturnRoute",
           "handleCompletionRoute",
@@ -161,10 +161,10 @@
       },
       "requires": {
         "operations": [
-          "5c7e59618844fba5c78057cbe5c4390d08d817c49997b4d500253c0c0080ac54"
+          "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54"
         ],
         "billing": [
-          "730bfad7e91d3b364ce9fcb00276cfa131d8d94b25de53d40a33a2b4052132ba"
+          "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc"
         ]
       },
       "minMigration": "0026",
@@ -305,6 +305,10 @@
     {
       "name": "0030_profile_image_limit.sql",
       "hash": "d4817c7ff08192c6cae4dfce41b72e8ef146cec98f4588770ed63a606eb57a8c"
+    },
+    {
+      "name": "0031_agenda_read_permission.sql",
+      "hash": "13e91798c393a8c34185db46fd1639a4b171980267b4fa2d90ac2108ec1c88e9"
     }
   ]
 }
