@@ -1,4 +1,4 @@
-// Optional, local cross-repository proof. Does not change either application.
+// Optional, local cross-repository transport proof. Does not deploy or alter production.
 import { access, writeFile, rm } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -16,29 +16,38 @@ const spec = resolve(
 const source = `
 import { env, exports } from 'cloudflare:workers';
 import { beforeAll, expect, it } from 'vitest';
-import { workerRequest } from '../../../beauty-management-web/src/server/bff/worker-transport.ts';
+import { workerFetch } from '../../../beauty-management-web/src/server/bff/worker-transport.ts';
 import { buildDevelopmentSeed } from '../../database/seeds/development.mjs';
 const operations=exports.default as {fetch(request:Request):Promise<Response>};
-const headers={authorization:'Bearer actor-dev-admin','x-tenant-id':'tenant-dev-001','x-workspace-role':'administrator','x-request-id':'agenda-bff-proof','x-correlation-id':'agenda-bff-proof'};
+const headers={authorization:'Bearer actor-dev-admin','x-tenant-id':'tenant-dev-001','x-request-id':'agenda-bff-proof','x-correlation-id':'agenda-bff-proof'};
+const forwarded=(path:string,options:{method?:string,body?:string,key?:string,tenantId?:string}={})=>workerFetch(
+  new Request('https://web.test/api/bff/qualify',{
+    method:options.method??'GET',
+    headers:{...headers,...(options.tenantId?{'x-tenant-id':options.tenantId}:{}),...(options.key?{'Idempotency-Key':options.key,'content-type':'application/json'}:{})},
+    ...(options.body?{body:options.body}:{})
+  }),
+  new URL('https://operations.internal'+path),operations,
+);
 beforeAll(async()=>{await env.D1_DATABASE.batch(buildDevelopmentSeed('2028-11-01').statements.map((sql:string)=>env.D1_DATABASE.prepare(sql)));});
-it('runs BFF transport through the real Operations Worker, user RPC dependencies and D1',async()=>{
+it('uses current BFF transport with private Operations, D1 and tenant isolation',async()=>{
   const create=await operations.fetch(new Request('https://operations.test/tenants/tenant-dev-001/appointments',{method:'POST',headers:{...headers,'content-type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify({customerId:'mock-customer-maria',serviceId:'mock-service-consulta',professionalId:'mock-professional-ana',startsAt:'2028-11-01T09:00:00Z',origin:'RECEPTION'})}));
   expect(create.status).toBe(201);
   const id=(await create.json() as {data:{id:string}}).data.id;
-  const read=await workerRequest(new Request('https://web.test',{headers}),'/v1/agenda?from=2028-11-01T00:00:00Z&to=2028-11-02T00:00:00Z',{OPERATIONS_SERVICE:operations});
+  const period='from=2028-11-01T00:00:00Z&to=2028-11-02T00:00:00Z';
+  const read=await forwarded('/tenants/tenant-dev-001/agenda?'+period);
   expect(read.status).toBe(200);
-  const data=await read.json() as {appointments:{id:string;status:string}[];customers:unknown[]};
-  expect(data.appointments).toEqual([expect.objectContaining({id,status:'awaiting_confirmation'})]);
-  expect(data.customers).toHaveLength(1);
+  const agenda=(await read.json() as {data:{appointments:{id:string;status:string}[]}}).data;
+  expect(agenda.appointments).toEqual([expect.objectContaining({id,status:'AWAITING_CONFIRMATION'})]);
   expect(read.headers.get('x-correlation-id')).toBe('agenda-bff-proof');
-  const detail=await workerRequest(new Request('https://web.test',{headers}),'/v1/agenda/appointments/'+id,{OPERATIONS_SERVICE:operations});
-  expect((await detail.json() as {allowedActions:string[]}).allowedActions).toEqual(['confirm']);
-  const confirm=await workerRequest(new Request('https://web.test',{method:'POST',headers:{...headers,'Idempotency-Key':crypto.randomUUID()},body:'{}'}),'/v1/agenda/appointments/'+id+'/confirm',{OPERATIONS_SERVICE:operations});
+  const detail=await forwarded('/tenants/tenant-dev-001/appointments/'+id);
+  expect((await detail.json() as {data:{allowedActions:string[]}}).data.allowedActions).toEqual(['confirm']);
+  const confirm=await forwarded('/tenants/tenant-dev-001/appointments/'+id+'/confirm',{method:'POST',body:'{}',key:crypto.randomUUID()});
   expect(confirm.status).toBe(200);
   const state=await env.D1_DATABASE.prepare('SELECT status FROM appointments WHERE tenant_id=? AND id=?').bind('tenant-dev-001',id).first<{status:string}>();
   expect(state?.status).toBe('CONFIRMED');
-  const switched=await workerRequest(new Request('https://web.test',{headers:{...headers,'x-tenant-id':'tenant-other'}}),'/v1/agenda?from=2028-11-01T00:00:00Z&to=2028-11-02T00:00:00Z',{OPERATIONS_SERVICE:operations});
-  expect((await switched.json() as {appointments:unknown[]}).appointments).toEqual([]);
+  const switched=await forwarded('/tenants/tenant-other/agenda?'+period,{tenantId:'tenant-other'});
+  expect(switched.status).toBe(200);
+  expect((await switched.json() as {data:{appointments:unknown[]}}).data.appointments).toEqual([]);
 });
 `;
 await writeFile(spec, source, { flag: 'wx' });
@@ -57,6 +66,5 @@ try {
   if (result.error) throw result.error;
   process.exitCode = result.status ?? 1;
 } finally {
-  // Exact file created above, never a recursive delete or a computed directory.
   await rm(spec);
 }
