@@ -29,13 +29,21 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
           serviceId: config.getOrThrow<string>('SERVICE_ID'),
           serviceVersion: config.get<string>('SERVICE_VERSION', 'development'),
           endpoint: config.get<string>('OBSERVE_ENDPOINT'),
-          runtimeMetrics: enabled && config.get<boolean>('OBSERVE_RUNTIME_METRICS', true),
-          runtimeMetricsInterval: config.get<number>('OBSERVE_RUNTIME_METRICS_INTERVAL', 60000),
-          forwardLogs: enabled && config.get<boolean>('OBSERVE_FORWARD_LOGS', true),
+          runtimeMetrics:
+            enabled && config.get<boolean>('OBSERVE_RUNTIME_METRICS', true),
+          runtimeMetricsInterval: config.get<number>(
+            'OBSERVE_RUNTIME_METRICS_INTERVAL',
+            60000,
+          ),
+          forwardLogs:
+            enabled && config.get<boolean>('OBSERVE_FORWARD_LOGS', true),
           tracesSampleRate: enabled
             ? config.get<number>('OBSERVE_TRACE_SAMPLE_RATE', 0.1)
             : 0,
-          maxTracesPerBatch: config.get<number>('OBSERVE_MAX_TRACES_PER_BATCH', 1000),
+          maxTracesPerBatch: config.get<number>(
+            'OBSERVE_MAX_TRACES_PER_BATCH',
+            1000,
+          ),
           flushInterval: config.get<number>('OBSERVE_FLUSH_INTERVAL', 5000),
           debug: config.get<boolean>('OBSERVE_DEBUG', false),
           redaction: {
@@ -43,9 +51,23 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
             useDefaultPatterns: true,
             replacement: '[REDACTED]',
             keys: [
-              'password', 'authorization', 'cookie', 'set-cookie', 'accessToken',
-              'refreshToken', 'token', 'secret', 'apiKey', 'cpf', 'document',
-              'email', 'phone', 'medical', 'allergy', 'medication', 'signedUrl',
+              'password',
+              'authorization',
+              'cookie',
+              'set-cookie',
+              'accessToken',
+              'refreshToken',
+              'token',
+              'secret',
+              'apiKey',
+              'cpf',
+              'document',
+              'email',
+              'phone',
+              'medical',
+              'allergy',
+              'medication',
+              'signedUrl',
               'presignedUrl',
             ],
           },
@@ -73,8 +95,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
 })
 export class ObservabilityModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer
-      .apply(RequestIdMiddleware, CorrelationIdMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestIdMiddleware, CorrelationIdMiddleware).forRoutes('*');
   }
 }

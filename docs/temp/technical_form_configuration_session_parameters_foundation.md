@@ -1,4 +1,4 @@
-Com o **PR-16 concluído e `gate:pr16 = PASS`**, o próximo PR deve começar a materializar o registro técnico da sessão. A documentação é explícita: após iniciar o atendimento, o profissional deve preencher ficha técnica e registrar potência/unidade; além disso, os campos são configuráveis por serviço, devem ser versionados historicamente e valores numéricos precisam respeitar tipo, faixa, precisão e unidade.  
+Com o **PR-16 concluído e `gate:pr16 = PASS`**, o próximo PR deve começar a materializar o registro técnico da sessão. A documentação é explícita: após iniciar o atendimento, o profissional deve preencher ficha técnica e registrar potência/unidade; além disso, os campos são configuráveis por serviço, devem ser versionados historicamente e valores numéricos precisam respeitar tipo, faixa, precisão e unidade.
 
 Portanto, o próximo PR deve ser:
 
@@ -53,8 +53,6 @@ RF-031 iniciar atendimento
 → RF-037 intercorrência
 → RF-038 conclusão
 ```
-
-
 
 ---
 
@@ -144,8 +142,6 @@ possui ficha técnica
 parâmetros técnicos obrigatórios
 ```
 
-
-
 Segundo, os campos permitidos incluem:
 
 ```text
@@ -177,7 +173,7 @@ opções
 status
 ```
 
-Quarto, alterações posteriores na configuração **não podem modificar sessões anteriores**; cada sessão deve preservar uma cópia da definição usada. 
+Quarto, alterações posteriores na configuração **não podem modificar sessões anteriores**; cada sessão deve preservar uma cópia da definição usada.
 
 Essa última regra deve ser tratada como invariante arquitetural, não como detalhe de UI.
 
@@ -357,7 +353,7 @@ TATTOO_NEEDLE
 MICROPIGMENTATION_PIGMENT
 ```
 
-O produto é propositalmente generalizado. 
+O produto é propositalmente generalizado.
 
 ---
 
@@ -416,7 +412,7 @@ ou decimal textual validado.
 Evite:
 
 ```ts
-0.1 + 0.2
+0.1 + 0.2;
 ```
 
 como autoridade de domínio.
@@ -444,7 +440,7 @@ com `options` configuradas deve ser inválido.
 
 # 14. Unidade
 
-A regra permite unidade configurada. 
+A regra permite unidade configurada.
 
 Exemplos podem ser:
 
@@ -498,7 +494,7 @@ alterar ficha futura
 alterar sessão passada
 ```
 
-é explícita. 
+é explícita.
 
 Portanto não implementar:
 
@@ -568,7 +564,7 @@ Se partial index for viável, use-o; senão imponha via repository/CAS.
 
 # 19. Criar casos de uso de configuração mínimos
 
-Precisamos viabilizar `RF-011 — Configurar ficha técnica`. 
+Precisamos viabilizar `RF-011 — Configurar ficha técnica`.
 
 Sugestão:
 
@@ -673,7 +669,7 @@ executada antes do primeiro preenchimento e idempotente.
 
 # 23. Por que não referenciar apenas `technical_form_version_id`
 
-Porque RN-CAM-003 exige que a sessão preserve uma cópia da definição utilizada. 
+Porque RN-CAM-003 exige que a sessão preserve uma cópia da definição utilizada.
 
 Se a linha original for alterada/corrompida no futuro, o histórico técnico não deve mudar.
 
@@ -867,8 +863,6 @@ precisão
 unidade
 ```
 
-
-
 Testes obrigatórios:
 
 ```text
@@ -924,7 +918,7 @@ CompleteSession
 
 futuramente.
 
-RN-CAM-004 diz que a sessão não pode ser **concluída** com obrigatórios faltantes, não que todos devam ser preenchidos no primeiro save. 
+RN-CAM-004 diz que a sessão não pode ser **concluída** com obrigatórios faltantes, não que todos devam ser preenchidos no primeiro save.
 
 ---
 
@@ -992,7 +986,7 @@ Session.status != IN_PROGRESS
 
 Somente o profissional da Session ou usuário explicitamente autorizado pode alterar dados técnicos.
 
-A documentação restringe profissionais de alterar sessões de outros profissionais sem permissão. 
+A documentação restringe profissionais de alterar sessões de outros profissionais sem permissão.
 
 Não confiar apenas em `sessionId`.
 
@@ -1123,7 +1117,7 @@ overwrite current value
 
 é suficiente até a conclusão.
 
-A rastreabilidade exige preservar operações críticas e parâmetros aplicados. 
+A rastreabilidade exige preservar operações críticas e parâmetros aplicados.
 
 Minha recomendação:
 
@@ -1148,8 +1142,6 @@ potência
 +
 unidade
 ```
-
-
 
 Não esconda isso em:
 
@@ -1304,7 +1296,7 @@ Isso favorece rastreabilidade.
 
 # 54. Comparação com sessão anterior ainda não entra
 
-`RF-034` é o próximo estágio. 
+`RF-034` é o próximo estágio.
 
 PR-17 deve apenas garantir que os dados possam ser consultados de forma que PR-18 implemente:
 
@@ -1426,7 +1418,7 @@ Session A
 
 Nunca migrar Session ativa automaticamente para v2.
 
-Esse teste é obrigatório por RN-GER-004/RN-CAM-003. 
+Esse teste é obrigatório por RN-GER-004/RN-CAM-003.
 
 ---
 
@@ -1451,7 +1443,7 @@ uses Field B
 writes Session B
 ```
 
-O isolamento precisa cobrir configurações e sessões. 
+O isolamento precisa cobrir configurações e sessões.
 
 ---
 
@@ -1549,9 +1541,9 @@ last committed update wins
 
 desde que:
 
-* ambos sejam autorizados;
-* Audit preserve alterações;
-* não haja perda silenciosa de estrutura.
+- ambos sejam autorizados;
+- Audit preserve alterações;
+- não haja perda silenciosa de estrutura.
 
 Se isso não for aceitável, introduzir revision/CAS.
 
@@ -1582,7 +1574,7 @@ preencher fichas
 registrar potência
 ```
 
-e não deve alterar sessões de outro profissional sem permissão explícita. 
+e não deve alterar sessões de outro profissional sem permissão explícita.
 
 Portanto testar:
 
@@ -2160,7 +2152,7 @@ PASS
 [ ] Session B utiliza v2
 ```
 
-A preservação histórica dos campos e configurações técnicas é requisito explícito. 
+A preservação histórica dos campos e configurações técnicas é requisito explícito.
 
 ---
 
@@ -2429,6 +2421,6 @@ PR-21
 CompleteSession
 ```
 
-Essa ordem é importante porque **`CompleteSession` só deve aparecer depois que todas as pré-condições técnicas que podem bloqueá-lo estiverem materializadas**. A especificação já exige que campos técnicos obrigatórios estejam preenchidos antes da conclusão e que histórico/configuração anteriores não sejam retroativamente alterados. 
+Essa ordem é importante porque **`CompleteSession` só deve aparecer depois que todas as pré-condições técnicas que podem bloqueá-lo estiverem materializadas**. A especificação já exige que campos técnicos obrigatórios estejam preenchidos antes da conclusão e que histórico/configuração anteriores não sejam retroativamente alterados.
 
 Portanto, o próximo PR correto é **PR-17 — Technical Form Configuration + Session Parameters Foundation**, encerrando com `Session = IN_PROGRESS`, ficha técnica versionada/snapshotada, parâmetros registrados e potência persistida — mas ainda sem equipamento, foto, intercorrência ou conclusão.

@@ -6,7 +6,7 @@ O próximo PR deveria ser:
 
 O objetivo não é implementar `Customer`, `Appointment`, `Payment` ou qualquer regra funcional ainda. O objetivo é estabelecer a fundação compartilhada sobre a qual todos os Workers serão construídos.
 
-A documentação técnica já exige separação entre interface, aplicação, domínio e infraestrutura, com o domínio independente de NestJS/Cloudflare e dependências externas implementadas por ports/adapters.  Além disso, o sistema precisa preservar desde o início multi-tenancy, rastreabilidade, congelamento histórico e idempotência.
+A documentação técnica já exige separação entre interface, aplicação, domínio e infraestrutura, com o domínio independente de NestJS/Cloudflare e dependências externas implementadas por ports/adapters. Além disso, o sistema precisa preservar desde o início multi-tenancy, rastreabilidade, congelamento histórico e idempotência.
 
 ## Sequência revisada
 
@@ -250,9 +250,7 @@ Conceitualmente:
 
 ```ts
 export abstract class Entity<TId> {
-  protected constructor(
-    public readonly id: TId,
-  ) {}
+  protected constructor(public readonly id: TId) {}
 }
 ```
 
@@ -287,9 +285,7 @@ Por exemplo:
 
 ```ts
 export abstract class ValueObject<T> {
-  protected constructor(
-    protected readonly props: T,
-  ) {}
+  protected constructor(protected readonly props: T) {}
 }
 ```
 
@@ -400,7 +396,7 @@ FakeClock
 Isso evita:
 
 ```ts
-new Date()
+new Date();
 ```
 
 espalhado em regras temporais testáveis.
@@ -499,7 +495,7 @@ Mas o objetivo é centralizar **validação**, não expor `process.env` por toda
 Queremos evitar:
 
 ```ts
-process.env.APP_VERSION
+process.env.APP_VERSION;
 ```
 
 em 50 arquivos.
@@ -560,9 +556,7 @@ const EnvironmentSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
 
-  APP_VERSION: z
-    .string()
-    .default('development'),
+  APP_VERSION: z.string().default('development'),
 });
 ```
 
@@ -693,7 +687,7 @@ Outbound Adapter
 Ports + SDK externo
 ```
 
-O projeto técnico já prevê justamente `interface → application → domain`, com infraestrutura implementando as portas. 
+O projeto técnico já prevê justamente `interface → application → domain`, com infraestrutura implementando as portas.
 
 ---
 
@@ -738,7 +732,7 @@ Isso será:
 
 Entretanto, o Kernel não deve impedir tenant-aware APIs futuras.
 
-A exigência multiempresa permanece uma das invariantes fundamentais do produto. 
+A exigência multiempresa permanece uma das invariantes fundamentais do produto.
 
 ---
 

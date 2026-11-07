@@ -18,7 +18,7 @@ Ele deve resolver duas pendências restantes:
 
 Não há razão para abrir outro PR exclusivamente para a prova Clinical, porque o relatório do PR-11.7 mostra que toda a qualificação física restante passou e só ficou pendente esse cenário específico. Já o principal blocker funcional agora é comercial.
 
-A documentação fornece base normativa suficiente para isso. Um `Service` pode configurar se exige sinal, sinal fixo ou percentual, se permite desconto e preço mínimo.  As políticas de desconto podem ser configuradas por perfil e definir percentual ou valor fixo, elegibilidade, mínimo, máximo, validade, uso único, aprovação e acúmulo.  E o sinal pode ser não exigido, fixo ou percentual, sendo calculado sobre o preço final após desconto e nunca podendo ultrapassá-lo. 
+A documentação fornece base normativa suficiente para isso. Um `Service` pode configurar se exige sinal, sinal fixo ou percentual, se permite desconto e preço mínimo. As políticas de desconto podem ser configuradas por perfil e definir percentual ou valor fixo, elegibilidade, mínimo, máximo, validade, uso único, aprovação e acúmulo. E o sinal pode ser não exigido, fixo ou percentual, sendo calculado sobre o preço final após desconto e nunca podendo ultrapassá-lo.
 
 ---
 
@@ -77,37 +77,37 @@ POST /appointments
 
 Entram:
 
-* prova Clinical/D1 `APTO`;
-* prova Clinical/D1 `NAO_APTO`;
-* configuração comercial de Service;
-* política de desconto persistente/configurável;
-* política de sinal persistente/configurável;
-* adapters reais de `DiscountPolicyPort`;
-* adapter real de `DepositPolicyPort`;
-* `CalculateCommercialTerms → READY`;
-* snapshots/identificadores da policy aplicada;
-* D1 migration;
-* testes unitários;
-* testes Workers;
-* integração Billing RPC;
-* matriz final `CreateAppointmentReadiness`.
+- prova Clinical/D1 `APTO`;
+- prova Clinical/D1 `NAO_APTO`;
+- configuração comercial de Service;
+- política de desconto persistente/configurável;
+- política de sinal persistente/configurável;
+- adapters reais de `DiscountPolicyPort`;
+- adapter real de `DepositPolicyPort`;
+- `CalculateCommercialTerms → READY`;
+- snapshots/identificadores da policy aplicada;
+- D1 migration;
+- testes unitários;
+- testes Workers;
+- integração Billing RPC;
+- matriz final `CreateAppointmentReadiness`.
 
 Não entram:
 
-* `POST /appointments`;
-* pagamento do sinal;
-* confirmação do sinal;
-* desconto manual excepcional completo;
-* workflow de aprovação administrativa completo;
-* Payment;
-* Refund;
-* Package;
-* Session;
-* Queue;
-* Cron;
-* Outbox consumer;
-* KV;
-* R2.
+- `POST /appointments`;
+- pagamento do sinal;
+- confirmação do sinal;
+- desconto manual excepcional completo;
+- workflow de aprovação administrativa completo;
+- Payment;
+- Refund;
+- Package;
+- Session;
+- Queue;
+- Cron;
+- Outbox consumer;
+- KV;
+- R2.
 
 ---
 
@@ -185,7 +185,7 @@ Resultado:
 BLOCKED
 ```
 
-A documentação define explicitamente avaliações `apto`, `apto com restrições` e `não apto`, e serviços que exigem avaliação não devem prosseguir sem liberação adequada. 
+A documentação define explicitamente avaliações `apto`, `apto com restrições` e `não apto`, e serviços que exigem avaliação não devem prosseguir sem liberação adequada.
 
 ---
 
@@ -245,8 +245,6 @@ sinal percentual
 
 preço mínimo
 ```
-
-
 
 Isso deve virar configuração técnica persistida, se ainda não virou no PR-06/10.
 
@@ -341,7 +339,7 @@ Exemplo conceitual:
 Não usar:
 
 ```ts
-0.2
+0.2;
 ```
 
 como valor financeiro de domínio.
@@ -359,7 +357,7 @@ discount = 10%
 
 só porque os exemplos da documentação usam esses valores.
 
-Os valores devem ser configuráveis pela empresa. 
+Os valores devem ser configuráveis pela empresa.
 
 ---
 
@@ -409,7 +407,7 @@ priority?
 
 Nem todos precisam ser obrigatórios.
 
-A documentação permite esses atributos; não significa que todos devam existir em toda policy. 
+A documentação permite esses atributos; não significa que todos devam existir em toda policy.
 
 ---
 
@@ -538,7 +536,7 @@ discountCents = 0
 
 # 20. Quando `allowsDiscount=true`
 
-Nesse caso o sistema deve localizar políticas aplicáveis, porque RN-DES-002 exige identificar perfil, localizar políticas válidas, validar serviço/período/uso/limite e salvar a regra aplicada. 
+Nesse caso o sistema deve localizar políticas aplicáveis, porque RN-DES-002 exige identificar perfil, localizar políticas válidas, validar serviço/período/uso/limite e salvar a regra aplicada.
 
 Logo:
 
@@ -589,9 +587,9 @@ com aritmética inteira e arredondamento normativo documentado.
 
 Se a documentação não define arredondamento:
 
-* escolher convenção técnica determinística;
-* registrar em `billing-contracts.md`;
-* não usar floating point.
+- escolher convenção técnica determinística;
+- registrar em `billing-contracts.md`;
+- não usar floating point.
 
 ---
 
@@ -616,8 +614,6 @@ ultrapassar o valor da operação
 reduzir abaixo do preço mínimo
 ultrapassar limite autorizado
 ```
-
-
 
 Então:
 
@@ -666,8 +662,6 @@ Administrador:
 recepção não aprova o próprio pedido
 ```
 
-
-
 Esse fluxo possui lifecycle próprio.
 
 Não precisa ser completamente implementado para liberar um caminho simples de `CreateAppointment`.
@@ -701,7 +695,7 @@ A aprovação precisa ser uma operação explícita e auditável.
 
 # 28. Acúmulo
 
-RN-DES-007 define que descontos não são acumuláveis por padrão. Quando várias policies forem aplicáveis, deve ser usada a mais vantajosa ou a prioridade configurada, e a estratégia deve ser registrada. 
+RN-DES-007 define que descontos não são acumuláveis por padrão. Quando várias policies forem aplicáveis, deve ser usada a mais vantajosa ou a prioridade configurada, e a estratégia deve ser registrada.
 
 Para MVP:
 
@@ -768,7 +762,7 @@ discountValue
 discountCents
 ```
 
-A documentação exige que a política e o desconto utilizados permaneçam congelados na operação. 
+A documentação exige que a política e o desconto utilizados permaneçam congelados na operação.
 
 ---
 
@@ -796,8 +790,6 @@ NOT_REQUIRED
 FIXED
 PERCENTAGE
 ```
-
-
 
 Portanto os três podem ser implementados sem inventar comportamento.
 
@@ -852,8 +844,6 @@ Preço final
 = sinal
 ```
 
-
-
 Logo o cálculo deve ocorrer **depois do desconto**.
 
 ---
@@ -893,8 +883,6 @@ RN-SIN-003:
 ```text
 depositCents <= finalPriceCents
 ```
-
-
 
 Já existe invariant no `CommercialTerms`; preservar nos dois níveis.
 
@@ -972,7 +960,7 @@ Discount por perfil exige:
 customerProfile
 ```
 
-O produto diz explicitamente que o perfil influencia o tratamento comercial e que valores/critérios são configuráveis pela empresa. 
+O produto diz explicitamente que o perfil influencia o tratamento comercial e que valores/critérios são configuráveis pela empresa.
 
 Então Operations pode fornecer o snapshot:
 
@@ -1384,7 +1372,7 @@ deposit
 discount
 ```
 
-A ordem é normativamente explícita. 
+A ordem é normativamente explícita.
 
 ---
 
@@ -1597,7 +1585,7 @@ CalculateCommercialTerms
 
 não precisa necessariamente gerar Audit persistente.
 
-A documentação exige auditoria do desconto aplicado/alterações críticas, mas neste PR estamos materializando cálculo/configuração. A criação autoritativa do Appointment no PR-12 deverá registrar a regra efetivamente aplicada. Eventos de desconto e aprovação estão entre os eventos auditáveis. 
+A documentação exige auditoria do desconto aplicado/alterações críticas, mas neste PR estamos materializando cálculo/configuração. A criação autoritativa do Appointment no PR-12 deverá registrar a regra efetivamente aplicada. Eventos de desconto e aprovação estão entre os eventos auditáveis.
 
 ---
 

@@ -25,12 +25,8 @@
             "header": [],
             "url": {
               "raw": "{{billingUrl}}/health",
-              "host": [
-                "{{billingUrl}}"
-              ],
-              "path": [
-                "health"
-              ],
+              "host": ["{{billingUrl}}"],
+              "path": ["health"],
               "query": []
             },
             "description": "\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
@@ -80,9 +76,7 @@
             ],
             "url": {
               "raw": "{{billingUrl}}/tenants/{{tenantId}}/receivables/{{receivableId}}/payments",
-              "host": [
-                "{{billingUrl}}"
-              ],
+              "host": ["{{billingUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",

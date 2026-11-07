@@ -2,7 +2,6 @@ import type { TransactionalWriteContext } from '@beauty/reliability/unit-of-work
 import type { CustomersPersistence } from '../ports/persistence.js';
 
 export class D1CustomersPersistence implements CustomersPersistence {
-
   stageCustomerClinicalRestrictions(
     context: TransactionalWriteContext,
     options: {

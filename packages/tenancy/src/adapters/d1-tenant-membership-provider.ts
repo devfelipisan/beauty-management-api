@@ -116,8 +116,9 @@ export class D1TenantMembershipProvider
     const rolePermissions: Record<string, string[]> = Object.create(null);
     for (const row of result.results) {
       if (!row.role_name) continue;
-      const grants = rolePermissions[row.role_name] ??= [];
-      if (row.permission_code && !grants.includes(row.permission_code)) grants.push(row.permission_code);
+      const grants = (rolePermissions[row.role_name] ??= []);
+      if (row.permission_code && !grants.includes(row.permission_code))
+        grants.push(row.permission_code);
     }
     return {
       tenantId,

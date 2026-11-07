@@ -9,7 +9,7 @@ Intercurrences registradas
 Photos/R2 disponíveis
 ```
 
-O próximo PR deve tratar os **efeitos pós-atendimento que pertencem à Fase 5 do MVP**: histórico consolidado, evolução do perfil do cliente e retorno recomendado. A própria priorização coloca `conclusão → histórico → retorno` antes do financeiro básico.  Além disso, a linha do tempo deve consolidar dados operacionais, técnicos, comerciais e financeiros sem perder referências históricas, e o retorno recomendado não pode criar um horário automaticamente. 
+O próximo PR deve tratar os **efeitos pós-atendimento que pertencem à Fase 5 do MVP**: histórico consolidado, evolução do perfil do cliente e retorno recomendado. A própria priorização coloca `conclusão → histórico → retorno` antes do financeiro básico. Além disso, a linha do tempo deve consolidar dados operacionais, técnicos, comerciais e financeiros sem perder referências históricas, e o retorno recomendado não pode criar um horário automaticamente.
 
 # PR-22 — Session Completion Effects + Customer History + Relationship Profile + Return Foundation
 
@@ -34,7 +34,7 @@ Return Recommendation
              └── futuramente vinculado a Appointment
 ```
 
-O PR **não deve ainda implementar Payment nem Package Consumption**. Porém existe um ponto importante: `RN-CONC-002` prevê que conclusão também envolva perfil, pacote, saldo financeiro e retorno em uma única operação lógica. Como Package/Payment ainda não existem, o PR-22 deve registrar explicitamente essa discrepância e **não declarar `RN-CONC-002` totalmente atendida** até os PRs financeiros. 
+O PR **não deve ainda implementar Payment nem Package Consumption**. Porém existe um ponto importante: `RN-CONC-002` prevê que conclusão também envolva perfil, pacote, saldo financeiro e retorno em uma única operação lógica. Como Package/Payment ainda não existem, o PR-22 deve registrar explicitamente essa discrepância e **não declarar `RN-CONC-002` totalmente atendida** até os PRs financeiros.
 
 ---
 
@@ -123,7 +123,7 @@ recommended return
 audit
 ```
 
-e que falha não deve produzir confirmação parcial. 
+e que falha não deve produzir confirmação parcial.
 
 Porém, após PR-21 temos Workers separados e consistência eventual:
 
@@ -221,7 +221,7 @@ Operations mantém uma **timeline segura e autorizável**, enquanto detalhes cl�
 
 # 6. Não criar um “History aggregate” monolítico
 
-A documentação define histórico como uma linha do tempo consolidada. 
+A documentação define histórico como uma linha do tempo consolidada.
 
 Não significa:
 
@@ -323,7 +323,7 @@ timeline.payload = {
 
 Além de custo, isso aumenta exposição de dados sensíveis.
 
-A proposta técnica explicitamente evita fichas e fotos completas em auditoria e estruturas de evidência. 
+A proposta técnica explicitamente evita fichas e fotos completas em auditoria e estruturas de evidência.
 
 Aplicar a mesma prudência à projection da timeline.
 
@@ -355,8 +355,6 @@ descontos
 créditos
 retornos
 ```
-
-
 
 Mas PR-22 não precisa reconstruir tudo retroativamente de uma vez.
 
@@ -494,7 +492,7 @@ Não permitir update/delete normal.
 
 # 17. Timeline deve ser append-only
 
-Histórico não deve perder referências quando cadastros forem inativados. 
+Histórico não deve perder referências quando cadastros forem inativados.
 
 Logo:
 
@@ -535,8 +533,6 @@ tenant + customer
 ```text
 date/time
 ```
-
-
 
 Consulta:
 
@@ -585,8 +581,6 @@ status
 unit
 ```
 
-
-
 Neste PR implementar aqueles cujos campos realmente existem.
 
 Se `unit` ainda não está materializado:
@@ -630,8 +624,6 @@ technical
 financial
 personal
 ```
-
-
 
 Portanto não fazer:
 
@@ -704,8 +696,6 @@ Inativo
 Com faltas recorrentes
 ```
 
-
-
 Use os nomes canônicos já existentes no projeto.
 
 Não criar enum duplicada.
@@ -735,7 +725,7 @@ Assíduo:
   recorrência suficiente
 ```
 
-mas valores de frequência/período são configuráveis. 
+mas valores de frequência/período são configuráveis.
 
 Logo não hardcode:
 
@@ -789,7 +779,7 @@ first completed session
 OLD
 ```
 
-Essa transição é claramente sustentada pelo produto: `Novo` é quem ainda não possui atendimento concluído; `Antigo` já possui pelo menos um. 
+Essa transição é claramente sustentada pelo produto: `Novo` é quem ainda não possui atendimento concluído; `Antigo` já possui pelo menos um.
 
 ---
 
@@ -811,7 +801,7 @@ Inatividade depende de:
 tempo sem retornar
 ```
 
-Logo será eventualmente um job diário, como a proposta técnica sugere para classificação de inatividade. 
+Logo será eventualmente um job diário, como a proposta técnica sugere para classificação de inatividade.
 
 PR-22 pode preparar a policy, mas não criar Cron.
 
@@ -882,7 +872,7 @@ changedAt
 
 # 37. `CustomerProfileChanged` deve ser auditável
 
-A documentação já lista alteração/reclassificação entre eventos auditáveis. 
+A documentação já lista alteração/reclassificação entre eventos auditáveis.
 
 Audit:
 
@@ -1053,7 +1043,7 @@ professional may define:
 - observation
 ```
 
-e a recomendação **não cria automaticamente um Appointment**. Enquanto não houver agendamento, fica pendente. A data originalmente recomendada deve permanecer no histórico. 
+e a recomendação **não cria automaticamente um Appointment**. Enquanto não houver agendamento, fica pendente. A data originalmente recomendada deve permanecer no histórico.
 
 ---
 
@@ -1199,7 +1189,7 @@ recommendedFor
 
 não muda.
 
-RN-RET-005 exige preservar a data original. 
+RN-RET-005 exige preservar a data original.
 
 ---
 
@@ -1212,7 +1202,7 @@ ReturnRecommended
 → CreateAppointment
 ```
 
-O cliente precisa escolher horário. 
+O cliente precisa escolher horário.
 
 ---
 
@@ -1323,7 +1313,7 @@ salvo se a regra normativa atual exigia e houve gap explícito.
 
 # 62. Mas registrar discrepância
 
-`RN-CONC-001` inclui retorno entre as verificações antes da conclusão. 
+`RN-CONC-001` inclui retorno entre as verificações antes da conclusão.
 
 O relatório do PR-21 não mencionou retorno como blocker.
 
@@ -1471,7 +1461,7 @@ Mas se update não está no escopo, simplesmente não criar endpoint de edição
 
 # 70. Conversão em Appointment
 
-`RN-RET-004` exige associação quando Appointment for criado. 
+`RN-RET-004` exige associação quando Appointment for criado.
 
 Não precisa implementar criação automática.
 
@@ -2093,7 +2083,7 @@ Após recomendação:
 appointments count unchanged
 ```
 
-Prova explícita de `RN-RET-002`. 
+Prova explícita de `RN-RET-002`.
 
 ---
 
@@ -2183,7 +2173,7 @@ Outro profissional não recomenda retorno sobre Session alheia sem permission ad
 
 # 115. Return recommendation só após conclusão?
 
-O fluxo de documentação diz “profissional conclui a sessão, define necessidade de retorno”. 
+O fluxo de documentação diz “profissional conclui a sessão, define necessidade de retorno”.
 
 Logo neste PR exigir:
 
@@ -2690,7 +2680,7 @@ Financial balance        NOT IMPLEMENTED
 RN-CONC-002 FULL         NOT YET
 ```
 
-Isso é importante porque a documentação normativa exige pacote e saldo financeiro como parte dos efeitos da conclusão. 
+Isso é importante porque a documentação normativa exige pacote e saldo financeiro como parte dos efeitos da conclusão.
 
 ---
 
@@ -2869,7 +2859,7 @@ customer inactivity Cron
 
 Aqui eu ajustaria o roadmap anterior com base na documentação normativa.
 
-Após histórico/perfil/retorno, a próxima lacuna importante não deveria ser Payment diretamente. A especificação exige que a conclusão possa consumir pacote e que duplo clique não consuma duas unidades.  A proposta técnica também modela `SESSION → PACKAGE_MOVEMENT` e cita bloqueio do pacote durante conclusão.
+Após histórico/perfil/retorno, a próxima lacuna importante não deveria ser Payment diretamente. A especificação exige que a conclusão possa consumir pacote e que duplo clique não consuma duas unidades. A proposta técnica também modela `SESSION → PACKAGE_MOVEMENT` e cita bloqueio do pacote durante conclusão.
 
 Portanto:
 

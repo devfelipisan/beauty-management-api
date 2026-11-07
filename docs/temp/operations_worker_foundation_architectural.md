@@ -92,7 +92,7 @@ A ordem de leitura deve ser:
 10. TODO.md
 ```
 
-A própria documentação consolidada do projeto estabelece essa ideia de hierarquia e que divergências precisam ser explicitadas, não resolvidas por inferência. 
+A própria documentação consolidada do projeto estabelece essa ideia de hierarquia e que divergências precisam ser explicitadas, não resolvidas por inferência.
 
 ---
 
@@ -226,7 +226,7 @@ O Codex não pode escolher D1 simplesmente porque:
 Cloudflare = D1
 ```
 
-A documentação atual do projeto tem PostgreSQL como escolha técnica explícita. 
+A documentação atual do projeto tem PostgreSQL como escolha técnica explícita.
 
 Logo:
 

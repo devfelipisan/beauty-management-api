@@ -4,7 +4,10 @@ import {
   type WorkerSecurityEnv,
 } from './worker-security.js';
 import { authorizeActor } from '@beauty/kernel/application/actor-authorization';
-import { resolveWorkspace, type WorkspaceRole } from '../workspace-authority.js';
+import {
+  resolveWorkspace,
+  type WorkspaceRole,
+} from '../workspace-authority.js';
 import type { UserRpcAuthority } from '@beauty/contracts';
 
 /** Compatibility export for existing adapters; wire versions live in contracts. */
@@ -61,8 +64,12 @@ export function userRpcMetadata(request: Request): {
       version: 2,
       kind: 'user',
       selection: {
-        tenantId: new URL(request.url).pathname.match(/^\/tenants\/([^/]+)/)?.[1] ?? request.headers.get('x-tenant-id') ?? '',
-        role: (request.headers.get('x-workspace-role') ?? undefined) as WorkspaceRole | undefined,
+        tenantId:
+          new URL(request.url).pathname.match(/^\/tenants\/([^/]+)/)?.[1] ??
+          request.headers.get('x-tenant-id') ??
+          '',
+        role: (request.headers.get('x-workspace-role') ?? undefined) as
+          WorkspaceRole | undefined,
         professionalId: request.headers.get('x-professional-id') ?? undefined,
       },
       token:
@@ -161,7 +168,9 @@ export async function authorizeWorkerRpc(
     ![1, 2].includes(authority?.version ?? 0) ||
     authority.kind !== 'user' ||
     typeof authority.token !== 'string' ||
-    (authority.version === 2 && (!authority.selection || typeof authority.selection.tenantId !== 'string'))
+    (authority.version === 2 &&
+      (!authority.selection ||
+        typeof authority.selection.tenantId !== 'string'))
   )
     throw new Error('AUTHENTICATION_REQUIRED');
   const security = workerSecurity(env);
@@ -171,8 +180,17 @@ export async function authorizeWorkerRpc(
     identity.actorId,
     input.tenantId,
   );
-  if (authority.version === 2 && (!authority.selection || authority.selection.tenantId !== input.tenantId)) throw new Error('TENANT_ACCESS_DENIED');
-  const membership = candidate ? resolveWorkspace(candidate, authority.version === 2 ? authority.selection : undefined) : null;
+  if (
+    authority.version === 2 &&
+    (!authority.selection || authority.selection.tenantId !== input.tenantId)
+  )
+    throw new Error('TENANT_ACCESS_DENIED');
+  const membership = candidate
+    ? resolveWorkspace(
+        candidate,
+        authority.version === 2 ? authority.selection : undefined,
+      )
+    : null;
   if (
     !membership ||
     !policy.permissions.some((permission) =>

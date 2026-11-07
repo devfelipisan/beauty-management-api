@@ -202,7 +202,7 @@ batch reliability
 
 porque uma falha entre ambos ainda produziria estado parcial.
 
-A arquitetura originalmente exige que mutação, audit, outbox e idempotência sejam tratadas como uma única unidade lógica. 
+A arquitetura originalmente exige que mutação, audit, outbox e idempotência sejam tratadas como uma única unidade lógica.
 
 ---
 
@@ -387,19 +387,19 @@ nest g class appointments/domain/appointment \
 
 O agregado deve refletir os dados normativos:
 
-* tenant;
-* customer;
-* service;
-* professional;
-* início;
-* fim;
-* duração;
-* preço-base;
-* desconto;
-* preço final;
-* sinal;
-* origem;
-* status.
+- tenant;
+- customer;
+- service;
+- professional;
+- início;
+- fim;
+- duração;
+- preço-base;
+- desconto;
+- preço final;
+- sinal;
+- origem;
+- status.
 
 Mas existe uma nuance importante.
 
@@ -861,7 +861,7 @@ duas requisições concorrentes
 → no máximo uma vence
 ```
 
-A proposta PostgreSQL original destacava exatamente que apenas executar `SELECT` antes do `INSERT` não resolve corrida concorrente. 
+A proposta PostgreSQL original destacava exatamente que apenas executar `SELECT` antes do `INSERT` não resolve corrida concorrente.
 
 No D1, precisamos estabelecer um mecanismo equivalente apropriado ao adapter escolhido.
 
@@ -1071,7 +1071,7 @@ REFERRAL
 MANUAL
 ```
 
-ou nomenclatura técnica equivalente. 
+ou nomenclatura técnica equivalente.
 
 Não inventar:
 
@@ -1386,7 +1386,7 @@ Idempotency-Key: ...
 
 deve ser obrigatório.
 
-A documentação técnica anterior lista `CreateAppointment` explicitamente entre as operações inicialmente protegidas por idempotência. 
+A documentação técnica anterior lista `CreateAppointment` explicitamente entre as operações inicialmente protegidas por idempotência.
 
 ---
 
@@ -1554,7 +1554,7 @@ Resultado:
 PROFESSIONAL_NOT_ENABLED_FOR_SERVICE
 ```
 
-Esse comportamento deriva diretamente de RN-PRO-002. 
+Esse comportamento deriva diretamente de RN-PRO-002.
 
 ---
 
@@ -1627,7 +1627,7 @@ não é suficiente.
 
 Precisamos provar a persistência.
 
-A proposta técnica original já alertava explicitamente que um `SELECT` anterior ao `INSERT` não elimina corrida concorrente. 
+A proposta técnica original já alertava explicitamente que um `SELECT` anterior ao `INSERT` não elimina corrida concorrente.
 
 ---
 
@@ -1829,7 +1829,7 @@ Isso ajudará futuramente a acompanhar:
 conflitos por agenda
 ```
 
-que a proposta técnica recomenda como métrica operacional. 
+que a proposta técnica recomenda como métrica operacional.
 
 ---
 
@@ -2289,6 +2289,6 @@ CreateAppointment authoritative flow
 
 Se essas dependencies já existirem de forma canônica no repositório quando o PR-08 for executado, PR-09 pode ser desnecessário e `CreateAppointment` pode ser finalizado no próprio PR-08.
 
-Essa cautela é importante porque `RN-AGE-001` não diz apenas “cliente, profissional e serviço devem existir”. Ele exige **empresa ativa, licença operacional, cliente ativo, serviço ativo, profissional ativo e habilitado, disponibilidade, ausência de conflito, avaliação válida quando obrigatória, restrições do cliente e limites do plano**.  E a documentação determina que o agendamento ocupe o intervalo integral e impeça sobreposição do profissional.
+Essa cautela é importante porque `RN-AGE-001` não diz apenas “cliente, profissional e serviço devem existir”. Ele exige **empresa ativa, licença operacional, cliente ativo, serviço ativo, profissional ativo e habilitado, disponibilidade, ausência de conflito, avaliação válida quando obrigatória, restrições do cliente e limites do plano**. E a documentação determina que o agendamento ocupe o intervalo integral e impeça sobreposição do profissional.
 
 Portanto, com o PR-07 efetivamente concluído, **PR-08 deve ser o primeiro PR de Scheduling, mas também precisa fechar a lacuna transacional deixada conscientemente pelo PR-07. Eu não recomendaria expor um `POST /appointments` parcialmente correto apenas para manter a numeração do roadmap.**

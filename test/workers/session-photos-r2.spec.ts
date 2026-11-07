@@ -12,7 +12,9 @@ type ClinicalService = {
   ): Promise<any>;
 };
 const db = env.D1_DATABASE;
-const clinical = authenticatedTestService(env.CLINICAL_SERVICE) as unknown as ClinicalService;
+const clinical = authenticatedTestService(
+  env.CLINICAL_SERVICE,
+) as unknown as ClinicalService;
 const run = crypto.randomUUID();
 const tenantId = `photo-tenant-${run}`;
 const sessionId = `photo-session-${run}`;

@@ -1,2 +1,20 @@
 import { CalculateCommercialTerms } from './calculate-commercial-terms.js';
-describe('CalculateCommercialTerms', () => { it('fails closed when the discount capability is unavailable', async () => { const useCase = new CalculateCommercialTerms({ evaluate: async () => ({ available:false }) }, { evaluate: async () => ({ available:false }) }); await expect(useCase.execute({ tenantId:'t', customerId:'c', serviceId:'s', basePriceCents:100 })).resolves.toMatchObject({ status:'BLOCKED', reason:'DISCOUNT_POLICY_UNAVAILABLE' }); }); });
+describe('CalculateCommercialTerms', () => {
+  it('fails closed when the discount capability is unavailable', async () => {
+    const useCase = new CalculateCommercialTerms(
+      { evaluate: async () => ({ available: false }) },
+      { evaluate: async () => ({ available: false }) },
+    );
+    await expect(
+      useCase.execute({
+        tenantId: 't',
+        customerId: 'c',
+        serviceId: 's',
+        basePriceCents: 100,
+      }),
+    ).resolves.toMatchObject({
+      status: 'BLOCKED',
+      reason: 'DISCOUNT_POLICY_UNAVAILABLE',
+    });
+  });
+});

@@ -45,7 +45,10 @@ describe('Professionals HTTP through Operations Worker', () => {
     expect(first.headers.get('x-correlation-id')).toBe(
       'professionals-correlation',
     );
-    const firstPage = await first.json() as { data: { id: string }[]; page: { hasMore: boolean; nextCursor: string | null } };
+    const firstPage = (await first.json()) as {
+      data: { id: string }[];
+      page: { hasMore: boolean; nextCursor: string | null };
+    };
     expect(firstPage).toMatchObject({
       data: [
         {
@@ -59,7 +62,13 @@ describe('Professionals HTTP through Operations Worker', () => {
       correlationId: 'professionals-correlation',
     });
     expect(firstPage.page.hasMore).toBe(true);
-    expect(await (await send('?limit=1&cursor=' + encodeURIComponent(firstPage.page.nextCursor!))).json()).toMatchObject({
+    expect(
+      await (
+        await send(
+          '?limit=1&cursor=' + encodeURIComponent(firstPage.page.nextCursor!),
+        )
+      ).json(),
+    ).toMatchObject({
       data: [{ id: 'professionals-b', status: 'INACTIVE' }],
       page: { hasMore: false, nextCursor: null },
     });

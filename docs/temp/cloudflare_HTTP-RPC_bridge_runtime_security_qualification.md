@@ -235,10 +235,10 @@ e carregar Express apenas para reutilizar controllers.
 
 Isso tende a gerar:
 
-* bundle maior;
-* abstrações incompatíveis;
-* dependência de APIs de servidor Node;
-* comportamento difícil de provar.
+- bundle maior;
+- abstrações incompatíveis;
+- dependência de APIs de servidor Node;
+- comportamento difícil de provar.
 
 O runtime Cloudflare deve trabalhar com Web APIs:
 
@@ -688,7 +688,7 @@ explicitamente para Application Service.
 Exemplo:
 
 ```ts
-execute(command, executionContext)
+execute(command, executionContext);
 ```
 
 ou:
@@ -697,7 +697,7 @@ ou:
 execute({
   ...command,
   context,
-})
+});
 ```
 
 conforme padrão já adotado.

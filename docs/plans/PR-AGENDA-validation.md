@@ -19,19 +19,19 @@ O inventário inicial foi preservado como registro histórico separado.
 
 ## Resultado implementado
 
-| Subsistema | Evidência |
-| --- | --- |
-| Autoridade | Grants por função, mapeamento central, seleção inequívoca V1 e seleção V2 revalidada nos receivers |
-| Isolamento | Tenant em portas/SQL/joins, escopo profissional em agenda/detalhes/conflito/catálogo profissional |
-| Fixtures | Identidade mock apenas no build local/teste; memberships/grants de Workers persistidos em D1 |
-| Ocupação | RESCHEDULED alinhado à ADR-0015; nenhuma nova transição |
-| Consulta | Filtros, sobreposição [from,to), cursor contextual, resumo independente da página e referências inativas |
-| Detalhes | Dados mínimos; confirm/check-in projetados pela política compartilhada dos comandos |
-| Conflito | Endpoint Worker preserva o formato existente sem prometer jornada ou reserva |
-| BFF | Service Binding, contexto e correlação; DTO operacional sem valores fictícios ou cadastro completo de clientes |
-| Web | Dia/semana/mês, paginação, filtros, detalhes, confirmação/check-in, conflito e atualização após comandos |
-| Contexto web | Chaves por contexto, filtros específicos reiniciados, respostas antigas ignoradas e seleção mantida na agenda |
-| Tempo | UTC no transporte, calendário no fuso do tenant; horário local inexistente/ambíguo é recusado explicitamente |
+| Subsistema   | Evidência                                                                                                      |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| Autoridade   | Grants por função, mapeamento central, seleção inequívoca V1 e seleção V2 revalidada nos receivers             |
+| Isolamento   | Tenant em portas/SQL/joins, escopo profissional em agenda/detalhes/conflito/catálogo profissional              |
+| Fixtures     | Identidade mock apenas no build local/teste; memberships/grants de Workers persistidos em D1                   |
+| Ocupação     | RESCHEDULED alinhado à ADR-0015; nenhuma nova transição                                                        |
+| Consulta     | Filtros, sobreposição [from,to), cursor contextual, resumo independente da página e referências inativas       |
+| Detalhes     | Dados mínimos; confirm/check-in projetados pela política compartilhada dos comandos                            |
+| Conflito     | Endpoint Worker preserva o formato existente sem prometer jornada ou reserva                                   |
+| BFF          | Service Binding, contexto e correlação; DTO operacional sem valores fictícios ou cadastro completo de clientes |
+| Web          | Dia/semana/mês, paginação, filtros, detalhes, confirmação/check-in, conflito e atualização após comandos       |
+| Contexto web | Chaves por contexto, filtros específicos reiniciados, respostas antigas ignoradas e seleção mantida na agenda  |
+| Tempo        | UTC no transporte, calendário no fuso do tenant; horário local inexistente/ambíguo é recusado explicitamente   |
 
 ## Gates executados
 
@@ -39,13 +39,13 @@ O primeiro diagnóstico encontrou ferramentas ausentes e Node 24.18.0. As
 dependências foram restauradas e a qualificação final utiliza um executável
 temporário Node 24.22.1, correspondente à .nvmrc, sem alterar a instalação global.
 
-| Gate | Resultado local |
-| --- | --- |
-| API npm run check | Aprovado: lint, typecheck, 501 testes unitários/arquiteturais, 94 físicos, 4 E2E, build e dry-run dos três Workers |
-| Web npm run check | Aprovado na revisão final: lint sem erros, typecheck, 33 testes e build de produção |
-| Web testes | 33 testes, incluindo 8 de agenda/contrato/tempo/proteção de produção |
-| Integração física entre repositórios | 1 cenário BFF → Operations → dependências RPC/D1: criação autoritativa, leitura, detalhes, confirmação e troca de tenant |
-| Navegador local | 6 cenários com respostas BFF sintéticas interceptadas: carga sem login no build dev, detalhe/ação/refresh, conflito, vazio, erro distinto de vazio e resposta atrasada de outro tenant |
+| Gate                                 | Resultado local                                                                                                                                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API npm run check                    | Aprovado: lint, typecheck, 501 testes unitários/arquiteturais, 94 físicos, 4 E2E, build e dry-run dos três Workers                                                                     |
+| Web npm run check                    | Aprovado na revisão final: lint sem erros, typecheck, 33 testes e build de produção                                                                                                    |
+| Web testes                           | 33 testes, incluindo 8 de agenda/contrato/tempo/proteção de produção                                                                                                                   |
+| Integração física entre repositórios | 1 cenário BFF → Operations → dependências RPC/D1: criação autoritativa, leitura, detalhes, confirmação e troca de tenant                                                               |
+| Navegador local                      | 6 cenários com respostas BFF sintéticas interceptadas: carga sem login no build dev, detalhe/ação/refresh, conflito, vazio, erro distinto de vazio e resposta atrasada de outro tenant |
 
 Os testes de navegador não substituem a prova física de Service Binding. Os
 cenários são registrados separadamente para não confundir mocks de apresentação

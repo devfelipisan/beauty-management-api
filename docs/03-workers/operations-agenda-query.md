@@ -5,10 +5,10 @@ Especificação HTTP executável: OpenAPI do Operations Worker.
 
 ## Rotas
 
-| Método e caminho | Permissão |
-| --- | --- |
-| GET /tenants/{tenantId}/agenda | agenda.read |
-| GET /tenants/{tenantId}/appointments/{appointmentId} | agenda.read |
+| Método e caminho                                                    | Permissão   |
+| ------------------------------------------------------------------- | ----------- |
+| GET /tenants/{tenantId}/agenda                                      | agenda.read |
+| GET /tenants/{tenantId}/appointments/{appointmentId}                | agenda.read |
 | GET /tenants/{tenantId}/professionals/{professionalId}/availability | agenda.read |
 
 Todas exigem identidade, membership ativa, função selecionada válida e grants

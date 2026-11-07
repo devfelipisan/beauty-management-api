@@ -11,7 +11,109 @@ import type { CustomerRestrictionPort } from '../ports/customer-restriction.port
 import type { LicenseEligibilityPort } from '../ports/license-eligibility.port.js';
 import type { PlanLimitPort } from '../ports/plan-limit.port.js';
 import type { ProfessionalServiceEligibilityPort } from '../ports/professional-service-eligibility.port.js';
-export interface CheckAppointmentEligibilityInput { tenantId:string; customerId:string; serviceId:string; professionalId:string; startsAt:string; endsAt:string; }
-export class CheckAppointmentEligibility { constructor(private readonly tenants:TenantRepository,private readonly customers:CustomerRepository,private readonly services:ServiceRepository,private readonly professionals:ProfessionalRepository,private readonly availability:AvailabilityRepository,private readonly enabled:ProfessionalServiceEligibilityPort,private readonly license:LicenseEligibilityPort,private readonly assessment:AssessmentEligibilityPort,private readonly restrictions:CustomerRestrictionPort,private readonly plan:PlanLimitPort) {}
-  async execute(input:CheckAppointmentEligibilityInput):Promise<AppointmentEligibilityResult> { const tenant=await this.tenants.findById(input.tenantId); if (!tenant || tenant.data.status !== 'ACTIVE') return new AppointmentEligibilityPolicy().evaluate({tenantOperational:false} as never); const customer=await this.customers.findById(input.tenantId,input.customerId); if (!customer || customer.data.status !== 'ACTIVE') return new AppointmentEligibilityPolicy().evaluate({tenantOperational:true,customerActive:false} as never); const service=await this.services.findById(input.tenantId,input.serviceId); if (!service || service.data.status !== 'ACTIVE') return new AppointmentEligibilityPolicy().evaluate({tenantOperational:true,customerActive:true,serviceActive:false} as never); const professional=await this.professionals.findById(input.tenantId,input.professionalId); if (!professional || professional.data.status !== 'ACTIVE') return new AppointmentEligibilityPolicy().evaluate({tenantOperational:true,customerActive:true,serviceActive:true,professionalActive:false} as never); const [enabled,license,restriction,plan]=await Promise.all([this.enabled.isEnabled(input.tenantId,input.professionalId,input.serviceId),this.license.check({tenantId:input.tenantId}),this.restrictions.check({tenantId:input.tenantId,customerId:input.customerId}),this.plan.check({tenantId:input.tenantId,operation:'CreateAppointment'})]); const assessment=service.data.requiresAssessment?await this.assessment.check({tenantId:input.tenantId,customerId:input.customerId,serviceId:input.serviceId,professionalId:input.professionalId,required:true}):{required:false,valid:true}; const interval=TimeInterval.create(input.startsAt,input.endsAt); const existing=await this.availability.findExisting(input.tenantId,input.professionalId,interval); return new AppointmentEligibilityPolicy().evaluate({tenantOperational:true,customerActive:true,customerRestricted:restriction.restricted,serviceActive:true,professionalActive:true,professionalEnabled:enabled,licenseOperational:license.operational,assessmentRequired:assessment.required,assessmentValid:assessment.valid,planCapacityAvailable:plan.capacityAvailable,professionalAvailable:true,timeConflict:existing.length>0}); }
+export interface CheckAppointmentEligibilityInput {
+  tenantId: string;
+  customerId: string;
+  serviceId: string;
+  professionalId: string;
+  startsAt: string;
+  endsAt: string;
+}
+export class CheckAppointmentEligibility {
+  constructor(
+    private readonly tenants: TenantRepository,
+    private readonly customers: CustomerRepository,
+    private readonly services: ServiceRepository,
+    private readonly professionals: ProfessionalRepository,
+    private readonly availability: AvailabilityRepository,
+    private readonly enabled: ProfessionalServiceEligibilityPort,
+    private readonly license: LicenseEligibilityPort,
+    private readonly assessment: AssessmentEligibilityPort,
+    private readonly restrictions: CustomerRestrictionPort,
+    private readonly plan: PlanLimitPort,
+  ) {}
+  async execute(
+    input: CheckAppointmentEligibilityInput,
+  ): Promise<AppointmentEligibilityResult> {
+    const tenant = await this.tenants.findById(input.tenantId);
+    if (!tenant || tenant.data.status !== 'ACTIVE')
+      return new AppointmentEligibilityPolicy().evaluate({
+        tenantOperational: false,
+      } as never);
+    const customer = await this.customers.findById(
+      input.tenantId,
+      input.customerId,
+    );
+    if (!customer || customer.data.status !== 'ACTIVE')
+      return new AppointmentEligibilityPolicy().evaluate({
+        tenantOperational: true,
+        customerActive: false,
+      } as never);
+    const service = await this.services.findById(
+      input.tenantId,
+      input.serviceId,
+    );
+    if (!service || service.data.status !== 'ACTIVE')
+      return new AppointmentEligibilityPolicy().evaluate({
+        tenantOperational: true,
+        customerActive: true,
+        serviceActive: false,
+      } as never);
+    const professional = await this.professionals.findById(
+      input.tenantId,
+      input.professionalId,
+    );
+    if (!professional || professional.data.status !== 'ACTIVE')
+      return new AppointmentEligibilityPolicy().evaluate({
+        tenantOperational: true,
+        customerActive: true,
+        serviceActive: true,
+        professionalActive: false,
+      } as never);
+    const [enabled, license, restriction, plan] = await Promise.all([
+      this.enabled.isEnabled(
+        input.tenantId,
+        input.professionalId,
+        input.serviceId,
+      ),
+      this.license.check({ tenantId: input.tenantId }),
+      this.restrictions.check({
+        tenantId: input.tenantId,
+        customerId: input.customerId,
+      }),
+      this.plan.check({
+        tenantId: input.tenantId,
+        operation: 'CreateAppointment',
+      }),
+    ]);
+    const assessment = service.data.requiresAssessment
+      ? await this.assessment.check({
+          tenantId: input.tenantId,
+          customerId: input.customerId,
+          serviceId: input.serviceId,
+          professionalId: input.professionalId,
+          required: true,
+        })
+      : { required: false, valid: true };
+    const interval = TimeInterval.create(input.startsAt, input.endsAt);
+    const existing = await this.availability.findExisting(
+      input.tenantId,
+      input.professionalId,
+      interval,
+    );
+    return new AppointmentEligibilityPolicy().evaluate({
+      tenantOperational: true,
+      customerActive: true,
+      customerRestricted: restriction.restricted,
+      serviceActive: true,
+      professionalActive: true,
+      professionalEnabled: enabled,
+      licenseOperational: license.operational,
+      assessmentRequired: assessment.required,
+      assessmentValid: assessment.valid,
+      planCapacityAvailable: plan.capacityAvailable,
+      professionalAvailable: true,
+      timeConflict: existing.length > 0,
+    });
+  }
 }

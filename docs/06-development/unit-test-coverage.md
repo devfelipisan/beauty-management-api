@@ -9,12 +9,12 @@ thresholds, os manifests ou o lockfile para melhorar artificialmente os números
 
 Baseline reproduzida antes das mudanças e nova execução usando Node 24.22.1:
 
-| Métrica | Antes | Depois |
-| --- | ---: | ---: |
+| Métrica    |  Antes | Depois |
+| ---------- | -----: | -----: |
 | Statements | 63,72% | 97,14% |
-| Branches | 52,82% | 94,51% |
-| Functions | 59,68% | 90,46% |
-| Lines | 62,62% | 98,73% |
+| Branches   | 52,82% | 94,51% |
+| Functions  | 59,68% | 90,46% |
+| Lines      | 62,62% | 98,73% |
 
 Suíte final: **68 arquivos e 394 testes aprovados**. Lint, typecheck/build
 (`tsc --build --force`) e `git diff --check` aprovados. Workers físicos e E2E não

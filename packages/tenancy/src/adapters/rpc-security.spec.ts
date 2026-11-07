@@ -9,10 +9,22 @@ import {
 } from './rpc-security.js';
 
 describe('RPC authority', () => {
-  it('denies an empty reconciliation policy even with upload permission and does no persistence I/O',async()=>{
-    const {env}=environment();
-    const authenticate=vi.spyOn(JwtIdentityProvider.prototype,'authenticate');
-    await expect(authorizeWorkerRpc(env,{}, {tenantId:'tenant',rpcAuthority:{version:1,kind:'user',token:'signed'}})).rejects.toThrow('PERMISSION_DENIED');
+  it('denies an empty reconciliation policy even with upload permission and does no persistence I/O', async () => {
+    const { env } = environment();
+    const authenticate = vi.spyOn(
+      JwtIdentityProvider.prototype,
+      'authenticate',
+    );
+    await expect(
+      authorizeWorkerRpc(
+        env,
+        {},
+        {
+          tenantId: 'tenant',
+          rpcAuthority: { version: 1, kind: 'user', token: 'signed' },
+        },
+      ),
+    ).rejects.toThrow('PERMISSION_DENIED');
     expect(authenticate).not.toHaveBeenCalled();
   });
   it('rejects an unspecified fixture environment for both user and system operations', async () => {
@@ -166,12 +178,20 @@ describe('RPC authority', () => {
       kind: 'user' as const,
       token: 'fixture',
     };
-    await expect(authorizeWorkerRpc(
-      env,
-      {},
-      { tenantId: 'tenant', actorId: 'actor', rpcAuthority },
-    )).rejects.toThrow('PERMISSION_DENIED');
-    await expect(authorizeWorkerRpc(env, { permissions: ['session.start'] }, { tenantId: 'tenant', actorId: 'actor' })).rejects.toThrow('AUTHENTICATION_REQUIRED');
+    await expect(
+      authorizeWorkerRpc(
+        env,
+        {},
+        { tenantId: 'tenant', actorId: 'actor', rpcAuthority },
+      ),
+    ).rejects.toThrow('PERMISSION_DENIED');
+    await expect(
+      authorizeWorkerRpc(
+        env,
+        { permissions: ['session.start'] },
+        { tenantId: 'tenant', actorId: 'actor' },
+      ),
+    ).rejects.toThrow('AUTHENTICATION_REQUIRED');
   });
 
   it('requires measured positive integer dispatch settings and takes production limits/time from the receiver', () => {
@@ -267,7 +287,14 @@ describe('RPC authority', () => {
           headers: { authorization: 'Bearer signed' },
         }),
       ),
-    ).toEqual({ rpcAuthority: { version: 2, kind: 'user', token: 'signed', selection: { tenantId: '', role: undefined, professionalId: undefined } } });
+    ).toEqual({
+      rpcAuthority: {
+        version: 2,
+        kind: 'user',
+        token: 'signed',
+        selection: { tenantId: '', role: undefined, professionalId: undefined },
+      },
+    });
     expect(
       userRpcMetadata(new Request('https://api.test')).rpcAuthority.token,
     ).toBe('');

@@ -7,4 +7,3 @@ usando as configurações de `apps/*-worker/wrangler.jsonc`. A condição de exp
 `workerd` resolve os fontes dos workspaces; não é necessário um build Node prévio.
 Nesta entrega, bindings, nomes dos recursos e migrations compartilhados são
 preservados. Não há provisionamento nem aplicação de migrations remotas.
-

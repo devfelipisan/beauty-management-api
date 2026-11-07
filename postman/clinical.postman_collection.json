@@ -25,12 +25,8 @@
             "header": [],
             "url": {
               "raw": "{{clinicalUrl}}/health",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
-              "path": [
-                "health"
-              ],
+              "host": ["{{clinicalUrl}}"],
+              "path": ["health"],
               "query": []
             },
             "description": "\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
@@ -80,9 +76,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/appointments/{{appointmentId}}/session/start",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -150,9 +144,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/services/{{serviceId}}/technical-forms",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -211,9 +203,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/services/{{serviceId}}/technical-forms",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -279,9 +269,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/services/{{serviceId}}/technical-forms/{{formId}}/publish",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -348,9 +336,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/technical-values",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -419,9 +405,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/power",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -482,9 +466,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/completion-eligibility",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -543,9 +525,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/complete",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -614,9 +594,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/return-recommendation",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -677,9 +655,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/photos",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -743,9 +719,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/photos?purpose=BEFORE&intercurrenceId={{intercurrenceId}}",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -813,9 +787,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/photos/{{photoId}}",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -875,9 +847,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/equipment-usages",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -938,9 +908,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/previous-context",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -999,9 +967,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/sessions/{{sessionId}}/variation-alerts/{{alertId}}/justify",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -1073,14 +1039,8 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/equipment",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "equipment"
-              ],
+              "host": ["{{clinicalUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "equipment"],
               "query": []
             },
             "description": "Permissão existente: `equipment.read`.\n\nO handler atual lê o identificador id de um corpo JSON em GET. Navegadores não permitem esse corpo em fetch; este GET não é testável pelo Swagger UI. Não existe parâmetro query equivalente no runtime. A rota permanece documentada sem inventar outro contrato.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
@@ -1141,14 +1101,8 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/equipment",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "equipment"
-              ],
+              "host": ["{{clinicalUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "equipment"],
               "query": []
             },
             "description": "Permissão existente: `equipment.create`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",
@@ -1211,9 +1165,7 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/equipment/{{equipmentId}}/services",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
+              "host": ["{{clinicalUrl}}"],
               "path": [
                 "tenants",
                 "{{tenantId}}",
@@ -1287,14 +1239,8 @@
             ],
             "url": {
               "raw": "{{clinicalUrl}}/tenants/{{tenantId}}/variation-policies",
-              "host": [
-                "{{clinicalUrl}}"
-              ],
-              "path": [
-                "tenants",
-                "{{tenantId}}",
-                "variation-policies"
-              ],
+              "host": ["{{clinicalUrl}}"],
+              "path": ["tenants", "{{tenantId}}", "variation-policies"],
               "query": []
             },
             "description": "Permissão existente: `variation-policy.configure`.\n\nExemplo de corpo é estrutural: preencher valores de negócio antes de enviar.",

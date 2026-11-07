@@ -31,9 +31,9 @@ Session IN_PROGRESS
             └── justification when relevant
 ```
 
-A documentação é bastante clara nesse ponto. Equipamentos têm estados `disponível`, `em manutenção`, `bloqueado` e `inativo`; somente equipamentos disponíveis e compatíveis com o serviço podem ser selecionados; e o equipamento utilizado precisa permanecer historicamente ligado à sessão mesmo se for posteriormente inativado. 
+A documentação é bastante clara nesse ponto. Equipamentos têm estados `disponível`, `em manutenção`, `bloqueado` e `inativo`; somente equipamentos disponíveis e compatíveis com o serviço podem ser selecionados; e o equipamento utilizado precisa permanecer historicamente ligado à sessão mesmo se for posteriormente inativado.
 
-Também está definido que o profissional deve poder consultar sessão anterior, equipamento, potência, parâmetros, reação, observações, fotos e intercorrências. Para potência, a comparação deve considerar cliente, serviço, região e equipamento quando aplicável; uma variação superior ao limite configurado deve gerar alerta, apresentar valor anterior/atual e solicitar justificativa, mas **no MVP esse alerta não precisa bloquear o atendimento**. 
+Também está definido que o profissional deve poder consultar sessão anterior, equipamento, potência, parâmetros, reação, observações, fotos e intercorrências. Para potência, a comparação deve considerar cliente, serviço, região e equipamento quando aplicável; uma variação superior ao limite configurado deve gerar alerta, apresentar valor anterior/atual e solicitar justificativa, mas **no MVP esse alerta não precisa bloquear o atendimento**.
 
 ---
 
@@ -230,7 +230,7 @@ createdAt
 updatedAt
 ```
 
-A documentação permite nome, modelo, fabricante, número de série, unidade principal, serviços compatíveis e observações. 
+A documentação permite nome, modelo, fabricante, número de série, unidade principal, serviços compatíveis e observações.
 
 ---
 
@@ -253,8 +253,6 @@ em manutenção
 bloqueado
 inativo
 ```
-
-
 
 Não adicionar:
 
@@ -312,7 +310,7 @@ equipmentId
 serviceId
 ```
 
-RN-EQP-002 determina que somente equipamento disponível e compatível com o serviço pode ser selecionado. 
+RN-EQP-002 determina que somente equipamento disponível e compatível com o serviço pode ser selecionado.
 
 ---
 
@@ -364,7 +362,7 @@ ServiceTechnicalContext
 
 # 12. Limites de plano
 
-A documentação também permite que o plano limite quantidade de equipamentos. 
+A documentação também permite que o plano limite quantidade de equipamentos.
 
 Porém, se essa capability ainda não está materializada para Equipment, não invente regra.
 
@@ -436,7 +434,7 @@ equipment.read
 
 somente se não houver equivalentes já definidos.
 
-O administrador da empresa é autorizado a cadastrar equipamentos. 
+O administrador da empresa é autorizado a cadastrar equipamentos.
 
 ---
 
@@ -485,7 +483,7 @@ INACTIVE
 
 para retirada operacional.
 
-RN-EQP-003 exige manutenção do uso histórico mesmo após inativação. 
+RN-EQP-003 exige manutenção do uso histórico mesmo após inativação.
 
 ---
 
@@ -592,7 +590,7 @@ recordedAt
 recordedBy
 ```
 
-A parte `Snapshot` é importante por RN-GER-004 e RN-EQP-003: alterações futuras no cadastro não devem reescrever o histórico técnico. 
+A parte `Snapshot` é importante por RN-GER-004 e RN-EQP-003: alterações futuras no cadastro não devem reescrever o histórico técnico.
 
 ---
 
@@ -744,7 +742,7 @@ Session A history
 → still shows E snapshot
 ```
 
-Isso materializa RN-EQP-003. 
+Isso materializa RN-EQP-003.
 
 ---
 
@@ -838,8 +836,6 @@ fotos
 intercorrências
 ```
 
-
-
 Mas nem todos esses módulos existem ainda.
 
 Portanto PR-18 deve retornar apenas as capacidades atualmente materializadas:
@@ -907,7 +903,7 @@ region
 equipment
 ```
 
-A regra de potência é mais específica: cliente + serviço + região + equipamento quando aplicável. 
+A regra de potência é mais específica: cliente + serviço + região + equipamento quando aplicável.
 
 ---
 
@@ -1084,7 +1080,7 @@ region
 equipment
 ```
 
-RN-POT-002 exige exatamente essa correspondência contextual. 
+RN-POT-002 exige exatamente essa correspondência contextual.
 
 ---
 
@@ -1149,7 +1145,7 @@ comparisonStatus
 
 # 52. Criar `VariationPolicy`
 
-RN-POT-003 fala em “limite configurado”. 
+RN-POT-003 fala em “limite configurado”.
 
 Logo não hardcode:
 
@@ -1372,7 +1368,7 @@ Mas isso deve ser documentado como decisão técnica se não houver regra mais e
 
 Esse é um ponto central.
 
-RN-POT-003 afirma que no MVP o alerta não precisa bloquear o atendimento. 
+RN-POT-003 afirma que no MVP o alerta não precisa bloquear o atendimento.
 
 Logo:
 
@@ -1391,7 +1387,7 @@ não:
 
 # 65. Justificativa é obrigatória quando há alerta
 
-A mesma regra exige solicitar justificativa. 
+A mesma regra exige solicitar justificativa.
 
 Então:
 
@@ -1553,7 +1549,7 @@ Use `actorId` apropriado ou `system`.
 
 # 74. Não colocar valores clínicos completos no Audit
 
-A proposta técnica já orienta que fichas completas e dados sensíveis não apareçam em auditoria. 
+A proposta técnica já orienta que fichas completas e dados sensíveis não apareçam em auditoria.
 
 Audit pode registrar:
 
@@ -1712,7 +1708,7 @@ same equipment
 
 quando a regra aplicável exigir.
 
-RN-POT-002 cita equipamento “quando aplicável”. 
+RN-POT-002 cita equipamento “quando aplicável”.
 
 ---
 
@@ -1749,7 +1745,7 @@ Primeiro atendimento deve funcionar normalmente.
 
 # 86. Histórico e inativação
 
-A linha do tempo não pode perder referências históricas quando cadastro é inativado. 
+A linha do tempo não pode perder referências históricas quando cadastro é inativado.
 
 Portanto EquipmentUsage histórico não pode depender de `JOIN equipment WHERE status=AVAILABLE` para ser exibido.
 
@@ -1790,7 +1786,7 @@ Idem.
 
 # 90. Profissional pode consultar histórico autorizado
 
-A documentação autoriza profissional a consultar histórico técnico autorizado, mas não sessões de outros profissionais sem permissão. 
+A documentação autoriza profissional a consultar histórico técnico autorizado, mas não sessões de outros profissionais sem permissão.
 
 Implemente autorização explícita.
 
@@ -2090,7 +2086,7 @@ Session.status = IN_PROGRESS
 technical save succeeded
 ```
 
-Isso prova RN-POT-003 para o MVP. 
+Isso prova RN-POT-003 para o MVP.
 
 ---
 
@@ -2181,7 +2177,7 @@ e deixar PR de conclusão decidir apenas com base em contrato aprovado.
 
 # 110. Equipment obrigatório pode sim integrar completeness
 
-RN-SRV-004 permite serviço exigir equipamento, e RN-EQP-002 define seleção válida. 
+RN-SRV-004 permite serviço exigir equipamento, e RN-EQP-002 define seleção válida.
 
 Então:
 
@@ -2441,7 +2437,7 @@ Calibration workflow
 Automatic hard-block from variation alert
 ```
 
-Em especial, **o alerta de variação não deve impedir automaticamente a sessão no MVP**, pois a regra atual determina alerta + valores anterior/atual + justificativa, sem exigir bloqueio do atendimento. 
+Em especial, **o alerta de variação não deve impedir automaticamente a sessão no MVP**, pois a regra atual determina alerta + valores anterior/atual + justificativa, sem exigir bloqueio do atendimento.
 
 ---
 
@@ -2555,7 +2551,7 @@ O próximo PR deve então ser:
 
 # PR-19 — Intercurrence Foundation + Clinical Restrictions Propagation
 
-A documentação determina que a intercorrência registre descrição, tipo, gravidade, data, profissional, sessão e conduta, podendo também possuir região, parâmetros, equipamento, fotos, acompanhamento, retorno e necessidade de reavaliação. Uma intercorrência ativa também deve gerar alerta no cadastro. 
+A documentação determina que a intercorrência registre descrição, tipo, gravidade, data, profissional, sessão e conduta, podendo também possuir região, parâmetros, equipamento, fotos, acompanhamento, retorno e necessidade de reavaliação. Uma intercorrência ativa também deve gerar alerta no cadastro.
 
 Isso é melhor vir **antes das fotos e antes de `CompleteSession`**, porque intercorrências podem gerar restrições clínicas que precisam impactar atendimentos posteriores.
 

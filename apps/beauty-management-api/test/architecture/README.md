@@ -8,4 +8,3 @@ Estas verificações devem falhar quando:
 - controllers importarem adapters de D1 diretamente.
 
 Implementar a ferramenta de análise quando o código dos Workers for adicionado.
-

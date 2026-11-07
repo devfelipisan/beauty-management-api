@@ -1216,9 +1216,9 @@ Isso é obrigatório.
 
 Se local tooling tiver limitação comprovada:
 
-* documentar exatamente a limitação;
-* criar teste equivalente no Workers test runtime;
-* não marcar binding como qualificado sem execução real em algum runtime compatível.
+- documentar exatamente a limitação;
+- criar teste equivalente no Workers test runtime;
+- não marcar binding como qualificado sem execução real em algum runtime compatível.
 
 ---
 

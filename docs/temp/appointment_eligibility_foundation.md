@@ -256,9 +256,7 @@ nest g class \
 Conceitualmente:
 
 ```ts
-type AppointmentEligibilityStatus =
-  | 'READY'
-  | 'BLOCKED';
+type AppointmentEligibilityStatus = 'READY' | 'BLOCKED';
 ```
 
 E razões estáveis, por exemplo:
@@ -336,16 +334,14 @@ Contrato orientado à pergunta de negócio:
 
 ```ts
 interface LicenseEligibilityPort {
-  check(input: {
-    tenantId: string;
-  }): Promise<LicenseEligibility>;
+  check(input: { tenantId: string }): Promise<LicenseEligibility>;
 }
 ```
 
 Não:
 
 ```ts
-findLicenseByTenantId()
+findLicenseByTenantId();
 ```
 
 se Application só precisa saber se a operação pode prosseguir.
@@ -370,7 +366,7 @@ O port pode ser preparado, mas o adapter só deve existir se houver fonte de dad
 Não criar:
 
 ```ts
-AlwaysValidLicenseAdapter
+AlwaysValidLicenseAdapter;
 ```
 
 para liberar agenda.
@@ -501,7 +497,7 @@ check({
   tenantId,
   customerId,
   serviceId,
-})
+});
 ```
 
 ---
@@ -983,8 +979,8 @@ Não usar fallback permissivo.
 Evite booleans pobres:
 
 ```ts
-true
-false
+true;
+false;
 ```
 
 Prefira algo como:

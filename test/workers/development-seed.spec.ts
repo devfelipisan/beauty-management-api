@@ -317,7 +317,9 @@ describe('Development seed on physical D1 and Workers', () => {
     };
     const refund = await internalBillingFixture().issueRefund(refundInput);
     expect(refund).toMatchObject({ amountCents: 2000, status: 'CONFIRMED' });
-    expect(await internalBillingFixture().issueRefund(refundInput)).toEqual(refund);
+    expect(await internalBillingFixture().issueRefund(refundInput)).toEqual(
+      refund,
+    );
     expect(
       (
         await db

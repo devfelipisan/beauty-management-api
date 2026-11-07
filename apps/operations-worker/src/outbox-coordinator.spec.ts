@@ -1,11 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { dispatchEligibleOutbox } from './outbox-coordinator.js';
 function fixture(events: string[]) {
-  const all = vi
-    .fn()
-    .mockResolvedValue({
-      results: events.map((event_type) => ({ event_type })),
-    });
+  const all = vi.fn().mockResolvedValue({
+    results: events.map((event_type) => ({ event_type })),
+  });
   const prepare = vi.fn(() => ({ bind: () => ({ all }) }));
   const dispatchers = {
     operations: vi.fn(async () => 1),

@@ -1,6 +1,6 @@
 O **PR-02 — Observabilidade + Execution Context** deve ser implementado imediatamente após o PR-01 porque, antes de introduzir `Tenant`, `Customer`, `Appointment`, D1 ou autenticação, precisamos garantir que **toda requisição e futura operação possa ser rastreada de ponta a ponta**.
 
-Isso não é apenas conveniência operacional: os requisitos não funcionais já exigem logs, rastreamento de erros, métricas, identificação de requisições e monitoramento, além de proibir exposição de senhas, tokens, documentos completos e informações clínicas desnecessárias nos logs.  A proposta técnica também define como contexto observável `request_id`, `correlation_id`, `tenant_id`, `actor_id`, operação, rota, status e duração, e proíbe payload integral, token, senha, ficha técnica, alergia, medicamento, fotos, comprovantes e URLs assinadas na telemetria. 
+Isso não é apenas conveniência operacional: os requisitos não funcionais já exigem logs, rastreamento de erros, métricas, identificação de requisições e monitoramento, além de proibir exposição de senhas, tokens, documentos completos e informações clínicas desnecessárias nos logs. A proposta técnica também define como contexto observável `request_id`, `correlation_id`, `tenant_id`, `actor_id`, operação, rota, status e duração, e proíbe payload integral, token, senha, ficha técnica, alergia, medicamento, fotos, comprovantes e URLs assinadas na telemetria.
 
 # PR-02 — Observabilidade + Execution Context
 
@@ -138,7 +138,7 @@ ExecutionContext
 Application input futuramente
 ```
 
-A proposta técnica mantém explicitamente `/observability` como pacote de logs, traces e métricas e exige a regra de dependência `interface → application → domain`, mantendo detalhes externos fora do domínio. 
+A proposta técnica mantém explicitamente `/observability` como pacote de logs, traces e métricas e exige a regra de dependência `interface → application → domain`, mantendo detalhes externos fora do domínio.
 
 ---
 
@@ -298,11 +298,7 @@ export interface ExecutionContext {
 
   traceId?: string;
 
-  source:
-    | 'web'
-    | 'bff'
-    | 'worker'
-    | 'job';
+  source: 'web' | 'bff' | 'worker' | 'job';
 
   service: string;
 
@@ -341,7 +337,7 @@ como identidade confiável.
 
 Isso seria errado.
 
-O sistema é multiempresa e o tenant confiável precisa ser determinado pela Business API/autorização, não por informação arbitrária enviada pelo navegador. O isolamento entre empresas é uma invariância obrigatória do produto. 
+O sistema é multiempresa e o tenant confiável precisa ser determinado pela Business API/autorização, não por informação arbitrária enviada pelo navegador. O isolamento entre empresas é uma invariância obrigatória do produto.
 
 Neste PR:
 
@@ -373,11 +369,7 @@ para chamadas internas.
 Uma nomenclatura consistente pode ser:
 
 ```ts
-export type ExecutionSource =
-  | 'web'
-  | 'bff'
-  | 'worker'
-  | 'job';
+export type ExecutionSource = 'web' | 'bff' | 'worker' | 'job';
 ```
 
 Não criar dezenas de tipos agora.
@@ -603,7 +595,7 @@ OBSERVE_TRACE_SAMPLE_RATE
 Não espalhar:
 
 ```ts
-process.env.OBSERVE_APP_SECRET
+process.env.OBSERVE_APP_SECRET;
 ```
 
 pela aplicação.
@@ -795,8 +787,7 @@ ou gerar novo UUID se inválido.
 Exemplo:
 
 ```ts
-const SAFE_ID =
-  /^[A-Za-z0-9._:-]{1,128}$/;
+const SAFE_ID = /^[A-Za-z0-9._:-]{1,128}$/;
 ```
 
 Não usar diretamente uma string de vários megabytes enviada pelo cliente como identificador de log.
@@ -930,10 +921,7 @@ Criar uma instância compartilhada em `libs/observability`.
 Conceitualmente:
 
 ```ts
-export const {
-  ObserveModule,
-  ObserveInstrument,
-} = createObserveModule({
+export const { ObserveModule, ObserveInstrument } = createObserveModule({
   // trace id configuration
   // error source context
 });
@@ -1013,11 +1001,7 @@ Conceitualmente:
 
 ```ts
 @Module({
-  imports: [
-    ConfigModule,
-    ObservabilityModule,
-    HealthModule,
-  ],
+  imports: [ConfigModule, ObservabilityModule, HealthModule],
 })
 export class AppModule {}
 ```
@@ -1174,7 +1158,7 @@ ConfirmDeposit
 CompleteSession
 ```
 
-A proposta técnica prevê exatamente esse tipo de operação como atributo de observabilidade. 
+A proposta técnica prevê exatamente esse tipo de operação como atributo de observabilidade.
 
 ---
 
@@ -1263,7 +1247,7 @@ signedUrl
 presignedUrl
 ```
 
-A especificação determina explicitamente logs seguros e proíbe senhas, tokens, dados sensíveis completos, documentos completos e informações clínicas desnecessárias. 
+A especificação determina explicitamente logs seguros e proíbe senhas, tokens, dados sensíveis completos, documentos completos e informações clínicas desnecessárias.
 
 ---
 
@@ -1351,7 +1335,7 @@ noisy neighbor
 
 e problemas isolados por empresa.
 
-A proposta técnica inclui consumo por tenant como indicador de observabilidade. 
+A proposta técnica inclui consumo por tenant como indicador de observabilidade.
 
 Mas neste PR ele continua:
 
@@ -1522,7 +1506,7 @@ e não hardcoded.
 
 # 53. Cloudflare Free
 
-A documentação original já destaca o orçamento apertado de CPU dos Workers Free e recomenda manter a API orientada a I/O e evitar processamento pesado por request. 
+A documentação original já destaca o orçamento apertado de CPU dos Workers Free e recomenda manter a API orientada a I/O e evitar processamento pesado por request.
 
 Portanto observabilidade deve ser:
 
@@ -1587,7 +1571,7 @@ Negócio
 Continuidade
 ```
 
-incluindo latência, erros, conflitos, retries e consumo por empresa. 
+incluindo latência, erros, conflitos, retries e consumo por empresa.
 
 Mas não implementar antecipadamente.
 
@@ -2314,7 +2298,7 @@ export class DomainSomething
 
 somente para integrar com Observe.
 
-A arquitetura exige domínio desacoplado da infraestrutura/framework. 
+A arquitetura exige domínio desacoplado da infraestrutura/framework.
 
 # 83. Relatório final obrigatório
 
@@ -2394,4 +2378,4 @@ Só então eu abriria:
 
 > **PR-03 — Tenancy + Authentication Foundation**
 
-porque nesse momento identidade, membership e tenant poderão ser adicionados ao mesmo `ExecutionContext`, em vez de criarmos uma segunda infraestrutura paralela de contexto. Isso também respeita a arquitetura do projeto, na qual request/correlation ID pertencem à camada técnica/BFF enquanto autorização definitiva e tenant confiável pertencem à Business API. 
+porque nesse momento identidade, membership e tenant poderão ser adicionados ao mesmo `ExecutionContext`, em vez de criarmos uma segunda infraestrutura paralela de contexto. Isso também respeita a arquitetura do projeto, na qual request/correlation ID pertencem à camada técnica/BFF enquanto autorização definitiva e tenant confiável pertencem à Business API.

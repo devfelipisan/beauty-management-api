@@ -15,13 +15,7 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": [
-      "vitest/globals",
-      "node",
-      "@cloudflare/workers-types"
-    ],
-    "customConditions": [
-      "beauty"
-    ]
+    "types": ["vitest/globals", "node", "@cloudflare/workers-types"],
+    "customConditions": ["beauty"]
   }
 }

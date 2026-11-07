@@ -7,4 +7,3 @@
 - **Async:** outbox, notificações e projeções.
 
 Comunicação interna padrão: Service Bindings.
-

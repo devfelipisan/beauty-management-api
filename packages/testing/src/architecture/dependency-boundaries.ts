@@ -7,5 +7,7 @@ export const DOMAIN_FORBIDDEN_IMPORTS = [
 ] as const;
 
 export function containsForbiddenImport(content: string): boolean {
-  return DOMAIN_FORBIDDEN_IMPORTS.some((dependency) => content.includes(dependency));
+  return DOMAIN_FORBIDDEN_IMPORTS.some((dependency) =>
+    content.includes(dependency),
+  );
 }

@@ -4,7 +4,13 @@ describe('CustomersController', () => {
   let controller: CustomersController;
 
   beforeEach(() => {
-    controller = new CustomersController({} as never, {} as never, {} as never, {} as never, {} as never);
+    controller = new CustomersController(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
   });
 
   it('should be defined', () => {

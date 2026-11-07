@@ -157,7 +157,10 @@ export const operationsOpenApi = document(
         'Listar clientes',
         'customer.read',
         {
-          parameters: [query('limit',integer({minimum:1,maximum:100,default:20})),query('cursor')],
+          parameters: [
+            query('limit', integer({ minimum: 1, maximum: 100, default: 20 })),
+            query('cursor'),
+          ],
           response: catalogEnvelope(array(ref('Customer'))),
           description:
             'Páginas com cursor opaco vinculado ao contexto. O array data é preservado e page informa a continuação.',

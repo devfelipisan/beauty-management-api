@@ -422,7 +422,7 @@ Não criar dates diferentes sem motivo.
 Para RPC direto, o Worker de destino deve usar uma classe que estenda:
 
 ```ts
-WorkerEntrypoint
+WorkerEntrypoint;
 ```
 
 e expor métodos públicos. ([Cloudflare Docs][6])
@@ -459,8 +459,8 @@ Isto:
 
 ```ts
 export default {
-  fetch() {}
-}
+  fetch() {},
+};
 ```
 
 é adequado para HTTP.
@@ -813,10 +813,7 @@ Provar respostas corretas.
 Executar:
 
 ```ts
-await Promise.all([
-  requestTenantA(),
-  requestTenantB(),
-]);
+await Promise.all([requestTenantA(), requestTenantB()]);
 ```
 
 atravessando:
@@ -1198,10 +1195,7 @@ slot:
 # 56. Disparar duas tentativas simultâneas
 
 ```ts
-const [a, b] = await Promise.allSettled([
-  reserve(slot),
-  reserve(slot),
-]);
+const [a, b] = await Promise.allSettled([reserve(slot), reserve(slot)]);
 ```
 
 ---
@@ -2040,9 +2034,9 @@ Multi-Worker Runtime Harness
 
 O detalhe mais importante para a implementação deste PR é corrigir a forma de iniciar a topologia local: **use Operations como primeiro `-c` e Clinical/Billing como configs secundários no mesmo `wrangler dev`**. A documentação atual da Cloudflare recomenda justamente o comando multi-config como abordagem padrão para desenvolvimento de múltiplos Workers e Service Bindings. ([Cloudflare Docs][3]) Isso deve ser tentado e qualificado antes de criar qualquer workaround baseado em HTTP ou abandonar Service Bindings.
 
-[1]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/?utm_source=chatgpt.com "Service bindings - Runtime APIs · Cloudflare Workers docs"
-[2]: https://developers.cloudflare.com/workers/wrangler/configuration/?utm_source=chatgpt.com "Configuration - Wrangler · Cloudflare Workers docs"
-[3]: https://developers.cloudflare.com/workers/local-development/multi-workers/?utm_source=chatgpt.com "Developing with multiple Workers · Cloudflare Workers docs"
-[4]: https://developers.cloudflare.com/changelog/post/2025-09-23-wrangler-dev-multi-config-cross-command-support/?utm_source=chatgpt.com "Improved support for running multiple Workers with `wrangler dev` · Changelog"
-[5]: https://developers.cloudflare.com/workers/runtime-apis/rpc/?utm_source=chatgpt.com "Remote-procedure call (RPC) · Cloudflare Workers docs"
-[6]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/?utm_source=chatgpt.com "Service bindings - RPC (WorkerEntrypoint) · Cloudflare Workers docs"
+[1]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/?utm_source=chatgpt.com 'Service bindings - Runtime APIs · Cloudflare Workers docs'
+[2]: https://developers.cloudflare.com/workers/wrangler/configuration/?utm_source=chatgpt.com 'Configuration - Wrangler · Cloudflare Workers docs'
+[3]: https://developers.cloudflare.com/workers/local-development/multi-workers/?utm_source=chatgpt.com 'Developing with multiple Workers · Cloudflare Workers docs'
+[4]: https://developers.cloudflare.com/changelog/post/2025-09-23-wrangler-dev-multi-config-cross-command-support/?utm_source=chatgpt.com 'Improved support for running multiple Workers with `wrangler dev` · Changelog'
+[5]: https://developers.cloudflare.com/workers/runtime-apis/rpc/?utm_source=chatgpt.com 'Remote-procedure call (RPC) · Cloudflare Workers docs'
+[6]: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/?utm_source=chatgpt.com 'Service bindings - RPC (WorkerEntrypoint) · Cloudflare Workers docs'

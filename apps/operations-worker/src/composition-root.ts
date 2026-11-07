@@ -1,29 +1,71 @@
-import { ReadCatalogPage, type CatalogKind, type CatalogAuthority } from '@beauty/operations/queries/catalog-page';
+import {
+  ReadCatalogPage,
+  type CatalogKind,
+  type CatalogAuthority,
+} from '@beauty/operations/queries/catalog-page';
 import { D1CatalogReadRepository } from '@beauty/operations/queries/d1-catalog-read-repository';
 import { assertCatalogResponse } from '@beauty/contracts';
-export async function readCatalogPage(env: OperationsEnv, kind: CatalogKind, input: {limit?: string; cursor?: string}, authority: CatalogAuthority) {
-  const result = await new ReadCatalogPage(new D1CatalogReadRepository(env.D1_DATABASE)).execute(kind, input, authority);
+export async function readCatalogPage(
+  env: OperationsEnv,
+  kind: CatalogKind,
+  input: { limit?: string; cursor?: string },
+  authority: CatalogAuthority,
+) {
+  const result = await new ReadCatalogPage(
+    new D1CatalogReadRepository(env.D1_DATABASE),
+  ).execute(kind, input, authority);
   assertCatalogResponse(kind, result);
   return result;
 }
 import { outboxOwnership } from '@beauty/reliability/outbox/ownership';
-import { ListTenantAgenda, GetAgendaAppointment, agendaPeriod, type AgendaAuthority } from '@beauty/operations/modules/appointments/application/queries/list-tenant-agenda';
+import {
+  ListTenantAgenda,
+  GetAgendaAppointment,
+  agendaPeriod,
+  type AgendaAuthority,
+} from '@beauty/operations/modules/appointments/application/queries/list-tenant-agenda';
 import { D1AgendaReadRepository } from '@beauty/operations/modules/appointments/infrastructure/d1-agenda-read-repository';
 import { CheckProfessionalAvailabilityUseCase } from '@beauty/operations/modules/appointments/application/check-professional-availability.use-case';
 import type { AgendaQuery } from '@beauty/contracts';
 
-export function listAgenda(env: OperationsEnv, query: AgendaQuery, authority: AgendaAuthority) {
-  return new ListTenantAgenda(new D1AgendaReadRepository(env.D1_DATABASE)).execute(query, authority);
+export function listAgenda(
+  env: OperationsEnv,
+  query: AgendaQuery,
+  authority: AgendaAuthority,
+) {
+  return new ListTenantAgenda(
+    new D1AgendaReadRepository(env.D1_DATABASE),
+  ).execute(query, authority);
 }
-export function agendaDetails(env: OperationsEnv, id: string, authority: AgendaAuthority) {
-  return new GetAgendaAppointment(new D1AgendaReadRepository(env.D1_DATABASE)).execute(id, authority);
+export function agendaDetails(
+  env: OperationsEnv,
+  id: string,
+  authority: AgendaAuthority,
+) {
+  return new GetAgendaAppointment(
+    new D1AgendaReadRepository(env.D1_DATABASE),
+  ).execute(id, authority);
 }
-export async function checkAgendaInterval(env: OperationsEnv, professionalId: string, from: string, to: string, authority: AgendaAuthority) {
-  if (!authority.permissions.includes('agenda.read') || (authority.professionalId && authority.professionalId !== professionalId)) throw new Error('PERMISSION_DENIED');
+export async function checkAgendaInterval(
+  env: OperationsEnv,
+  professionalId: string,
+  from: string,
+  to: string,
+  authority: AgendaAuthority,
+) {
+  if (
+    !authority.permissions.includes('agenda.read') ||
+    (authority.professionalId && authority.professionalId !== professionalId)
+  )
+    throw new Error('PERMISSION_DENIED');
   const period = agendaPeriod(from, to);
-  const professional = await new D1ProfessionalRepository(env.D1_DATABASE).findById(authority.tenantId, professionalId);
+  const professional = await new D1ProfessionalRepository(
+    env.D1_DATABASE,
+  ).findById(authority.tenantId, professionalId);
   if (!professional) throw new Error('RESOURCE_NOT_FOUND');
-  return new CheckProfessionalAvailabilityUseCase(new D1AvailabilityRepository(env.D1_DATABASE)).execute(authority.tenantId, professionalId, period.from, period.to);
+  return new CheckProfessionalAvailabilityUseCase(
+    new D1AvailabilityRepository(env.D1_DATABASE),
+  ).execute(authority.tenantId, professionalId, period.from, period.to);
 }
 import {
   ProfileImages,

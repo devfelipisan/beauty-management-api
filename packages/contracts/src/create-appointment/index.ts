@@ -1,5 +1,22 @@
-export type AppointmentOrigin = 'RECEPTION' | 'LANDING_PAGE' | 'WHATSAPP' | 'RETURN' | 'CAMPAIGN' | 'REFERRAL' | 'MANUAL';
-export type AppointmentStatus = 'AWAITING_DEPOSIT' | 'AWAITING_CONFIRMATION' | 'CONFIRMED' | 'CHECKED_IN' | 'IN_PROGRESS' | 'COMPLETED' | 'RESCHEDULED' | 'CANCELED' | 'NO_SHOW' | 'EXPIRED';
+export type AppointmentOrigin =
+  | 'RECEPTION'
+  | 'LANDING_PAGE'
+  | 'WHATSAPP'
+  | 'RETURN'
+  | 'CAMPAIGN'
+  | 'REFERRAL'
+  | 'MANUAL';
+export type AppointmentStatus =
+  | 'AWAITING_DEPOSIT'
+  | 'AWAITING_CONFIRMATION'
+  | 'CONFIRMED'
+  | 'CHECKED_IN'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'RESCHEDULED'
+  | 'CANCELED'
+  | 'NO_SHOW'
+  | 'EXPIRED';
 
 export interface CreateAppointmentRequest {
   customerId: string;

@@ -31,4 +31,3 @@ local; `npm run workers:dry-run` empacota os três Workers sem publicar.
 
 O D1 continua compartilhado nesta etapa. Não recriar bancos nem aplicar
 migrations remotas como parte da reorganização dos workspaces.
-

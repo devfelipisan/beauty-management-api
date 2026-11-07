@@ -1,10 +1,15 @@
 import { authenticatedTestService } from './authenticated-test-service.js';
 import { env, exports } from 'cloudflare:workers';
-import { invokeClinicalAssessment, invokeCommercialTerms } from '../../apps/operations-worker/src/worker.js';
+import {
+  invokeClinicalAssessment,
+  invokeCommercialTerms,
+} from '../../apps/operations-worker/src/worker.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 beforeAll(async () => {
-  await env.D1_DATABASE.prepare("INSERT INTO tenants (id,legal_name,display_name,document,timezone,status,created_at,updated_at) VALUES ('tenant-dev-001','Runtime fixture','Runtime fixture','runtime-fixture','America/Sao_Paulo','ACTIVE','test','test')").run();
+  await env.D1_DATABASE.prepare(
+    "INSERT INTO tenants (id,legal_name,display_name,document,timezone,status,created_at,updated_at) VALUES ('tenant-dev-001','Runtime fixture','Runtime fixture','runtime-fixture','America/Sao_Paulo','ACTIVE','test','test')",
+  ).run();
 });
 
 const worker = exports.default as {
@@ -13,54 +18,113 @@ const worker = exports.default as {
 
 describe('Operations Worker physical runtime', () => {
   it('serves health through the workerd runtime', async () => {
-    const response = await worker.fetch(new Request('https://operations.test/health'));
+    const response = await worker.fetch(
+      new Request('https://operations.test/health'),
+    );
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ service: 'beauty-operations-worker' });
+    expect(await response.json()).toMatchObject({
+      service: 'beauty-operations-worker',
+    });
   });
 
   it('returns 404 for an unknown route', async () => {
-    const response = await worker.fetch(new Request('https://operations.test/not-found'));
+    const response = await worker.fetch(
+      new Request('https://operations.test/not-found'),
+    );
 
     expect(response.status).toBe(404);
   });
 
   it('reaches Clinical and Billing through real service bindings', async () => {
-    const clinical = await invokeClinicalAssessment({ ...env, CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE), BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE) } as never, {
-      tenantId: 'tenant-dev-001', customerId: 'customer-1', serviceId: 'service-1', professionalId: '',
-    });
-    const billing = await invokeCommercialTerms({ ...env, CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE), BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE) } as never, {
-      tenantId: 'tenant-dev-001', customerId: 'customer-1', serviceId: 'service-1', basePriceCents: 1000,
-    });
+    const clinical = await invokeClinicalAssessment(
+      {
+        ...env,
+        CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE),
+        BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE),
+      } as never,
+      {
+        tenantId: 'tenant-dev-001',
+        customerId: 'customer-1',
+        serviceId: 'service-1',
+        professionalId: '',
+      },
+    );
+    const billing = await invokeCommercialTerms(
+      {
+        ...env,
+        CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE),
+        BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE),
+      } as never,
+      {
+        tenantId: 'tenant-dev-001',
+        customerId: 'customer-1',
+        serviceId: 'service-1',
+        basePriceCents: 1000,
+      },
+    );
 
     expect(clinical).toMatchObject({ eligible: false });
     expect(billing).toMatchObject({ status: 'BLOCKED' });
   });
 
   it('reaches a normative READY commercial path through Billing RPC', async () => {
-    const billing = await invokeCommercialTerms({ ...env, CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE), BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE) } as never, {
-      tenantId: 'tenant-dev-001', customerId: 'customer-1', serviceId: 'service-1', basePriceCents: 20000,
-      commercialContext: { serviceId: 'service-1', category: 'GENERAL', allowsDiscount: false, depositMode: 'PERCENTAGE', depositPercentageBasisPoints: 2000 },
-    });
+    const billing = await invokeCommercialTerms(
+      {
+        ...env,
+        CLINICAL_SERVICE: authenticatedTestService(env.CLINICAL_SERVICE),
+        BILLING_SERVICE: authenticatedTestService(env.BILLING_SERVICE),
+      } as never,
+      {
+        tenantId: 'tenant-dev-001',
+        customerId: 'customer-1',
+        serviceId: 'service-1',
+        basePriceCents: 20000,
+        commercialContext: {
+          serviceId: 'service-1',
+          category: 'GENERAL',
+          allowsDiscount: false,
+          depositMode: 'PERCENTAGE',
+          depositPercentageBasisPoints: 2000,
+        },
+      },
+    );
 
-    expect(billing).toMatchObject({ status: 'READY', discountCents: 0, finalPriceCents: 20000, depositRequired: true, depositCents: 4000 });
+    expect(billing).toMatchObject({
+      status: 'READY',
+      discountCents: 0,
+      finalPriceCents: 20000,
+      depositRequired: true,
+      depositCents: 4000,
+    });
   });
 
   it('preserves request and correlation context across concurrent requests', async () => {
-    const responses = await Promise.all(Array.from({ length: 100 }, (_, index) => {
-      const requestId = `context-${index}`;
-      const correlationId = `correlation-${index}`;
-      return worker.fetch(new Request('https://operations.test/tenants/tenant-dev-001/customers', {
-        headers: {
-          authorization: 'Bearer actor-dev-admin',
-          'x-request-id': requestId,
-          'x-correlation-id': correlationId,
-        },
-      })).then((response) => ({ response, requestId, correlationId }));
-    }));
+    const responses = await Promise.all(
+      Array.from({ length: 100 }, (_, index) => {
+        const requestId = `context-${index}`;
+        const correlationId = `correlation-${index}`;
+        return worker
+          .fetch(
+            new Request(
+              'https://operations.test/tenants/tenant-dev-001/customers',
+              {
+                headers: {
+                  authorization: 'Bearer actor-dev-admin',
+                  'x-request-id': requestId,
+                  'x-correlation-id': correlationId,
+                },
+              },
+            ),
+          )
+          .then((response) => ({ response, requestId, correlationId }));
+      }),
+    );
 
-    const leaks = responses.filter(({ response, requestId, correlationId }) =>
-      response.headers.get('x-request-id') !== requestId || response.headers.get('x-correlation-id') !== correlationId,
+    const leaks = responses.filter(
+      ({ response, requestId, correlationId }) =>
+        response.headers.get('x-request-id') !== requestId ||
+        response.headers.get('x-correlation-id') !== correlationId,
     );
     expect(leaks).toHaveLength(0);
   });

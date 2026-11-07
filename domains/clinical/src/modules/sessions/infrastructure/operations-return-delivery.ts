@@ -1,4 +1,33 @@
 import type { ReturnRecommendedEvent } from '@beauty/contracts';
 import type { OutboxEvent } from '@beauty/reliability/outbox/outbox-event';
-import type { DeliveryPort, DeliveryResult } from '@beauty/reliability/outbox/outbox-delivery';
-export class OperationsReturnDelivery implements DeliveryPort {constructor(private readonly operations:{applyReturnRecommended(input:ReturnRecommendedEvent & {eventId:string}):Promise<{applied:boolean}>}){}async deliver(event:OutboxEvent):Promise<DeliveryResult>{if(event.type!=='ReturnRecommended')return {kind:'PERMANENT',errorCode:'UNSUPPORTED_EVENT_TYPE'};try{const p=event.payload as any;const result=await this.operations.applyReturnRecommended({...p,eventId:event.id,tenantId:event.tenantId,correlationId:event.correlationId});return result.applied?{kind:'DELIVERED'}:{kind:'RETRYABLE',errorCode:'DESTINATION_REJECTED'};}catch{return {kind:'RETRYABLE',errorCode:'DESTINATION_UNAVAILABLE'};}}}
+import type {
+  DeliveryPort,
+  DeliveryResult,
+} from '@beauty/reliability/outbox/outbox-delivery';
+export class OperationsReturnDelivery implements DeliveryPort {
+  constructor(
+    private readonly operations: {
+      applyReturnRecommended(
+        input: ReturnRecommendedEvent & { eventId: string },
+      ): Promise<{ applied: boolean }>;
+    },
+  ) {}
+  async deliver(event: OutboxEvent): Promise<DeliveryResult> {
+    if (event.type !== 'ReturnRecommended')
+      return { kind: 'PERMANENT', errorCode: 'UNSUPPORTED_EVENT_TYPE' };
+    try {
+      const p = event.payload as any;
+      const result = await this.operations.applyReturnRecommended({
+        ...p,
+        eventId: event.id,
+        tenantId: event.tenantId,
+        correlationId: event.correlationId,
+      });
+      return result.applied
+        ? { kind: 'DELIVERED' }
+        : { kind: 'RETRYABLE', errorCode: 'DESTINATION_REJECTED' };
+    } catch {
+      return { kind: 'RETRYABLE', errorCode: 'DESTINATION_UNAVAILABLE' };
+    }
+  }
+}

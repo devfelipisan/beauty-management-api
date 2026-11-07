@@ -9,7 +9,7 @@ Customer Restrictions
 Assessment
 ```
 
-A documentação canônica já fornece regras suficientes para avançar significativamente: toda empresa precisa de licença; os estados de licença são definidos; licença suspensa não pode criar novos agendamentos; plano pode impor limites; Customer pode ser bloqueado para novos atendimentos; Service pode exigir avaliação; e avaliações possuem resultados `apto`, `apto com restrições` e `não apto`.  
+A documentação canônica já fornece regras suficientes para avançar significativamente: toda empresa precisa de licença; os estados de licença são definidos; licença suspensa não pode criar novos agendamentos; plano pode impor limites; Customer pode ser bloqueado para novos atendimentos; Service pode exigir avaliação; e avaliações possuem resultados `apto`, `apto com restrições` e `não apto`.
 
 # PR-11 — Appointment Admission Dependencies
 
@@ -338,14 +338,14 @@ nest g class \
 
 A documentação estabelece que a licença está vinculada a:
 
-* empresa;
-* plano;
-* assinatura;
-* início;
-* vencimento;
-* status;
-* limites;
-* recursos habilitados. 
+- empresa;
+- plano;
+- assinatura;
+- início;
+- vencimento;
+- status;
+- limites;
+- recursos habilitados.
 
 Não omitir essa relação conceitual.
 
@@ -556,17 +556,17 @@ Aqui existe uma ambiguidade relevante.
 
 A documentação diz que o plano pode limitar:
 
-* usuários;
-* profissionais;
-* unidades;
-* armazenamento;
-* quantidade mensal de atendimentos;
-* recursos comerciais;
-* landing page;
-* relatórios;
-* integrações;
-* fotos;
-* equipamentos.
+- usuários;
+- profissionais;
+- unidades;
+- armazenamento;
+- quantidade mensal de atendimentos;
+- recursos comerciais;
+- landing page;
+- relatórios;
+- integrações;
+- fotos;
+- equipamentos.
 
 Mas ela **não diz explicitamente** que “quantidade mensal de atendimentos” deve ser consumida no instante da criação do Appointment.
 
@@ -616,7 +616,7 @@ o plano possui a capability necessária
 para criar novos agendamentos?
 ```
 
-Isso pode ser modelado como feature/resource habilitado na License, pois RN-LIC-001 já determina que a licença carrega `recursos habilitados`. 
+Isso pode ser modelado como feature/resource habilitado na License, pois RN-LIC-001 já determina que a licença carrega `recursos habilitados`.
 
 ---
 
@@ -735,7 +735,7 @@ A documentação permite explicitamente que um Customer seja:
 bloqueado para novos atendimentos
 ```
 
-sem que isso signifique `INACTIVE`. 
+sem que isso signifique `INACTIVE`.
 
 Portanto o modelo do PR-05/06 estava correto ao separar lifecycle de restrictions.
 
@@ -766,7 +766,7 @@ se a implementação mais simples atender.
 Eu usaria uma propriedade operacional explícita:
 
 ```ts
-blockedForNewAppointments: boolean
+blockedForNewAppointments: boolean;
 ```
 
 em vez de criar imediatamente:
@@ -856,7 +856,7 @@ faltas recorrentes
 necessidade de nova avaliação
 ```
 
-como alertas. 
+como alertas.
 
 Não significa:
 
@@ -989,8 +989,6 @@ APTO_COM_RESTRICOES
 NAO_APTO
 ```
 
-
-
 Mapear tecnicamente, por exemplo:
 
 ```text
@@ -1022,7 +1020,7 @@ performedAt
 validUntil?
 ```
 
-A documentação exige profissional, data, hora, empresa e validade quando aplicável. 
+A documentação exige profissional, data, hora, empresa e validade quando aplicável.
 
 ---
 
@@ -1039,8 +1037,6 @@ sensibilidade
 condição da pele
 observações
 ```
-
-
 
 o objetivo do PR-11 é **eligibility de Appointment**.
 
@@ -1069,8 +1065,6 @@ A regra diz apenas:
 ```text
 validade, quando aplicável
 ```
-
-
 
 Portanto:
 
@@ -1112,7 +1106,7 @@ Service
 → exige avaliação
 ```
 
-como configuração técnica. 
+como configuração técnica.
 
 Portanto o Service do Operations pode legitimamente receber:
 
@@ -1184,7 +1178,7 @@ NAO_APTO
 BLOCKED
 ```
 
-Cliente não apto não pode iniciar o serviço sem nova liberação. 
+Cliente não apto não pode iniciar o serviço sem nova liberação.
 
 Para `Appointment`, como RN-AGE exige avaliação válida quando obrigatória, tratar esse resultado como blocker de admission.
 
@@ -1566,7 +1560,7 @@ Portanto índice/constraint tenant-aware.
 
 Idealmente uma única licença operacional corrente por tenant, mas não crie constraint de histórico sem analisar requisitos de contratação/licença.
 
-RN-GER-005 impede duplicar licença para a mesma contratação. 
+RN-GER-005 impede duplicar licença para a mesma contratação.
 
 ---
 
@@ -1699,7 +1693,7 @@ Não misturar preço com eligibility se não houver necessidade.
 
 # 74. Plan capability também é admission
 
-Esse sim pertence ao Eligibility porque RN-AGE-001 exige limites do plano antes da criação. 
+Esse sim pertence ao Eligibility porque RN-AGE-001 exige limites do plano antes da criação.
 
 ---
 
@@ -1946,7 +1940,7 @@ check license
 
 Toda verificação de Appointment criaria write amplification.
 
-Quando License for ativada/suspensa/reativada, aí sim Audit é obrigatório; RN-LIC-005 explicitamente exige auditoria na reativação. 
+Quando License for ativada/suspensa/reativada, aí sim Audit é obrigatório; RN-LIC-005 explicitamente exige auditoria na reativação.
 
 Esses comandos administrativos podem ficar para PR de Platform Administration.
 
@@ -2623,6 +2617,6 @@ COMMIT
 201 Created
 ```
 
-Isso também permitirá preencher todos os campos obrigatórios de `RN-AGE-002`, incluindo preço-base, desconto, preço final, sinal, origem e status, sem colocar lógica financeira no Operations. 
+Isso também permitirá preencher todos os campos obrigatórios de `RN-AGE-002`, incluindo preço-base, desconto, preço final, sinal, origem e status, sem colocar lógica financeira no Operations.
 
 **Portanto, com o PR-10 concluído, o PR-11 deve eliminar os quatro adapters de admissão ainda indisponíveis e materializar o `clinical-worker`. O `POST /appointments` só passa a ser legítimo no PR-12, quando `Scheduling + Reliability + Eligibility + CommercialTerms` estiverem todos baseados em autoridades reais e testadas.**

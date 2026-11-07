@@ -8,13 +8,11 @@ function fixture() {
   const repository: AgendaReadRepository = {
     list: vi.fn().mockResolvedValue([]),
     summarize: vi.fn().mockResolvedValue({}),
-    tenant: vi
-      .fn()
-      .mockResolvedValue({
-        id: 'tenant',
-        displayName: 'Tenant',
-        timezone: 'America/Sao_Paulo',
-      }),
+    tenant: vi.fn().mockResolvedValue({
+      id: 'tenant',
+      displayName: 'Tenant',
+      timezone: 'America/Sao_Paulo',
+    }),
     find: vi.fn().mockResolvedValue(null),
   };
   const authority = {

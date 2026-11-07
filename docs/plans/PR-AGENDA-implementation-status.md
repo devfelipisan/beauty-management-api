@@ -20,19 +20,19 @@ permissão e contratos. Este documento não as aprova nem cria grants.
 
 ## Inventário confirmado
 
-| Área | Evidência e situação |
-| --- | --- |
-| Identidade | `WorkerSecurity` compõe JWT/JWKS ou identidade mock restrita ao build local/teste |
-| Membership | `D1TenantMembershipProvider.findActiveMembership` agrega grants de todos os papéis ativos |
-| Contexto | `/v1/me/tenants` e `/v1/me/context` já existem; contexto valida seletores, mas retorna grants agregados |
-| HTTP | Operations, Billing e Clinical consultam membership; Nest utiliza `TenantGuard` |
-| RPC | `userRpcMetadata`, `bindRpcAuthority` e `authorizeWorkerRpc` compartilham a propagação V1; o contrato também existe em `@beauty/contracts` |
-| Fixture RPC | O caminho local simplifica autorização; não constitui prova de equivalência com produção |
-| Persistência | `database/d1/migrations` contém a cadeia D1; `0026_identity_rbac.sql` define identidade, memberships, roles e grants |
-| Agenda | `appointments` e índices por tenant/tempo e profissional/tempo já existem |
-| Ocupação | Consulta de disponibilidade e escritas excluem somente CANCELED e EXPIRED; política excluía também RESCHEDULED |
-| Disponibilidade | Nest possui GET de disponibilidade; caso de uso verifica intervalo, sem jornada e com bloqueios vazios |
-| Web | Checkout irmão `beauty-management-web` existe e contém `src/components/agenda/agenda-page.tsx`; não foi alterado |
+| Área            | Evidência e situação                                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Identidade      | `WorkerSecurity` compõe JWT/JWKS ou identidade mock restrita ao build local/teste                                                          |
+| Membership      | `D1TenantMembershipProvider.findActiveMembership` agrega grants de todos os papéis ativos                                                  |
+| Contexto        | `/v1/me/tenants` e `/v1/me/context` já existem; contexto valida seletores, mas retorna grants agregados                                    |
+| HTTP            | Operations, Billing e Clinical consultam membership; Nest utiliza `TenantGuard`                                                            |
+| RPC             | `userRpcMetadata`, `bindRpcAuthority` e `authorizeWorkerRpc` compartilham a propagação V1; o contrato também existe em `@beauty/contracts` |
+| Fixture RPC     | O caminho local simplifica autorização; não constitui prova de equivalência com produção                                                   |
+| Persistência    | `database/d1/migrations` contém a cadeia D1; `0026_identity_rbac.sql` define identidade, memberships, roles e grants                       |
+| Agenda          | `appointments` e índices por tenant/tempo e profissional/tempo já existem                                                                  |
+| Ocupação        | Consulta de disponibilidade e escritas excluem somente CANCELED e EXPIRED; política excluía também RESCHEDULED                             |
+| Disponibilidade | Nest possui GET de disponibilidade; caso de uso verifica intervalo, sem jornada e com bloqueios vazios                                     |
+| Web             | Checkout irmão `beauty-management-web` existe e contém `src/components/agenda/agenda-page.tsx`; não foi alterado                           |
 
 Inventário HTTP inclui criação, confirmação, check-in, reagendamento,
 cancelamento e ausência. A nova agenda e os detalhes ainda não foram expostos.
@@ -85,13 +85,13 @@ Não há migration ou procedimento de deploy nesta alteração.
 Responsável pelas decisões funcionais: solicitante/proprietário do produto.
 Status de todas as linhas abaixo: pendente, sem aprovação presumida.
 
-| Decisão | Etapas dependentes |
-| --- | --- |
+| Decisão                                                                | Etapas dependentes         |
+| ---------------------------------------------------------------------- | -------------------------- |
 | Aprovar agenda.read e cobertura de listagem, resumo e detalhes mínimos | PR-03, PR-04, PR-05, PR-07 |
-| Definir permissão da verificação de conflito | PR-06 |
-| Aprovar campos públicos de listagem/detalhes e catálogo separado | PR-03 e consumidores |
-| Aprovar resumo com os mesmos filtros, sem cursor/limite | PR-03, PR-04 |
-| Definir limite temporal, tamanho padrão e máximo de página | PR-03, PR-04, PR-05 |
+| Definir permissão da verificação de conflito                           | PR-06                      |
+| Aprovar campos públicos de listagem/detalhes e catálogo separado       | PR-03 e consumidores       |
+| Aprovar resumo com os mesmos filtros, sem cursor/limite                | PR-03, PR-04               |
+| Definir limite temporal, tamanho padrão e máximo de página             | PR-03, PR-04, PR-05        |
 
 Sem essas decisões, não registrar a agenda básica como implementada. As propostas
 de contrato mantêm UTC, intervalo [from,to), sobreposição e cursor composto por
@@ -106,11 +106,12 @@ antes de executar verificações: executáveis oxlint/vitest ausentes.
 O diretório node_modules existia, mas não fornecia as ferramentas necessárias.
 
 O Node disponível é v24.18.0; `.nvmrc` exige 24.22.1 e package.json exige
->=24.22.1 <25. PowerShell bloqueia npm.ps1; npm.cmd permite invocar npm sem mudar
-a política do sistema. A primeira restauração de dependências falhou com EACCES
-no download do registry npm e na escrita do cache externo. Uma segunda tentativa
-foi solicitada com execução ampliada; consultar o resultado final informado na
-entrega antes de considerar qualquer gate aprovado.
+
+> =24.22.1 <25. PowerShell bloqueia npm.ps1; npm.cmd permite invocar npm sem mudar
+> a política do sistema. A primeira restauração de dependências falhou com EACCES
+> no download do registry npm e na escrita do cache externo. Uma segunda tentativa
+> foi solicitada com execução ampliada; consultar o resultado final informado na
+> entrega antes de considerar qualquer gate aprovado.
 
 ## Sequência restante
 

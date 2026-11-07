@@ -109,7 +109,13 @@ describe('Worker security composition', () => {
       env,
     );
     expect(membership).toHaveBeenLastCalledWith('actor', 'tenant');
-    membership.mockResolvedValueOnce({ tenantId: 'other', actorId: 'actor', active: true, roles: ['reception'], permissions: [] });
+    membership.mockResolvedValueOnce({
+      tenantId: 'other',
+      actorId: 'actor',
+      active: true,
+      roles: ['reception'],
+      permissions: [],
+    });
     await requireHttpAuthority(
       new Request('https://api.test/v1/me/context', {
         headers: { ...headers, 'x-tenant-id': 'other' },

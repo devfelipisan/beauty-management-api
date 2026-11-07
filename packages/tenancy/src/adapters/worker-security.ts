@@ -63,21 +63,29 @@ export async function requireHttpAuthority(
     throw new Error('TENANT_ACCESS_DENIED');
 }
 
-export function workerSecurity(env: WorkerSecurityEnv, request?: Request): Security {
+export function workerSecurity(
+  env: WorkerSecurityEnv,
+  request?: Request,
+): Security {
   if (request) {
     const security = workerSecurity(env);
     return {
       identity: security.identity,
       membership: {
         async findActiveMembership(actorId, tenantId) {
-          const membership = await security.membership.findActiveMembership(actorId, tenantId);
+          const membership = await security.membership.findActiveMembership(
+            actorId,
+            tenantId,
+          );
           if (!membership) return null;
           const selectedTenant = request.headers.get('x-tenant-id');
-          if (selectedTenant && selectedTenant !== tenantId) throw new Error('TENANT_ACCESS_DENIED');
+          if (selectedTenant && selectedTenant !== tenantId)
+            throw new Error('TENANT_ACCESS_DENIED');
           return resolveWorkspace(membership, {
             tenantId,
             role: request.headers.get('x-workspace-role') ?? undefined,
-            professionalId: request.headers.get('x-professional-id') ?? undefined,
+            professionalId:
+              request.headers.get('x-professional-id') ?? undefined,
           });
         },
       },

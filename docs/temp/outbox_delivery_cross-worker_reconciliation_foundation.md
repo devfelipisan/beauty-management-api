@@ -449,7 +449,7 @@ define ownership.
 Proibido:
 
 ```ts
-Map<string, Mutex>
+Map<string, Mutex>;
 ```
 
 A arquitetura já provou que garantias distribuídas devem estar na persistência.
@@ -1294,7 +1294,7 @@ O dispatcher nunca carrega tudo.
 Evitar:
 
 ```ts
-Promise.all(events.map(deliver))
+Promise.all(events.map(deliver));
 ```
 
 para milhares de eventos.

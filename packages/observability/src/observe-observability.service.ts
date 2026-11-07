@@ -26,9 +26,11 @@ export class ObserveObservabilityService implements ObservabilityPort {
 
   setAttribute(key: string, value: string | number | boolean): void {
     try {
-      (this.tracer as unknown as {
-        setAttribute(key: string, value: string | number | boolean): void;
-      }).setAttribute(key, value);
+      (
+        this.tracer as unknown as {
+          setAttribute(key: string, value: string | number | boolean): void;
+        }
+      ).setAttribute(key, value);
     } catch {
       // Telemetry failure must not break the request.
     }
