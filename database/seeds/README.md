@@ -112,3 +112,13 @@ está vinculado a mock-professional-ana no tenant principal. Os grants são
 fixtures explícitas, não defaults do produto nem concessões de produção.
 O admin preserva as permissões do antigo provider mock e acrescenta agenda.read.
 Workers continuam verificando identidade, função e escopo em cada operação.
+
+## Perfil demo persistente — somente D1 local
+
+Para popular a agenda navegável (sem fabricar dados transacionais por SQL),
+utilize o complemento descrito em [DEMO.md](DEMO.md). Após `npm run db:seed`,
+inicie `npm run dev:workers` e, em outro terminal, execute
+`node scripts/seed-demo-local.mjs --preview` ou `--apply`.
+O `--apply` exige Operations local e não funciona em CI nem contra D1 remoto.
+Os fluxos são repetíveis por chave de idempotência, preservando permissões,
+auditoria e isolamento multiempresa.
