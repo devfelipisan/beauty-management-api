@@ -5,8 +5,14 @@ import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-await access(resolve(root, '../beauty-management-web/src/server/bff/worker-transport.ts'));
-const spec = resolve(root, 'test/workers', `agenda-bff-local-${randomUUID()}.spec.ts`);
+await access(
+  resolve(root, '../beauty-management-web/src/server/bff/worker-transport.ts'),
+);
+const spec = resolve(
+  root,
+  'test/workers',
+  `agenda-bff-local-${randomUUID()}.spec.ts`,
+);
 const source = `
 import { env, exports } from 'cloudflare:workers';
 import { beforeAll, expect, it } from 'vitest';
@@ -46,10 +52,17 @@ it('uses current BFF transport with private Operations, D1 and tenant isolation'
 `;
 await writeFile(spec, source, { flag: 'wx' });
 try {
-  const result = spawnSync(process.execPath, [
-    resolve(root, 'node_modules/vitest/vitest.mjs'),
-    'run', '--config', resolve(root, 'vitest.config.workers.mjs'), spec,
-  ], { cwd: root, stdio: 'inherit', env: process.env });
+  const result = spawnSync(
+    process.execPath,
+    [
+      resolve(root, 'node_modules/vitest/vitest.mjs'),
+      'run',
+      '--config',
+      resolve(root, 'vitest.config.workers.mjs'),
+      spec,
+    ],
+    { cwd: root, stdio: 'inherit', env: process.env },
+  );
   if (result.error) throw result.error;
   process.exitCode = result.status ?? 1;
 } finally {

@@ -32,18 +32,6 @@ jobs:
       - run: npm ci
       - name: Verify Worker source exports before builds
         run: npm run test:workers -- test/workers/create-appointment.spec.ts test/workers/tenant-isolation.spec.ts test/workers/service-binding-caller.spec.ts
-      - name: Temporary Prettier export for demo-seed review
-        if: github.event_name == 'pull_request' && github.head_ref == 'test/demo-d1-realistic-data'
-        run: |
-          node node_modules/prettier/bin/prettier.cjs --write database/seeds/demo.mjs scripts/seed-demo-local.mjs scripts/seed-demo-local.spec.ts test/workers/demo-seed.spec.ts scripts/qualify-agenda-bff.mjs database/seeds/DEMO.md database/seeds/README.md
-          node --input-type=module - <<'NODE'
-          import { readFileSync } from 'node:fs';
-          for (const path of ['database/seeds/demo.mjs','scripts/seed-demo-local.mjs','scripts/seed-demo-local.spec.ts','test/workers/demo-seed.spec.ts','scripts/qualify-agenda-bff.mjs','database/seeds/DEMO.md','database/seeds/README.md']) {
-            console.log('PR65_FORMAT_START:' + path);
-            console.log(readFileSync(path).toString('base64'));
-            console.log('PR65_FORMAT_END:' + path);
-          }
-          NODE
       - name: Check formatting of changed files
         id: changes
         env:

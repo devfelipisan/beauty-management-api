@@ -3,12 +3,32 @@ import { buildDevelopmentSeed, primaryTenant } from './development.mjs';
 // Synthetic demonstration catalogue. Never populate transactional tables here.
 // Appointment mutations must pass through Operations and its idempotency gates.
 const firstNames = [
-  'Alice', 'Beatriz', 'Carolina', 'Daniela', 'Elisa', 'Fabiana',
-  'Gabriela', 'Isabela', 'Júlia', 'Larissa', 'Marina', 'Natália',
+  'Alice',
+  'Beatriz',
+  'Carolina',
+  'Daniela',
+  'Elisa',
+  'Fabiana',
+  'Gabriela',
+  'Isabela',
+  'Júlia',
+  'Larissa',
+  'Marina',
+  'Natália',
 ];
 const lastNames = [
-  'Andrade', 'Barbosa', 'Castro', 'Duarte', 'Ferreira', 'Gomes',
-  'Lopes', 'Moraes', 'Nogueira', 'Pereira', 'Ramos', 'Teixeira',
+  'Andrade',
+  'Barbosa',
+  'Castro',
+  'Duarte',
+  'Ferreira',
+  'Gomes',
+  'Lopes',
+  'Moraes',
+  'Nogueira',
+  'Pereira',
+  'Ramos',
+  'Teixeira',
 ];
 const relationshipProfiles = ['NEW', 'REGULAR', 'LOYAL', 'OLD'];
 const demoProfessionals = [
@@ -39,12 +59,16 @@ function insert(table, row, conflict = ['id']) {
 }
 
 function utcDate(referenceDate, dayOffset, hour = 12) {
-  const instant = new Date(Date.parse(`${referenceDate}T00:00:00.000Z`) + dayOffset * 86_400_000);
+  const instant = new Date(
+    Date.parse(`${referenceDate}T00:00:00.000Z`) + dayOffset * 86_400_000,
+  );
   instant.setUTCHours(hour, 0, 0, 0);
   return instant.toISOString();
 }
 
-export function buildDemoDataset(referenceDate = new Date().toISOString().slice(0, 10)) {
+export function buildDemoDataset(
+  referenceDate = new Date().toISOString().slice(0, 10),
+) {
   // Reuse the authoritative seed validation instead of accepting arbitrary SQL dates.
   buildDevelopmentSeed(referenceDate);
   const createdAt = utcDate(referenceDate, 0, 0);
@@ -61,17 +85,20 @@ export function buildDemoDataset(referenceDate = new Date().toISOString().slice(
     const suffix = String(i + 1).padStart(3, '0');
     const id = `demo-customer-${suffix}`;
     customerIds.push(id);
-    statements.push(insert('customers', {
-      id,
-      tenant_id: primaryTenant,
-      full_name: `${firstNames[i % firstNames.length]} ${lastNames[Math.floor(i / firstNames.length)]} (sintético)`,
-      email: `demo.cliente.${suffix}@example.test`,
-      status: 'ACTIVE',
-      relationship_profile: relationshipProfiles[i % relationshipProfiles.length],
-      blocked_for_new_appointments: 0,
-      created_at: createdAt,
-      updated_at: createdAt,
-    }));
+    statements.push(
+      insert('customers', {
+        id,
+        tenant_id: primaryTenant,
+        full_name: `${firstNames[i % firstNames.length]} ${lastNames[Math.floor(i / firstNames.length)]} (sintético)`,
+        email: `demo.cliente.${suffix}@example.test`,
+        status: 'ACTIVE',
+        relationship_profile:
+          relationshipProfiles[i % relationshipProfiles.length],
+        blocked_for_new_appointments: 0,
+        created_at: createdAt,
+        updated_at: createdAt,
+      }),
+    );
   }
 
   const associations = [];
@@ -83,48 +110,64 @@ export function buildDemoDataset(referenceDate = new Date().toISOString().slice(
   for (const [suffix, name] of demoProfessionals) {
     const id = `demo-professional-${suffix}`;
     professionalIds.push(id);
-    statements.push(insert('professionals', {
-      id,
-      tenant_id: primaryTenant,
-      name: `${name} (sintético)`,
-      status: 'ACTIVE',
-      public_visible: 1,
-      created_at: createdAt,
-      updated_at: createdAt,
-    }));
-    for (const service of demoServices) {
-      associations.push(insert('professional_services', {
+    statements.push(
+      insert('professionals', {
+        id,
         tenant_id: primaryTenant,
-        professional_id: id,
-        service_id: `demo-service-${service[0]}`,
+        name: `${name} (sintético)`,
+        status: 'ACTIVE',
+        public_visible: 1,
         created_at: createdAt,
-      }, ['tenant_id', 'professional_id', 'service_id']));
+        updated_at: createdAt,
+      }),
+    );
+    for (const service of demoServices) {
+      associations.push(
+        insert(
+          'professional_services',
+          {
+            tenant_id: primaryTenant,
+            professional_id: id,
+            service_id: `demo-service-${service[0]}`,
+            created_at: createdAt,
+          },
+          ['tenant_id', 'professional_id', 'service_id'],
+        ),
+      );
     }
-    associations.push(insert('professional_services', {
-      tenant_id: primaryTenant,
-      professional_id: id,
-      service_id: 'mock-service-consulta',
-      created_at: createdAt,
-    }, ['tenant_id', 'professional_id', 'service_id']));
+    associations.push(
+      insert(
+        'professional_services',
+        {
+          tenant_id: primaryTenant,
+          professional_id: id,
+          service_id: 'mock-service-consulta',
+          created_at: createdAt,
+        },
+        ['tenant_id', 'professional_id', 'service_id'],
+      ),
+    );
   }
   for (const [suffix, name, duration, price] of demoServices) {
-    statements.push(insert('services', {
-      id: `demo-service-${suffix}`,
-      tenant_id: primaryTenant,
-      name,
-      category: 'GENERAL',
-      duration_minutes: duration,
-      base_price_cents: price,
-      status: 'ACTIVE',
-      requires_assessment: 0,
-      allows_discount: 0,
-      requires_equipment: 0,
-      requires_photography: 0,
-      has_technical_form: 0,
-      deposit_mode: 'NOT_REQUIRED',
-      created_at: createdAt,
-      updated_at: createdAt,
-    }));
+    statements.push(
+      insert('services', {
+        id: `demo-service-${suffix}`,
+        tenant_id: primaryTenant,
+        name,
+        category: 'GENERAL',
+        duration_minutes: duration,
+        base_price_cents: price,
+        status: 'ACTIVE',
+        requires_assessment: 0,
+        allows_discount: 0,
+        requires_equipment: 0,
+        requires_photography: 0,
+        has_technical_form: 0,
+        deposit_mode: 'NOT_REQUIRED',
+        created_at: createdAt,
+        updated_at: createdAt,
+      }),
+    );
   }
   // Insert services before their links so future FK enforcement stays valid.
   statements.push(...associations);
@@ -132,7 +175,8 @@ export function buildDemoDataset(referenceDate = new Date().toISOString().slice(
   for (let day = 1; day <= 30; day++) {
     for (let slot = 0; slot < 6; slot++) {
       const index = (day - 1) * 6 + slot;
-      const professionalId = professionalIds[(day + slot) % professionalIds.length];
+      const professionalId =
+        professionalIds[(day + slot) % professionalIds.length];
       const serviceId = professionalId.startsWith('demo-')
         ? `demo-service-${demoServices[(day + slot) % demoServices.length][0]}`
         : 'mock-service-consulta';
@@ -160,7 +204,13 @@ export function buildDemoDataset(referenceDate = new Date().toISOString().slice(
       localOnly: true,
       referenceDate,
       tenantId: primaryTenant,
-      totals: { tenants: 2, customers: 60, professionals: 8, services: 15, appointments: 180 },
+      totals: {
+        tenants: 2,
+        customers: 60,
+        professionals: 8,
+        services: 15,
+        appointments: 180,
+      },
       extraCatalogue: { customers: 46, professionals: 4, services: 8 },
       plannedStatuses: { awaitingConfirmation: 60, confirmed: 120 },
       appointments,

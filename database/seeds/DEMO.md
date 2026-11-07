@@ -37,13 +37,13 @@ original, e grava `.local/mock-data/demo-execution.json` após verificação.
 
 ## Conteúdo adicional
 
-| Entidade | Base existente | Adições | Total global previsto |
-| --- | ---: | ---: | ---: |
-| Empresas | 2 | 0 | 2 |
-| Clientes | 14 | 46 | 60 |
-| Profissionais | 4 | 4 | 8 |
-| Serviços | 7 | 8 | 15 |
-| Agendamentos | 0 no seed base | 180 | 180 |
+| Entidade      | Base existente | Adições | Total global previsto |
+| ------------- | -------------: | ------: | --------------------: |
+| Empresas      |              2 |       0 |                     2 |
+| Clientes      |             14 |      46 |                    60 |
+| Profissionais |              4 |       4 |                     8 |
+| Serviços      |              7 |       8 |                    15 |
+| Agendamentos  | 0 no seed base |     180 |                   180 |
 
 O calendário gera seis agendamentos por dia durante 30 dias a partir da data
 âncora do seed, com horário em UTC consistente com o fuso da empresa
