@@ -1,3 +1,4 @@
+import { selectorRead } from './selector-read.js';
 import { catalogRoute } from './catalog-routes.js';
 import { dispatchEligibleOutbox } from './outbox-coordinator.js';
 import { agendaRoute } from './agenda-routes.js';
@@ -603,6 +604,13 @@ export default class OperationsWorker extends WorkerEntrypoint<
         userRpcMetadata(args[0]).rpcAuthority,
       ),
     ).packageAssignmentRoute(...args);
+  }
+  async readSelectedWorkspace(request: Request): Promise<Response> {
+    return selectorRead(
+      request,
+      executionEnv(this.env),
+      this.ctx.props?.caller,
+    );
   }
   async fetch(request: any): Promise<any> {
     return observedHttpRequest(

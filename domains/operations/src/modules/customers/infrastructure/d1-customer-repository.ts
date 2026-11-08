@@ -84,6 +84,21 @@ export class D1CustomerRepository implements CustomerRepository {
       .all<Row>();
     return r.results.map((row) => this.map(row));
   }
+  async listForProfessional(
+    tenantId: string,
+    professionalId: string,
+    limit: number,
+    after?: string,
+  ) {
+    const result = await this.db
+      .prepare(
+        `SELECT c.* FROM customers c WHERE c.tenant_id=? AND (? IS NULL OR c.id>?)
+      AND EXISTS (SELECT 1 FROM appointments a WHERE a.tenant_id=c.tenant_id AND a.customer_id=c.id AND a.professional_id=?) ORDER BY c.id LIMIT ?`,
+      )
+      .bind(tenantId, after ?? null, after ?? null, professionalId, limit)
+      .all<Row>();
+    return result.results.map((row) => this.map(row));
+  }
   async create(c: Customer, transaction?: TransactionalWriteContext) {
     const x = c.data;
     await this.write(

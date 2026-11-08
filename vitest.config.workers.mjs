@@ -80,6 +80,15 @@ export default defineConfig({
       miniflare: {
         d1Databases: { ...testD1Databases, TEST_CALLER_DB: 'caller-proof-db' },
         serviceBindings: {
+          TEST_SELECTOR_ALLOWED: {
+            name: 'beauty-operations-runtime',
+            props: { caller: 'beauty-management-web' },
+          },
+          TEST_SELECTOR_MISSING: { name: 'beauty-operations-runtime' },
+          TEST_SELECTOR_WRONG: {
+            name: 'beauty-operations-runtime',
+            props: { caller: 'browser' },
+          },
           TEST_CALLER_ALLOWED: {
             name: 'beauty-billing-caller-proof',
             props: { caller: 'beauty-operations-worker' },

@@ -12,7 +12,8 @@ import type {
 
 export interface AgendaAuthority {
   tenantId: string;
-  actorId: string;
+  actorId?: string;
+  mode?: 'selector';
   permissions: readonly string[];
   professionalId?: string;
   selectedRole?: string;
@@ -21,7 +22,7 @@ export interface AgendaAuthority {
 function assertRead(context: AgendaAuthority): void {
   if (
     !context.tenantId ||
-    !context.actorId ||
+    (!context.actorId && context.mode !== 'selector') ||
     !context.permissions.includes('agenda.read')
   ) {
     throw new Error('PERMISSION_DENIED');
@@ -88,7 +89,7 @@ export class ListTenantAgenda {
     const professionalId = context.professionalId ?? input.professionalId;
     const scope = JSON.stringify([
       context.tenantId,
-      context.actorId,
+      context.mode === 'selector' ? ['selector'] : context.actorId,
       context.selectedRole ?? null,
       [...context.permissions].sort(),
       from,

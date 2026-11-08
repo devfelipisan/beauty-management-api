@@ -4,10 +4,11 @@
     "operations": {
       "packageVersion": "0.0.1",
       "provided": {
-        "revision": "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54",
+        "revision": "7d6b894949959893efc9cb9eeca2b406fc3f5fbee70119fe8f4141fee891bc75",
         "rpcMethods": [
           "appointmentChangeRoute",
           "packageAssignmentRoute",
+          "readSelectedWorkspace",
           "applyDepositConfirmed",
           "applyDepositExpired",
           "getSessionStartContext",
@@ -94,7 +95,8 @@
       },
       "requires": {
         "operations": [
-          "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54"
+          "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54",
+          "7d6b894949959893efc9cb9eeca2b406fc3f5fbee70119fe8f4141fee891bc75"
         ]
       },
       "minMigration": "0026",
@@ -161,7 +163,8 @@
       },
       "requires": {
         "operations": [
-          "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54"
+          "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54",
+          "7d6b894949959893efc9cb9eeca2b406fc3f5fbee70119fe8f4141fee891bc75"
         ],
         "billing": [
           "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc"

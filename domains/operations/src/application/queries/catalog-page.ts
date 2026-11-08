@@ -14,7 +14,8 @@ export interface CatalogReadRepository {
 }
 export interface CatalogAuthority {
   tenantId: string;
-  actorId: string;
+  actorId?: string;
+  mode?: 'selector';
   permissions: readonly string[];
   professionalId?: string;
   selectedRole?: string;
@@ -32,7 +33,7 @@ export class ReadCatalogPage {
     authority: CatalogAuthority,
   ) {
     if (
-      !authority.actorId ||
+      (!authority.actorId && authority.mode !== 'selector') ||
       !authority.tenantId ||
       !authority.permissions.includes(permissions[kind])
     )
@@ -48,7 +49,7 @@ export class ReadCatalogPage {
     const scope = JSON.stringify([
       kind,
       authority.tenantId,
-      authority.actorId,
+      authority.mode === 'selector' ? ['selector'] : authority.actorId,
       authority.selectedRole ?? null,
       authority.professionalId ?? null,
       [...authority.permissions].sort(),
