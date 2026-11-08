@@ -5,7 +5,7 @@ import { preflight } from './preflight.mjs';
 import { postcheck } from './postcheck.mjs';
 import { activeVersion } from './worker-state.mjs';
 import { simulateRelease, validateManifest } from './manifest.mjs';
-import { fail, diagnostic } from './errors.mjs';
+import { fail, diagnostic, DeploymentValidationError } from './errors.mjs';
 import {
   fixture,
   configurations,
@@ -697,4 +697,54 @@ test('cron reconciliation failure preserves partial publication without inventin
     records.map((record) => record.worker),
     ['billing', 'clinical'],
   );
+});
+
+test('contract diagnostics identify the intermediate edge without accepting unsafe rolling publication', () => {
+  const current = structuredClone(manifest.workers);
+  const candidate = structuredClone(manifest);
+  candidate.workers.billing.requires.operations = ['a'.repeat(64)];
+  assert.throws(
+    () =>
+      simulateRelease(current, candidate, [
+        'billing',
+        'clinical',
+        'operations',
+      ]),
+    (error) => {
+      assert.deepEqual(diagnostic(error), {
+        code: 'CONTRACT_INCOMPATIBLE',
+        phase: 'preflight',
+        operation: 'github.manifest',
+        worker: 'billing',
+        dependency: 'operations',
+        topologyStage: 'after-publish',
+        updatedWorker: 'billing',
+      });
+      return true;
+    },
+  );
+  current.billing.requires.operations = ['a'.repeat(64)];
+  assert.throws(
+    () => simulateRelease(current, candidate, ['billing']),
+    (error) => {
+      assert.equal(diagnostic(error).topologyStage, 'current');
+      assert.equal(diagnostic(error).updatedWorker, undefined);
+      return true;
+    },
+  );
+});
+test('contract diagnostic fields are sanitized and excluded from unrelated failures', () => {
+  for (const code of ['CONTRACT_INCOMPATIBLE', 'MANIFEST_INVALID']) {
+    const safe = diagnostic(
+      new DeploymentValidationError(code, {
+        operation: 'github.manifest',
+        dependency: 'private-token',
+        topologyStage: 'private-url',
+        updatedWorker: 'private-payload',
+      }),
+    );
+    assert.equal(safe.dependency, undefined);
+    assert.equal(safe.topologyStage, undefined);
+    assert.equal(safe.updatedWorker, undefined);
+  }
 });

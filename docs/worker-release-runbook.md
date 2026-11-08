@@ -544,3 +544,13 @@ Nenhum deploy, inventário real ou homologação remota foi executado por este P
 Mudanças na superfície pública de WorkerEntrypoint, inclusive métodos de leitura por Service Binding, alteram a revisão calculada do contrato. Depois de revisar a alteração, executar `node scripts/deploy/manifest-check.mjs --write`, revisar o diff e executar `npm run check:release`. O manifesto deve ser versionado no mesmo PR da alteração; testes de domínio e dry-run isolados não substituem o gate completo.
 
 O gerador inicia requires somente com as revisões novas. Para a adição de readSelectedWorkspace, Billing e Clinical mantêm explicitamente compatibilidade com a revisão anterior imediata de Operations, pois os métodos consumidos por eles não mudaram. A regressão de release valida a ordem billing → clinical → operations; revisões anteriores incompatíveis continuam bloqueadas. Isso é compatibilidade de contrato revisada, não homologação da versão ativa ou autorização de deploy. Nenhuma baseline, binding remoto ou secret é modificado.
+
+## Incompatibilidade entre revisões gerenciadas
+
+`CONTRACT_INCOMPATIBLE` inclui `dependency`, `topologyStage` e, após um passo simulado, `updatedWorker`. Consultar o artefato de deployment: `workers=[]` indica que o bloqueio ocorreu antes do primeiro upload. Não confundir esse erro com ausência de credenciais. A atualização segura depende da interoperabilidade real dos protocolos e não somente de atualizar hashes ou mudar a ordem de publicação. Para o incidente RPC V1/V2 e a decisão operacional pendente, consultar [plano de transição](rpc-v2-upgrade-plan.md).
+
+Para uma migração incompatível de conjunto já gerenciado, usar exclusivamente o
+workflow manual Coordinated RPC upgrade, com confirmação de manutenção e aprovação
+production, conforme [o procedimento RPC V2](rpc-v2-upgrade-plan.md). A solicitação
+fixa versões e SHAs anteriores; o fluxo exige proveniência aceita e não substitui
+a publicação gradual quando ela é compatível.
