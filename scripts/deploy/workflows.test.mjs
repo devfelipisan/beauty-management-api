@@ -291,3 +291,66 @@ test('protected release synchronizes cron before publishing and preserves a sepa
     ),
   );
 });
+
+test('coordinated managed upgrade is an explicit protected workflow with immutable code and recovery artifacts', () => {
+  const first = workflow('infrastructure-coordinated-upgrade');
+  assert.equal(
+    first.on.workflow_dispatch.inputs.maintenance_confirmed.required,
+    true,
+  );
+  assert.equal(
+    first.on.workflow_dispatch.inputs.maintenance_confirmed.default,
+    false,
+  );
+  for (const job of ['validate', 'publish']) {
+    const step = first.jobs[job].steps.find((step) =>
+      step.run?.includes('coordinated-upgrade.mjs'),
+    );
+    assert.equal(
+      step.env.MAINTENANCE_CONFIRMED,
+      '${{ inputs.maintenance_confirmed }}',
+    );
+  }
+  assert.deepEqual(Object.keys(first.on), ['workflow_dispatch']);
+  assert.equal(first.on.workflow_dispatch.inputs.commit_sha.required, true);
+  assert.equal(first.concurrency.group, 'beauty-production');
+  assert.equal(first.concurrency['cancel-in-progress'], false);
+  assert.equal(first.jobs.publish.needs, 'validate');
+  assert.equal(first.jobs.publish.environment, 'production');
+  assert.equal(first.jobs.publish.permissions.deployments, 'write');
+  assert.ok(
+    !JSON.stringify(first.jobs.validate).includes('CLOUDFLARE_API_TOKEN'),
+  );
+  assert.ok(JSON.stringify(first.jobs.validate).includes('npm run check'));
+  assert.ok(JSON.stringify(first.jobs.validate).includes('--check'));
+  // The candidate's broad Vitest globs must not discover a nested control checkout.
+  const validation = first.jobs.validate.steps;
+  assert.ok(
+    validation.findIndex((step) => step.run?.includes('npm run check')) <
+      validation.findIndex((step) => step.with?.path === '.release-control'),
+  );
+  const steps = first.jobs.publish.steps;
+  assert.ok(
+    steps.some(
+      (step) =>
+        step.with?.path === '.release-control' &&
+        step.with.ref === '${{ github.sha }}',
+    ),
+  );
+  assert.ok(
+    steps.some((step) => step.with?.ref === '${{ inputs.commit_sha }}'),
+  );
+  assert.ok(
+    steps.some(
+      (step) =>
+        step.if === 'always()' &&
+        step.with?.path === '.cache/coordinated-upgrade/result.json',
+    ),
+  );
+  assert.ok(!JSON.stringify(workflow('ci')).includes('coordinated-upgrade'));
+  assert.ok(
+    !readFileSync('scripts/deploy/preflight.mjs', 'utf8').includes(
+      'coordinatedUpgrade',
+    ),
+  );
+});

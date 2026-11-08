@@ -308,7 +308,7 @@ export function readManifest() {
 }
 export function simulateRelease(current, candidate, order) {
   const topology = { ...current };
-  function check() {
+  function check(topologyStage, updatedWorker) {
     for (const [name, worker] of Object.entries(topology))
       for (const [dependency, revisions] of Object.entries(worker.requires)) {
         if (!revisions.includes(topology[dependency]?.provided?.revision))
@@ -316,12 +316,15 @@ export function simulateRelease(current, candidate, order) {
             phase: 'preflight',
             operation: 'github.manifest',
             worker: name,
+            dependency,
+            topologyStage,
+            updatedWorker,
           });
       }
   }
-  check();
+  check('current');
   for (const name of order) {
     topology[name] = candidate.workers[name];
-    check();
+    check('after-publish', name);
   }
 }

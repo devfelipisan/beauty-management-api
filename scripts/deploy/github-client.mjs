@@ -15,6 +15,27 @@ import {
   firstPublicationWorkflow,
   versionId as validVersionId,
 } from '../infra/first-publication-request.mjs';
+import {
+  coordinatedUpgradeRequest,
+  coordinatedUpgradeRequestPath,
+  coordinatedUpgradeWorkflow,
+} from '../infra/coordinated-upgrade-request.mjs';
+const maintenancePolicies = {
+  'first-publication': {
+    workflow: firstPublicationWorkflow,
+    path: firstPublicationRequestPath,
+    request: firstPublicationRequest,
+    key: 'firstPublication',
+    error: 'FIRST_PUBLICATION_NOT_APPROVED',
+  },
+  'coordinated-upgrade': {
+    workflow: coordinatedUpgradeWorkflow,
+    path: coordinatedUpgradeRequestPath,
+    request: coordinatedUpgradeRequest,
+    key: 'coordinatedUpgrade',
+    error: 'COORDINATED_UPGRADE_NOT_APPROVED',
+  },
+};
 export function runnerExecution(env = process.env) {
   return {
     event: env.GITHUB_EVENT_NAME,
@@ -262,7 +283,8 @@ export function githubClient({
       controlSha: execution.controlSha,
     };
   }
-  async function firstPublicationEligible(commitSha) {
+  async function maintenanceEligible(commitSha, origin) {
+    const policy = maintenancePolicies[origin];
     const scope = {
       ...context,
       commitSha,
@@ -278,7 +300,7 @@ export function githubClient({
       !positive(execution.runAttempt) ||
       !/^[0-9a-f]{40}$/.test(execution.controlSha ?? '')
     )
-      fail('FIRST_PUBLICATION_NOT_APPROVED', scope);
+      fail(policy.error, scope);
     const own = await request(`/actions/runs/${execution.runId}`, {
       operation: 'github.ci',
     });
@@ -286,12 +308,12 @@ export function githubClient({
       String(own.id) !== String(execution.runId) ||
       own.run_attempt !== Number(execution.runAttempt) ||
       own.event !== 'workflow_dispatch' ||
-      own.path !== firstPublicationWorkflow ||
+      own.path !== policy.workflow ||
       own.head_sha !== execution.controlSha ||
       own.head_branch !== releaseBranch ||
       own.repository?.full_name !== repository
     )
-      fail('FIRST_PUBLICATION_NOT_APPROVED', scope);
+      fail(policy.error, scope);
     const comparison = await request(
       `/compare/${commitSha}...${encodeURIComponent(releaseBranch)}`,
     );
@@ -300,8 +322,8 @@ export function githubClient({
       comparison.merge_base_commit?.sha !== commitSha
     )
       fail('SHA_INELIGIBLE', scope);
-    const requested = firstPublicationRequest(
-      await content(firstPublicationRequestPath, execution.controlSha),
+    const requested = policy.request(
+      await content(policy.path, execution.controlSha),
       commitSha,
     );
     const runs = await pages(
@@ -328,7 +350,7 @@ export function githubClient({
     return {
       commitSha,
       ...proof,
-      releaseOrigin: 'first-publication',
+      releaseOrigin: origin,
       releaseRunAttempt: Number(execution.runAttempt),
       controlSha: execution.controlSha,
       runId: String(execution.runId),
@@ -367,13 +389,13 @@ export function githubClient({
         operation: 'github.ci',
       });
       const automatic = record.payload.releaseOrigin === 'ci';
-      const first = record.payload.releaseOrigin === 'first-publication';
+      const maintenance = maintenancePolicies[record.payload.releaseOrigin];
       const allowedPath = record.payload.baseline
         ? record.payload.adoptionEvidence
           ? '.github/workflows/infrastructure-initial-adoption.yml'
           : '.github/workflows/infrastructure-readiness.yml'
-        : first
-          ? firstPublicationWorkflow
+        : maintenance
+          ? maintenance.workflow
           : automatic
             ? '.github/workflows/ci.yml'
             : '.github/workflows/deploy-workers.yml';
@@ -387,9 +409,12 @@ export function githubClient({
       if (record.payload.releaseOrigin !== undefined) {
         const proof = record.payload;
         if (
-          !['ci', 'manual', 'first-publication'].includes(
-            proof.releaseOrigin,
-          ) ||
+          ![
+            'ci',
+            'manual',
+            'first-publication',
+            'coordinated-upgrade',
+          ].includes(proof.releaseOrigin) ||
           proof.baseline ||
           !positive(proof.releaseRunAttempt) ||
           !positive(proof.ciRunId) ||
@@ -437,7 +462,7 @@ export function githubClient({
         )
           continue;
         if (automatic) await authorizedCaller(commitSha, scope);
-        if (first) {
+        if (maintenance) {
           if (
             run.status !== 'completed' ||
             run.conclusion !== 'success' ||
@@ -445,15 +470,18 @@ export function githubClient({
             releaseAttempt.conclusion !== 'success'
           )
             continue;
-          const approved = firstPublicationRequest(
-            await content(firstPublicationRequestPath, proof.controlSha),
+          const approved = maintenance.request(
+            await content(maintenance.path, proof.controlSha),
             commitSha,
           );
           if (
-            !validVersionId(proof.firstPublication?.previousVersionId) ||
-            proof.firstPublication.previousVersionId !==
+            !validVersionId(proof[maintenance.key]?.previousVersionId) ||
+            proof[maintenance.key].previousVersionId !==
               approved.workers[worker].versionId ||
-            proof.firstPublication.requestDigest !== digest(approved)
+            proof[maintenance.key].requestDigest !== digest(approved) ||
+            (proof.releaseOrigin === 'coordinated-upgrade' &&
+              proof.coordinatedUpgrade.previousCommitSha !==
+                approved.workers[worker].commitSha)
           )
             continue;
         }
@@ -725,6 +753,7 @@ export function githubClient({
     controlSha,
     adoptionEvidence: initialEvidence,
     firstPublication,
+    coordinatedUpgrade,
     verificationMethod,
     scheduledCrons,
   }) {
@@ -737,7 +766,9 @@ export function githubClient({
       fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
     if (
       !baseline &&
-      (!['ci', 'manual', 'first-publication'].includes(releaseOrigin) ||
+      (!['ci', 'manual', 'first-publication', 'coordinated-upgrade'].includes(
+        releaseOrigin,
+      ) ||
         !positive(releaseRunAttempt) ||
         !positive(ciRunId) ||
         !positive(ciRunAttempt) ||
@@ -750,6 +781,14 @@ export function githubClient({
       (baseline ||
         !validVersionId(firstPublication?.previousVersionId) ||
         !/^[0-9a-f]{64}$/.test(firstPublication?.requestDigest ?? ''))
+    )
+      fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
+    if (
+      releaseOrigin === 'coordinated-upgrade' &&
+      (baseline ||
+        !validVersionId(coordinatedUpgrade?.previousVersionId) ||
+        !/^[0-9a-f]{40}$/.test(coordinatedUpgrade?.previousCommitSha ?? '') ||
+        !/^[0-9a-f]{64}$/.test(coordinatedUpgrade?.requestDigest ?? ''))
     )
       fail('INVALID_REQUEST', { ...context, operation: 'github.deployment' });
     if (
@@ -778,6 +817,9 @@ export function githubClient({
           baseline,
           ...(scheduledCrons !== undefined ? { scheduledCrons } : {}),
           ...(verificationMethod ? { verificationMethod } : {}),
+          ...(releaseOrigin === 'coordinated-upgrade'
+            ? { coordinatedUpgrade }
+            : {}),
           ...(releaseOrigin === 'first-publication'
             ? { firstPublication }
             : {}),
@@ -825,7 +867,10 @@ export function githubClient({
     provenanceByVersion,
     recordPublished,
     adoptionEvidence,
-    firstPublicationEligible,
+    firstPublicationEligible: (sha) =>
+      maintenanceEligible(sha, 'first-publication'),
+    coordinatedUpgradeEligible: (sha) =>
+      maintenanceEligible(sha, 'coordinated-upgrade'),
     assertFirstPublicationNeeded,
     metrics,
   };

@@ -23,6 +23,7 @@ const codes = new Set([
   'PROVENANCE_UNAVAILABLE',
   'ADOPTION_EVIDENCE_INVALID',
   'FIRST_PUBLICATION_NOT_APPROVED',
+  'COORDINATED_UPGRADE_NOT_APPROVED',
   'SHA_INELIGIBLE',
   'CI_NOT_APPROVED',
   'WRANGLER_FAILED',
@@ -98,6 +99,21 @@ function wranglerFields(value) {
       : {}),
   };
 }
+function contractFields(value) {
+  const names = ['operations', 'billing', 'clinical'];
+  return {
+    ...(names.includes(value.dependency)
+      ? { dependency: value.dependency }
+      : {}),
+    ...(['current', 'after-publish'].includes(value.topologyStage)
+      ? { topologyStage: value.topologyStage }
+      : {}),
+    ...(value.topologyStage === 'after-publish' &&
+    names.includes(value.updatedWorker)
+      ? { updatedWorker: value.updatedWorker }
+      : {}),
+  };
+}
 export const requiredBindingsFailure =
   'Required production bindings unavailable; deployment blocked.';
 export class DeploymentValidationError extends Error {
@@ -148,6 +164,11 @@ export class DeploymentValidationError extends Error {
           context.databaseReason === 'QUERY_REJECTED'))
     )
       this.databaseReason = context.databaseReason;
+    if (
+      this.code === 'CONTRACT_INCOMPATIBLE' &&
+      this.operation === 'github.manifest'
+    )
+      Object.assign(this, contractFields(context));
     if (this.code === 'WRANGLER_FAILED' && this.operation === 'wrangler.deploy')
       Object.assign(this, wranglerFields(context));
     if (
@@ -179,10 +200,17 @@ export function diagnostic(error, context = {}) {
       'wranglerReason',
       'exitCode',
       'upstreamCode',
+      'dependency',
+      'topologyStage',
+      'updatedWorker',
     ]
       .filter(
         (key) =>
           safe[key] !== undefined &&
+          (!['dependency', 'topologyStage', 'updatedWorker'].includes(key) ||
+            (safe.code === 'CONTRACT_INCOMPATIBLE' &&
+              safe.operation === 'github.manifest' &&
+              contractFields(safe)[key] === safe[key])) &&
           (!['wranglerReason', 'exitCode', 'upstreamCode'].includes(key) ||
             (safe.code === 'WRANGLER_FAILED' &&
               safe.operation === 'wrangler.deploy' &&

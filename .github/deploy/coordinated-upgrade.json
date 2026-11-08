@@ -1,0 +1,21 @@
+{
+  "commitSha": "775587b80d8ef29c589606830293eb34c993fe07",
+  "authorizationReference": "Owner confirmed in implementation review: no active operation; prepare coordinated upgrade of all three Workers in maintenance. Production approval remains required.",
+  "compatibilityReference": "docs/rpc-v2-upgrade-plan.md: V1 to V2; initial and final sets validated independently, no traffic during mixed topology.",
+  "recoveryReference": "docs/rpc-v2-upgrade-plan.md: retain previousVersions artifact; recover all three versions together in maintenance.",
+  "maintenanceReference": "docs/rpc-v2-upgrade-plan.md: production approver confirms stopped ingress, integrations and writers before publishing; reopen only after final qualification.",
+  "workers": {
+    "billing": {
+      "versionId": "5328d32c-3207-4ece-965a-d94341816832",
+      "commitSha": "956cfbf9ed20f65d3beb2012bc8871efd5426386"
+    },
+    "clinical": {
+      "versionId": "7a22fd4e-95d2-43bd-b8e0-afa64225715e",
+      "commitSha": "956cfbf9ed20f65d3beb2012bc8871efd5426386"
+    },
+    "operations": {
+      "versionId": "99606606-b42a-4e9a-b7c3-8142b604b08c",
+      "commitSha": "956cfbf9ed20f65d3beb2012bc8871efd5426386"
+    }
+  }
+}
