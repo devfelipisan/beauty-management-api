@@ -20,8 +20,16 @@ export class D1CatalogReadRepository implements CatalogReadRepository {
   ): Promise<CatalogRow[]> {
     let rows: CatalogRow[];
     if (kind === 'customers') {
+      const customers = new D1CustomerRepository(this.db);
       rows = (
-        await new D1CustomerRepository(this.db).list(tenantId, limit, after)
+        professionalId
+          ? await customers.listForProfessional(
+              tenantId,
+              professionalId,
+              limit,
+              after,
+            )
+          : await customers.list(tenantId, limit, after)
       ).map((item) => ({ id: item.id, ...item.data }));
     } else if (kind === 'services') {
       rows = (

@@ -89,3 +89,7 @@ Decisão: [ADR-0014](docs/adr/0014-npm-workspaces-domain-boundaries.md).
 - Instruções do Codex: `.codex/`
 
 [Contratos de leitura Web/BFF](docs/workspace-read-contracts.md).
+
+## Integração Web antes do login
+
+A porta RPC de leitura `readSelectedWorkspace` permite o fluxo por seletor solicitado, usando o D1 existente e `ctx.props.caller=beauty-management-web` no Service Binding. Não é um endpoint HTTP anônimo nem uma identidade de usuário. O catálogo e o contexto são revalidados no D1; comandos permanecem autenticados e não aceitam esse contexto. Publicar esse receiver no Operations antes de habilitar o Web. Consulte [ADR-0017](docs/adr/0017-selector-read-context.md).

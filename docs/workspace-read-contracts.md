@@ -7,3 +7,7 @@ A consulta de aplicação `ReadCatalogPage` depende de `CatalogReadRepository`. 
 A projeção de agenda/detalhes inclui `tenantId`, snapshots `basePriceCents`, `discountCents`, `finalPriceCents`, `depositCents` e timestamps persistidos. A autorização continua `agenda.read`, e a segregação profissional continua aplicada na query. Não há nova permission financeira neste contrato de leitura da agenda. Snapshots ausentes em registros legados permanecem `null`; consumidores que os exigem devem rejeitar o contrato explicitamente, sem zeros ou preços atuais.
 
 Schemas runtime verificam as respostas antes da serialização. OpenAPI documenta vínculos, snapshots e paginação. Não foram alteradas tabelas, migrations, comandos, FSMs, auditoria ou outbox. Os testes físicos `workspace-read.spec.ts` cobrem vínculos, paginação, snapshots e negações; `agenda-read.spec.ts` conserva as regras de segregação.
+
+## Leitura pré-login pelo seletor
+
+A porta RPC readSelectedWorkspace aceita somente leituras do Worker Web identificado por props do binding. Catálogo e contexto são obtidos de tenants/roles/profissionais ativos e grants persistidos no D1, sem usuário ou membership fictícios. A semântica é deliberadamente diferente da autenticação de usuário das rotas HTTP existentes, que permanece obrigatória. Consulte [ADR-0017](adr/0017-selector-read-context.md).

@@ -69,6 +69,12 @@
       "types": "./dist/adapters/rpc-security.d.ts",
       "workerd": "./src/adapters/rpc-security.ts",
       "default": "./dist/adapters/rpc-security.js"
+    },
+    "./adapters/d1-selector-workspace-provider": {
+      "beauty": "./src/adapters/d1-selector-workspace-provider.ts",
+      "types": "./dist/adapters/d1-selector-workspace-provider.d.ts",
+      "workerd": "./src/adapters/d1-selector-workspace-provider.ts",
+      "default": "./dist/adapters/d1-selector-workspace-provider.js"
     }
   },
   "scripts": {
