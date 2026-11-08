@@ -538,3 +538,9 @@ auditoria e nenhuma concessão implícita ou endpoint público de bootstrap.
 
 Dry-runs e testes locais não comprovam permissões remotas, retenção, carga ou custos.
 Nenhum deploy, inventário real ou homologação remota foi executado por este PR.
+
+## Atualização do manifesto após adicionar RPC
+
+Mudanças na superfície pública de WorkerEntrypoint, inclusive métodos de leitura por Service Binding, alteram a revisão calculada do contrato. Depois de revisar a alteração, executar `node scripts/deploy/manifest-check.mjs --write`, revisar o diff e executar `npm run check:release`. O manifesto deve ser versionado no mesmo PR da alteração; testes de domínio e dry-run isolados não substituem o gate completo.
+
+O gerador inicia requires somente com as revisões novas. Para a adição de readSelectedWorkspace, Billing e Clinical mantêm explicitamente compatibilidade com a revisão anterior imediata de Operations, pois os métodos consumidos por eles não mudaram. A regressão de release valida a ordem billing → clinical → operations; revisões anteriores incompatíveis continuam bloqueadas. Isso é compatibilidade de contrato revisada, não homologação da versão ativa ou autorização de deploy. Nenhuma baseline, binding remoto ou secret é modificado.

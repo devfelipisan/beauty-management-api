@@ -261,6 +261,39 @@ test('changed RPC revisions reject unsafe rolling deployment from the previous t
   );
   assert.throws(verifyRollout, { code: 'CONTRACT_INCOMPATIBLE' });
 });
+test('selector RPC addition preserves rolling compatibility with the immediately previous Operations contract', () => {
+  const previousRevision =
+    'f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54';
+  assert.ok(
+    manifest.workers.operations.provided.rpcMethods.includes(
+      'readSelectedWorkspace',
+    ),
+  );
+  assert.notEqual(
+    manifest.workers.operations.provided.revision,
+    previousRevision,
+  );
+  const current = structuredClone(manifest.workers);
+  current.operations.provided.revision = previousRevision;
+  current.operations.provided.rpcMethods =
+    current.operations.provided.rpcMethods.filter(
+      (name) => name !== 'readSelectedWorkspace',
+    );
+  for (const worker of ['billing', 'clinical']) {
+    current[worker].requires.operations = [previousRevision];
+    assert.ok(
+      manifest.workers[worker].requires.operations.includes(previousRevision),
+    );
+    assert.ok(
+      manifest.workers[worker].requires.operations.includes(
+        manifest.workers.operations.provided.revision,
+      ),
+    );
+  }
+  assert.doesNotThrow(() =>
+    simulateRelease(current, manifest, ['billing', 'clinical', 'operations']),
+  );
+});
 test('manifest rejects invented revisions and incomplete transitions', () => {
   const candidate = structuredClone(manifest);
   candidate.workers.billing.provided.revision = 'c'.repeat(64);
