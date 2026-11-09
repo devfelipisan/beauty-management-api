@@ -554,3 +554,7 @@ workflow manual Coordinated RPC upgrade, com confirmação de manutenção e apr
 production, conforme [o procedimento RPC V2](rpc-v2-upgrade-plan.md). A solicitação
 fixa versões e SHAs anteriores; o fluxo exige proveniência aceita e não substitui
 a publicação gradual quando ela é compatível.
+
+## Seletor demonstrativo — requisito de publicação
+
+O receiver exige allowlist server-side `SELECTOR_DEMO_TENANT_IDS` de tenants exclusivamente sintéticos. Configurar e auditar antes de publicar; ausência fecha o RPC em `503 SELECTOR_DEMO_CONFIGURATION_INVALID`. Não adicionar tenants reais para corrigir falha de bootstrap. [Contrato e rollback seguro](selector-demo-safety.md).
