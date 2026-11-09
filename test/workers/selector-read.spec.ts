@@ -229,3 +229,72 @@ it('grants no customer access implicitly and scopes an explicitly permitted prof
     403,
   );
 });
+
+it('excludes a persisted active tenant from both catalog and guessed selections unless explicitly allowed', async () => {
+  const catalog = await read('/v1/me/tenants');
+  const body = (await catalog.json()) as {
+    data: { tenants: { id: string }[] };
+  };
+  expect(body.data.tenants.map((row) => row.id)).toEqual([tenant]);
+  const exists = await env.D1_DATABASE.prepare(
+    'SELECT id FROM tenants WHERE id=?',
+  )
+    .bind('tenant-other')
+    .first();
+  expect(exists).not.toBeNull();
+  for (const path of [
+    '/v1/me/context',
+    '/tenants/tenant-other/customers',
+    '/tenants/tenant-other/agenda?from=2030-01-01T00:00:00Z&to=2030-01-02T00:00:00Z',
+  ]) {
+    expect((await read(path, { 'x-tenant-id': 'tenant-other' })).status).toBe(
+      403,
+    );
+  }
+});
+
+it('redacts contact and financial snapshots and returns no executable actions before login', async () => {
+  const created = await worker.fetch(
+    new Request(`https://operations.test/tenants/${tenant}/appointments`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer actor-dev-admin',
+        'content-type': 'application/json',
+        'Idempotency-Key': 'selector-redaction-fixture',
+      },
+      body: JSON.stringify({
+        customerId: 'mock-customer-maria',
+        serviceId: 'mock-service-consulta',
+        professionalId: professional,
+        startsAt: '2030-01-01T12:00:00.000Z',
+        origin: 'RECEPTION',
+      }),
+    }),
+  );
+  expect(created.status).toBe(201);
+  const customers = await read(`/tenants/${tenant}/customers`);
+  const customerBody = (await customers.json()) as {
+    data: Record<string, unknown>[];
+  };
+  for (const row of customerBody.data) {
+    expect(row).not.toHaveProperty('phone');
+    expect(row).not.toHaveProperty('email');
+    expect(row).not.toHaveProperty('document');
+  }
+  const response = await read(
+    `/tenants/${tenant}/agenda?from=2030-01-01T00:00:00Z&to=2030-01-02T00:00:00Z`,
+  );
+  expect(response.status).toBe(200);
+  const body = (await response.json()) as {
+    data: { appointments: { id: string; finalPriceCents: number | null }[] };
+  };
+  expect(body.data.appointments.length).toBeGreaterThan(0);
+  for (const row of body.data.appointments) {
+    expect(row.finalPriceCents).toBeNull();
+    const details = await read(`/tenants/${tenant}/appointments/${row.id}`);
+    expect(details.status).toBe(200);
+    expect(await details.json()).toMatchObject({
+      data: { allowedActions: [], finalPriceCents: null, depositCents: null },
+    });
+  }
+});

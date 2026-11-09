@@ -22,7 +22,10 @@ export async function selectorRead(
     if (request.method !== 'GET' || request.body)
       throw new Error('PERMISSION_DENIED');
     const url = new URL(request.url);
-    const provider = new D1SelectorWorkspaceProvider(env.D1_DATABASE);
+    const provider = new D1SelectorWorkspaceProvider(
+      env.D1_DATABASE,
+      env.SELECTOR_DEMO_TENANT_IDS,
+    );
     if (url.pathname === '/v1/me/tenants') {
       if ([...url.searchParams].length) throw new Error('VALIDATION_ERROR');
       return json({ data: await provider.catalog(), requestId, correlationId });
@@ -81,7 +84,21 @@ export async function selectorRead(
         },
         context,
       );
-      return json({ ...result, requestId, correlationId });
+      // Even a synthetic catalog must not become a transport for contact data.
+      const data =
+        kind === 'customers'
+          ? result.data.map((row) => ({
+              id: row.id,
+              tenantId: row.tenantId,
+              fullName: row.fullName,
+              status: row.status,
+              relationshipProfile: row.relationshipProfile,
+              blockedForNewAppointments: row.blockedForNewAppointments,
+              createdAt: row.createdAt,
+              updatedAt: row.updatedAt,
+            }))
+          : result.data;
+      return json({ ...result, data, requestId, correlationId });
     }
     let data;
     if (kind === 'agenda') {
@@ -104,7 +121,31 @@ export async function selectorRead(
       );
     } else data = await agendaDetails(env, match[3], context);
     assertAgendaRead(data);
-    return json({ data, requestId, correlationId });
+    // Selector is never a source of financial snapshots or executable actions.
+    const publicAppointment = (
+      row: import('@beauty/contracts').AgendaAppointment,
+    ) => ({
+      id: row.id,
+      tenantId: row.tenantId,
+      customer: row.customer,
+      professional: row.professional,
+      service: row.service,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      status: row.status,
+      origin: row.origin,
+      basePriceCents: null,
+      discountCents: null,
+      finalPriceCents: null,
+      depositCents: null,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    });
+    const projection =
+      'appointments' in data
+        ? { ...data, appointments: data.appointments.map(publicAppointment) }
+        : { ...publicAppointment(data), allowedActions: [] };
+    return json({ data: projection, requestId, correlationId });
   } catch (error) {
     return mappedError(error, requestId, correlationId);
   }

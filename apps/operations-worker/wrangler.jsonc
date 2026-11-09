@@ -68,6 +68,7 @@
         "AUTH_PROVIDER": "mock",
         "OBSERVE_ENABLED": "false",
         "MAX_PROFILE_IMAGE_BYTES": "300000",
+        "SELECTOR_DEMO_TENANT_IDS": "[\"tenant-dev-001\"]",
       },
       "d1_databases": [
         {

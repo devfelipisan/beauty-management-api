@@ -55,6 +55,7 @@ async function auxiliaryWorker(
       OUTBOX_BATCH_SIZE: '5',
       OUTBOX_LEASE_SECONDS: '60',
       OBSERVE_ENABLED: 'false',
+      SELECTOR_DEMO_TENANT_IDS: '["tenant-dev-001"]',
       ...(name === 'beauty-operations-runtime'
         ? { MAX_PROFILE_IMAGE_BYTES: '300000' }
         : {}),
@@ -105,6 +106,7 @@ export default defineConfig({
           OUTBOX_BATCH_SIZE: '5',
           OUTBOX_LEASE_SECONDS: '60',
           OBSERVE_ENABLED: 'false',
+          SELECTOR_DEMO_TENANT_IDS: '["tenant-dev-001"]',
           TEST_MIGRATIONS: migrations,
           MAX_PROFILE_IMAGE_BYTES: '300000',
         },

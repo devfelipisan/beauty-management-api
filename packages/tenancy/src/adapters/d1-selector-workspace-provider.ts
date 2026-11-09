@@ -23,7 +23,30 @@ export interface SelectorReadAuthority {
 
 /** Pre-login selection is a read context, never an identity or membership. */
 export class D1SelectorWorkspaceProvider {
-  constructor(private readonly db: D1DatabaseLike) {}
+  private readonly allowedTenantIds: string[];
+
+  constructor(
+    private readonly db: D1DatabaseLike,
+    configuredTenantIds?: string,
+  ) {
+    let value: unknown;
+    try {
+      value = JSON.parse(configuredTenantIds ?? 'null');
+    } catch {
+      throw new Error('SELECTOR_DEMO_CONFIGURATION_INVALID');
+    }
+    if (
+      !Array.isArray(value) ||
+      value.length === 0 ||
+      value.length > 10 ||
+      !value.every(
+        (id): id is string => typeof id === 'string' && idPattern.test(id),
+      ) ||
+      new Set(value).size !== value.length
+    )
+      throw new Error('SELECTOR_DEMO_CONFIGURATION_INVALID');
+    this.allowedTenantIds = value;
+  }
 
   async catalog() {
     const rows = await this.db
@@ -31,9 +54,10 @@ export class D1SelectorWorkspaceProvider {
         `SELECT t.id,t.display_name,t.status,r.name AS role_name,p.id AS professional_id,p.name AS professional_name
       FROM tenants t JOIN roles r ON r.tenant_id=t.id AND r.active=1
       LEFT JOIN professionals p ON r.name='professional' AND p.tenant_id=t.id AND p.status='ACTIVE'
-      WHERE t.status='ACTIVE' AND EXISTS (SELECT 1 FROM role_permissions rp WHERE rp.tenant_id=t.id AND rp.role_name=r.name AND rp.permission_code IN ('agenda.read','customer.read','professional.read','service.read'))
+      WHERE t.id IN (${this.allowedTenantIds.map(() => '?').join(',')}) AND t.status='ACTIVE' AND EXISTS (SELECT 1 FROM role_permissions rp WHERE rp.tenant_id=t.id AND rp.role_name=r.name AND rp.permission_code IN ('agenda.read','customer.read','professional.read','service.read'))
       ORDER BY t.id,r.name,p.id`,
       )
+      .bind(...this.allowedTenantIds)
       .all<{
         id: string;
         display_name: string;
@@ -93,7 +117,12 @@ export class D1SelectorWorkspaceProvider {
     role: string | null,
     professionalId?: string,
   ): Promise<SelectorReadAuthority> {
-    if (!idPattern.test(tenantId) || !role || !Object.hasOwn(roleNames, role))
+    if (
+      !idPattern.test(tenantId) ||
+      !this.allowedTenantIds.includes(tenantId) ||
+      !role ||
+      !Object.hasOwn(roleNames, role)
+    )
       throw new Error('PERMISSION_DENIED');
     if (
       role === 'professional'
