@@ -1,4 +1,5 @@
 import type { D1DatabaseLike } from '@beauty/database/d1/d1.types';
+import type { TransactionalWriteContext } from '@beauty/reliability/unit-of-work/transactional-write-context';
 import {
   Professional,
   type ProfessionalProps,
@@ -8,6 +9,7 @@ type Row = {
   id: string;
   tenant_id: string;
   name: string;
+  specialty?: string;
   status: ProfessionalProps['status'];
   public_visible: number;
   created_at: string;
@@ -19,6 +21,7 @@ export class D1ProfessionalRepository implements ProfessionalRepository {
     return Professional.create(r.id, {
       tenantId: r.tenant_id,
       name: r.name,
+      specialty: r.specialty ?? undefined,
       status: r.status,
       publicVisible: Boolean(r.public_visible),
       createdAt: r.created_at,
@@ -43,11 +46,19 @@ export class D1ProfessionalRepository implements ProfessionalRepository {
       .all<Row>();
     return r.results.map((row) => this.map(row));
   }
-  async create(p: Professional) {
+  async create(p: Professional, transaction?: TransactionalWriteContext) {
     const x = p.data;
+    if (transaction) {
+      transaction.add({
+        kind: 'D1_SQL', expectedChanges: 1,
+        sql: 'INSERT INTO professionals (id, tenant_id, name, status, public_visible, created_at, updated_at, specialty) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        params: [p.id, x.tenantId, x.name, x.status, x.publicVisible ? 1 : 0, x.createdAt, x.updatedAt, x.specialty ?? null],
+      });
+      return;
+    }
     await this.db
       .prepare(
-        'INSERT INTO professionals (id, tenant_id, name, status, public_visible, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO professionals (id, tenant_id, name, status, public_visible, created_at, updated_at, specialty) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
       .bind(
         p.id,
@@ -57,6 +68,7 @@ export class D1ProfessionalRepository implements ProfessionalRepository {
         x.publicVisible ? 1 : 0,
         x.createdAt,
         x.updatedAt,
+        x.specialty ?? null,
       )
       .run();
   }

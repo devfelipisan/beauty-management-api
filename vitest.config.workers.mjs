@@ -56,6 +56,7 @@ async function auxiliaryWorker(
       OUTBOX_LEASE_SECONDS: '60',
       OBSERVE_ENABLED: 'false',
       SELECTOR_DEMO_TENANT_IDS: '["tenant-dev-001"]',
+      SELECTOR_DEMO_WRITES_ENABLED: name === 'beauty-demo-write-runtime' ? 'true' : 'false',
       ...(name === 'beauty-operations-runtime'
         ? { MAX_PROFILE_IMAGE_BYTES: '300000' }
         : {}),
@@ -81,6 +82,10 @@ export default defineConfig({
       miniflare: {
         d1Databases: { ...testD1Databases, TEST_CALLER_DB: 'caller-proof-db' },
         serviceBindings: {
+          TEST_SELECTOR_WRITABLE: {
+            name: 'beauty-demo-write-runtime',
+            props: { caller: 'beauty-management-web' },
+          },
           TEST_SELECTOR_ALLOWED: {
             name: 'beauty-operations-runtime',
             props: { caller: 'beauty-management-web' },
@@ -111,6 +116,10 @@ export default defineConfig({
           MAX_PROFILE_IMAGE_BYTES: '300000',
         },
         workers: [
+          await auxiliaryWorker(
+            './apps/operations-worker/src/worker.ts',
+            'beauty-demo-write-runtime',
+          ),
           await auxiliaryWorker(
             './apps/billing-worker/src/worker.ts',
             'beauty-billing-caller-proof',

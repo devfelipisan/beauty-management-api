@@ -21,7 +21,9 @@ export interface SelectorReadAuthority {
   permissions: string[];
 }
 
-/** Pre-login selection is a read context, never an identity or membership. */
+/** Pre-login selection is an operational context, never an identity or membership.
+ * Command grants are requested only by the separately guarded private demo boundary.
+ */
 export class D1SelectorWorkspaceProvider {
   private readonly allowedTenantIds: string[];
 
@@ -116,6 +118,7 @@ export class D1SelectorWorkspaceProvider {
     tenantId: string,
     role: string | null,
     professionalId?: string,
+    includeCommands = false,
   ): Promise<SelectorReadAuthority> {
     if (
       !idPattern.test(tenantId) ||
@@ -148,7 +151,7 @@ export class D1SelectorWorkspaceProvider {
       .all<{ permission_code: string }>();
     const permissions = rows.results
       .map((row) => row.permission_code)
-      .filter((permission) => readPermissions.includes(permission));
+      .filter((permission) => includeCommands || readPermissions.includes(permission));
     if (!permissions.length) throw new Error('PERMISSION_DENIED');
     return {
       mode: 'selector',

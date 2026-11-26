@@ -1,5 +1,8 @@
 # ADRs
 
+- [ADR-0018 — Comandos demo privados com persistência](0018-demo-catalog-commands.md)
+- [ADR-0017 — Leituras pré-login pelo seletor](0017-selector-read-context.md)
+
 - [ADR-0016 — Contexto operacional selecionado e agenda](0016-selected-workspace-authority.md)
 
 - [ADR-0015 — Autoridade e publicação privada](0015-worker-authority-and-release-safety.md)

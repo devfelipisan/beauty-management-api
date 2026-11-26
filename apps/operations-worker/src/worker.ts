@@ -1,4 +1,5 @@
 import { selectorRead } from './selector-read.js';
+import { selectorCommand } from './selector-command.js';
 import { catalogRoute } from './catalog-routes.js';
 import { dispatchEligibleOutbox } from './outbox-coordinator.js';
 import { agendaRoute } from './agenda-routes.js';
@@ -611,6 +612,9 @@ export default class OperationsWorker extends WorkerEntrypoint<
       executionEnv(this.env),
       this.ctx.props?.caller,
     );
+  }
+  async executeSelectedWorkspaceCommand(request: Request): Promise<Response> {
+    return selectorCommand(request, executionEnv(this.env), this.ctx.props?.caller);
   }
   async fetch(request: any): Promise<any> {
     return observedHttpRequest(

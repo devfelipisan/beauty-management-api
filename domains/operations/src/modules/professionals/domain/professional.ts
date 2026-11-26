@@ -6,6 +6,7 @@ export enum ProfessionalStatus {
 export interface ProfessionalProps {
   tenantId: string;
   name: string;
+  specialty?: string;
   status: ProfessionalStatus;
   publicVisible: boolean;
   createdAt: string;

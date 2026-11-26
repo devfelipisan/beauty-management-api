@@ -507,6 +507,18 @@
       "types": "./dist/infrastructure/queries/d1-catalog-read-repository.d.ts",
       "workerd": "./src/infrastructure/queries/d1-catalog-read-repository.ts",
       "default": "./dist/infrastructure/queries/d1-catalog-read-repository.js"
+    },
+    "./modules/demo/application/create-demo-catalog": {
+      "beauty": "./src/modules/demo/application/create-demo-catalog.ts",
+      "types": "./dist/modules/demo/application/create-demo-catalog.d.ts",
+      "workerd": "./src/modules/demo/application/create-demo-catalog.ts",
+      "default": "./dist/modules/demo/application/create-demo-catalog.js"
+    },
+    "./modules/demo/infrastructure/d1-demo-catalog-links": {
+      "beauty": "./src/modules/demo/infrastructure/d1-demo-catalog-links.ts",
+      "types": "./dist/modules/demo/infrastructure/d1-demo-catalog-links.d.ts",
+      "workerd": "./src/modules/demo/infrastructure/d1-demo-catalog-links.ts",
+      "default": "./dist/modules/demo/infrastructure/d1-demo-catalog-links.js"
     }
   },
   "scripts": {

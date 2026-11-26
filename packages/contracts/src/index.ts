@@ -23,3 +23,4 @@ export * from './appointment-changes/index.js';
 export * from './appointment-change-policies/index.js';
 
 export * from './read-validation.js';
+export * from './demo-catalog.js';

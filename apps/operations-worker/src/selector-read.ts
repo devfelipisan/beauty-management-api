@@ -1,6 +1,6 @@
 import { D1SelectorWorkspaceProvider } from '@beauty/tenancy/adapters/d1-selector-workspace-provider';
 import { ids, json, mappedError } from '@beauty/cloudflare-runtime';
-import { assertAgendaRead } from '@beauty/contracts';
+import { assertAgendaRead, demoCatalogCapabilities } from '@beauty/contracts';
 import type { AgendaQuery } from '@beauty/contracts';
 import type { OperationsEnv } from './env.js';
 import {
@@ -28,7 +28,7 @@ export async function selectorRead(
     );
     if (url.pathname === '/v1/me/tenants') {
       if ([...url.searchParams].length) throw new Error('VALIDATION_ERROR');
-      return json({ data: await provider.catalog(), requestId, correlationId });
+      return json({ data: { ...await provider.catalog(), mode: 'demo' }, requestId, correlationId });
     }
     const match = url.pathname.match(
       /^\/tenants\/([A-Za-z0-9_-]{1,128})\/(customers|professionals|services|agenda|appointments\/([A-Za-z0-9_-]{1,128}))$/,
@@ -41,6 +41,7 @@ export async function selectorRead(
       tenantId,
       request.headers.get('x-workspace-role'),
       request.headers.get('x-professional-id') ?? undefined,
+      url.pathname === '/v1/me/context',
     );
     const kind = match?.[2];
     const allowed =
@@ -66,6 +67,7 @@ export async function selectorRead(
           tenantId,
           role: context.selectedRole,
           professionalId: context.professionalId,
+          capabilities: demoCatalogCapabilities(context.permissions, env.SELECTOR_DEMO_WRITES_ENABLED === 'true', context.professionalId),
         },
         requestId,
         correlationId,
@@ -86,7 +88,7 @@ export async function selectorRead(
       );
       // Even a synthetic catalog must not become a transport for contact data.
       const data =
-        kind === 'customers'
+        kind === 'customers' && env.SELECTOR_DEMO_WRITES_ENABLED !== 'true'
           ? result.data.map((row) => ({
               id: row.id,
               tenantId: row.tenantId,
