@@ -572,6 +572,43 @@ rejeitados. Os novos deployments registram origem, tentativas, job verify e SHA 
 controle. A leitura histórica usa a tentativa registrada, sem invalidar publicação
 verificada por causa de uma reexecução posterior. Registros legados continuam aceitos.
 
+### Recuperação de Worker pelo CI
+
+Após uma falha de deploy em um push da `feature/microsservices`, o CI gera o
+artefato `worker-recovery-<tentativa>`. Para `NO_ACCEPTED_RECORD` com
+`hasVersionRecord: false`, o plano confirma que apenas o Worker afetado está sem
+proveniência e busca uma versão de tráfego integral no histórico retornado pela
+Cloudflare. O plano `ready` identifica o alvo exato, o commit comprovado e os
+IDs das versões e dos deployments observados para os três Workers. Outros erros,
+incompatibilidades ou falta de um candidato elegível mantêm a publicação bloqueada.
+
+O GitHub exige que o gatilho `workflow_dispatch` esteja registrado na branch
+padrão. Depois de promover o descritor do CI para `main`, use **Actions → CI →
+Run workflow**, selecione `feature/microsservices` e informe
+`recovery_run_id` e `recovery_attempt` da execução com plano `ready`.
+O job de preparação confere a identidade da execução original e mostra o plano.
+O job de recuperação passa pelos testes do CI e pela aprovação de `production`
+e usa a fila `beauty-production`.
+
+Antes de aprovar, revise a compatibilidade com os dados atuais e coordene a
+janela operacional. Após a aprovação, o job relê o snapshot e repete as
+validações. Mudanças nos deployments interrompem a tentativa. A API Cloudflare
+não oferece escrita condicional por deployment anterior, portanto a janela
+também precisa excluir mudanças administrativas feitas fora do GitHub Actions.
+
+A recuperação ativa a versão aprovada em 100% do tráfego do Worker afetado.
+Confira o artefato `worker-recovery-result-<tentativa>`. Após `restored` e a
+pós-verificação, o CI solicita automaticamente uma nova execução apenas do job
+de publicação que falhou em **Deploy after CI / Deploy**. No workflow atual, o
+job exibe **Deploy after CI / Publish … at …**. A solicitação é feita depois que
+a recuperação libera `beauty-production`. A execução original recebe uma nova
+tentativa e segue a aprovação normal de `production`.
+
+Se a execução original já tiver outra tentativa, o CI interrompe a solicitação.
+Se a restauração ou a pós-verificação falhar, o deploy não é reexecutado. Em
+caso de erro de transporte, confira o estado remoto e a execução original antes
+de tomar outra ação.
+
 ### Recuperação do Operations após a execução 45922893262
 
 Na raiz de `feature/microsservices`, com o Node de `.nvmrc` e as dependências

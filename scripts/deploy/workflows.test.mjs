@@ -387,3 +387,46 @@ test('coordinated managed upgrade is an explicit protected workflow with immutab
     ),
   );
 });
+
+test('worker recovery uses a plan from failed CI and requires production approval', () => {
+  const ci = workflow('ci');
+  const recover = ci.jobs.recover;
+  assert.deepEqual(recover.needs, ['verify', 'recovery-plan']);
+  assert.equal(recover.environment, 'production');
+  assert.equal(recover.concurrency.group, 'beauty-production');
+  assert.equal(recover.concurrency['cancel-in-progress'], false);
+  assert.match(recover.if, /workflow_dispatch/);
+  assert.equal(recover.permissions.deployments, 'read');
+  assert.match(
+    ci.jobs['recovery-plan'].steps[0].run,
+    /\.conclusion == "failure"/,
+  );
+  assert.match(ci.jobs['recovery-plan'].steps[0].run, /gh run download/);
+  const steps = workflow('deploy-workers').jobs.deploy.steps;
+  const plan = steps.find((step) => step.id === 'recovery-plan');
+  assert.match(plan.if, /steps\.release\.outcome == 'failure'/);
+  assert.match(plan.run, /worker-recovery\.mjs plan/);
+});
+
+test('recovery retries only the original failed deploy after verified restoration', () => {
+  const { jobs } = workflow('ci');
+  const load = jobs['recovery-plan'].steps[0].run;
+  assert.match(load, /Deploy after CI \/ Deploy/);
+  assert.match(load, /Deploy after CI \/ Publish/);
+  assert.match(load, /select\(length == 1\)/);
+  assert.match(load, /Validate provenance, publish and verify Workers/);
+  const restore = jobs.recover.steps.find((step) => step.id === 'restore');
+  assert.match(restore.run, /\.status == "restored"/);
+  const retry = jobs['retry-deploy'];
+  assert.deepEqual(retry.needs, ['recovery-plan', 'recover']);
+  assert.match(retry.if, /needs\.recover\.result == 'success'/);
+  assert.match(retry.if, /needs\.recover\.outputs\.restored == 'true'/);
+  assert.deepEqual(retry.permissions, { actions: 'write' });
+  const job = retry.steps[0];
+  assert.equal(
+    job.env.DEPLOY_JOB_ID,
+    '${{ needs.recovery-plan.outputs.deploy_job_id }}',
+  );
+  assert.match(job.run, /\.run_attempt == \$attempt/);
+  assert.match(job.run, /--method POST "\$api\/jobs\/\$DEPLOY_JOB_ID\/rerun"/);
+});
