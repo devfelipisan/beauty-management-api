@@ -79,6 +79,7 @@ jobs:
     outputs:
       plan: ${{ steps.plan.outputs.plan }}
       target: ${{ steps.plan.outputs.target }}
+      deploy_job_id: ${{ steps.plan.outputs.deploy_job_id }}
     steps:
       - name: Verify source run and load its immutable plan
         id: plan
@@ -89,12 +90,26 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$SOURCE_RUN" =~ ^[1-9][0-9]*$ && "$SOURCE_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN/attempts/$SOURCE_ATTEMPT" |
-            jq -e --arg repo "$GITHUB_REPOSITORY" '
-              .repository.full_name == $repo and .head_repository.full_name == $repo and
-              .head_branch == "feature/microsservices" and .path == ".github/workflows/ci.yml" and
-              .event == "push" and .conclusion == "failure"
-            ' >/dev/null
+          api="repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN"
+          source_sha=$(gh api "$api" |
+            jq -er --arg repo "$GITHUB_REPOSITORY" --argjson attempt "$SOURCE_ATTEMPT" '
+              select(
+                .repository.full_name == $repo and .head_repository.full_name == $repo and
+                .head_branch == "feature/microsservices" and .path == ".github/workflows/ci.yml" and
+                .event == "push" and .status == "completed" and .conclusion == "failure" and
+                .run_attempt == $attempt
+              ) | .head_sha | select(test("^[0-9a-f]{40}$"))
+            ')
+          deploy_job_id=$(gh api --paginate "$api/attempts/$SOURCE_ATTEMPT/jobs?per_page=100" |
+            jq -ser --arg sha "$source_sha" '
+              [.[].jobs[] | select(
+                .conclusion == "failure" and
+                (.name == "Deploy after CI / Deploy" or
+                 (.name | test("^Deploy after CI / Publish (all|billing|clinical|operations) at " + $sha + "$"))) and
+                any(.steps[]?; .name == "Validate provenance, publish and verify Workers" and .conclusion == "failure")
+              )] | select(length == 1) | .[0].id | select(type == "number" and . > 0)
+            ')
+          printf 'deploy_job_id=%s\n' "$deploy_job_id" >> "$GITHUB_OUTPUT"
           gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name "worker-recovery-$SOURCE_ATTEMPT" --dir recovery
           jq -e '
             .status == "ready" and (.worker | IN("billing", "clinical", "operations")) and
@@ -105,6 +120,8 @@ jobs:
           printf 'target=%s\n' "$(jq -r '.worker + " " + .target' recovery/plan.json)" >> "$GITHUB_OUTPUT"
   recover:
     name: Restore ${{ needs.recovery-plan.outputs.target }}
+    outputs:
+      restored: ${{ steps.restore.outputs.restored }}
     needs: [verify, recovery-plan]
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/microsservices'
     runs-on: ubuntu-latest
@@ -131,6 +148,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/check-production-protection.mjs production
       - name: Revalidate and restore the approved version
+        id: restore
         env:
           APPROVED_PLAN: ${{ needs.recovery-plan.outputs.plan }}
           GITHUB_TOKEN: ${{ github.token }}
@@ -141,6 +159,8 @@ jobs:
           mkdir -p .cache/worker-recovery
           printf '%s\n' "$APPROVED_PLAN" > .cache/worker-recovery/plan.json
           node scripts/infra/worker-recovery.mjs apply .cache/worker-recovery/plan.json | tee .cache/worker-recovery/result.json
+          jq -e '.status == "restored"' .cache/worker-recovery/result.json >/dev/null
+          echo 'restored=true' >> "$GITHUB_OUTPUT"
       - name: Preserve recovery result
         if: always()
         uses: actions/upload-artifact@v4
@@ -148,3 +168,27 @@ jobs:
           name: worker-recovery-result-${{ github.run_attempt }}
           path: .cache/worker-recovery/result.json
           if-no-files-found: ignore
+  retry-deploy:
+    name: Retry the original production deploy
+    needs: [recovery-plan, recover]
+    if: needs.recover.result == 'success' && needs.recover.outputs.restored == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Queue the failed deploy job from the original run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.recovery_run_id }}
+          SOURCE_ATTEMPT: ${{ inputs.recovery_attempt }}
+          DEPLOY_JOB_ID: ${{ needs.recovery-plan.outputs.deploy_job_id }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN" =~ ^[1-9][0-9]*$ && "$SOURCE_ATTEMPT" =~ ^[1-9][0-9]*$ && "$DEPLOY_JOB_ID" =~ ^[1-9][0-9]*$ ]]
+          api="repos/$GITHUB_REPOSITORY/actions"
+          gh api "$api/runs/$SOURCE_RUN" |
+            jq -e --argjson attempt "$SOURCE_ATTEMPT" '
+              .run_attempt == $attempt and .status == "completed" and .conclusion == "failure"
+            ' >/dev/null
+          gh api --method POST "$api/jobs/$DEPLOY_JOB_ID/rerun"
+          printf 'Deploy job %s queued in original run %s.\n' "$DEPLOY_JOB_ID" "$SOURCE_RUN"

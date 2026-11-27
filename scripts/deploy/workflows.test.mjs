@@ -407,3 +407,26 @@ test('worker recovery uses a plan from failed CI and requires production approva
   assert.match(plan.if, /steps\.release\.outcome == 'failure'/);
   assert.match(plan.run, /worker-recovery\.mjs plan/);
 });
+
+test('recovery retries only the original failed deploy after verified restoration', () => {
+  const { jobs } = workflow('ci');
+  const load = jobs['recovery-plan'].steps[0].run;
+  assert.match(load, /Deploy after CI \/ Deploy/);
+  assert.match(load, /Deploy after CI \/ Publish/);
+  assert.match(load, /select\(length == 1\)/);
+  assert.match(load, /Validate provenance, publish and verify Workers/);
+  const restore = jobs.recover.steps.find((step) => step.id === 'restore');
+  assert.match(restore.run, /\.status == "restored"/);
+  const retry = jobs['retry-deploy'];
+  assert.deepEqual(retry.needs, ['recovery-plan', 'recover']);
+  assert.match(retry.if, /needs\.recover\.result == 'success'/);
+  assert.match(retry.if, /needs\.recover\.outputs\.restored == 'true'/);
+  assert.deepEqual(retry.permissions, { actions: 'write' });
+  const job = retry.steps[0];
+  assert.equal(
+    job.env.DEPLOY_JOB_ID,
+    '${{ needs.recovery-plan.outputs.deploy_job_id }}',
+  );
+  assert.match(job.run, /\.run_attempt == \$attempt/);
+  assert.match(job.run, /--method POST "\$api\/jobs\/\$DEPLOY_JOB_ID\/rerun"/);
+});

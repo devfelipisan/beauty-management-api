@@ -597,9 +597,17 @@ não oferece escrita condicional por deployment anterior, portanto a janela
 também precisa excluir mudanças administrativas feitas fora do GitHub Actions.
 
 A recuperação ativa a versão aprovada em 100% do tráfego do Worker afetado.
-Confira o artefato `worker-recovery-result-<tentativa>` e, após `restored`,
-reexecute os jobs de deploy da execução original. Em caso de erro de transporte
-ou de pós-verificação, inspecione o estado real antes de tomar outra ação.
+Confira o artefato `worker-recovery-result-<tentativa>`. Após `restored` e a
+pós-verificação, o CI solicita automaticamente uma nova execução apenas do job
+de publicação que falhou em **Deploy after CI / Deploy**. No workflow atual, o
+job exibe **Deploy after CI / Publish … at …**. A solicitação é feita depois que
+a recuperação libera `beauty-production`. A execução original recebe uma nova
+tentativa e segue a aprovação normal de `production`.
+
+Se a execução original já tiver outra tentativa, o CI interrompe a solicitação.
+Se a restauração ou a pós-verificação falhar, o deploy não é reexecutado. Em
+caso de erro de transporte, confira o estado remoto e a execução original antes
+de tomar outra ação.
 
 ### Recuperação do Operations após a execução 45922893262
 
