@@ -387,3 +387,23 @@ test('coordinated managed upgrade is an explicit protected workflow with immutab
     ),
   );
 });
+
+test('worker recovery uses a plan from failed CI and requires production approval', () => {
+  const ci = workflow('ci');
+  const recover = ci.jobs.recover;
+  assert.deepEqual(recover.needs, ['verify', 'recovery-plan']);
+  assert.equal(recover.environment, 'production');
+  assert.equal(recover.concurrency.group, 'beauty-production');
+  assert.equal(recover.concurrency['cancel-in-progress'], false);
+  assert.match(recover.if, /workflow_dispatch/);
+  assert.equal(recover.permissions.deployments, 'read');
+  assert.match(
+    ci.jobs['recovery-plan'].steps[0].run,
+    /\.conclusion == "failure"/,
+  );
+  assert.match(ci.jobs['recovery-plan'].steps[0].run, /gh run download/);
+  const steps = workflow('deploy-workers').jobs.deploy.steps;
+  const plan = steps.find((step) => step.id === 'recovery-plan');
+  assert.match(plan.if, /steps\.release\.outcome == 'failure'/);
+  assert.match(plan.run, /worker-recovery\.mjs plan/);
+});

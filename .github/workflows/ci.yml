@@ -5,6 +5,16 @@ on:
     branches: [main, feature/microsservices]
   pull_request:
     branches: [main, feature/microsservices]
+  workflow_dispatch:
+    inputs:
+      recovery_run_id:
+        description: ID of the failed production CI run
+        required: true
+        type: string
+      recovery_attempt:
+        description: Attempt that produced the recovery plan
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -59,3 +69,82 @@ jobs:
       commit_sha: ${{ github.sha }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  recovery-plan:
+    name: Load recovery plan
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/microsservices'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      plan: ${{ steps.plan.outputs.plan }}
+      target: ${{ steps.plan.outputs.target }}
+    steps:
+      - name: Verify source run and load its immutable plan
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.recovery_run_id }}
+          SOURCE_ATTEMPT: ${{ inputs.recovery_attempt }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN" =~ ^[1-9][0-9]*$ && "$SOURCE_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN/attempts/$SOURCE_ATTEMPT" |
+            jq -e --arg repo "$GITHUB_REPOSITORY" '
+              .repository.full_name == $repo and .head_repository.full_name == $repo and
+              .head_branch == "feature/microsservices" and .path == ".github/workflows/ci.yml" and
+              .event == "push" and .conclusion == "failure"
+            ' >/dev/null
+          gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name "worker-recovery-$SOURCE_ATTEMPT" --dir recovery
+          jq -e '
+            .status == "ready" and (.worker | IN("billing", "clinical", "operations")) and
+            (.target | test("^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$"))
+          ' recovery/plan.json >/dev/null
+          jq . recovery/plan.json
+          printf 'plan=%s\n' "$(jq -c . recovery/plan.json)" >> "$GITHUB_OUTPUT"
+          printf 'target=%s\n' "$(jq -r '.worker + " " + .target' recovery/plan.json)" >> "$GITHUB_OUTPUT"
+  recover:
+    name: Restore ${{ needs.recovery-plan.outputs.target }}
+    needs: [verify, recovery-plan]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/microsservices'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: beauty-production
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+      deployments: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Recheck production approval policy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-production-protection.mjs production
+      - name: Revalidate and restore the approved version
+        env:
+          APPROVED_PLAN: ${{ needs.recovery-plan.outputs.plan }}
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p .cache/worker-recovery
+          printf '%s\n' "$APPROVED_PLAN" > .cache/worker-recovery/plan.json
+          node scripts/infra/worker-recovery.mjs apply .cache/worker-recovery/plan.json | tee .cache/worker-recovery/result.json
+      - name: Preserve recovery result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-recovery-result-${{ github.run_attempt }}
+          path: .cache/worker-recovery/result.json
+          if-no-files-found: ignore

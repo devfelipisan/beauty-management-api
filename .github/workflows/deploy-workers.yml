@@ -137,6 +137,25 @@ jobs:
           name: provenance-diagnostic-${{ needs.prepare.outputs.commitSha }}-${{ github.run_attempt }}
           path: .cache/provenance-diagnostic/result.json
           if-no-files-found: ignore
+      - name: Prepare a recovery plan after a provenance failure
+        id: recovery-plan
+        if: failure() && steps.release.outcome == 'failure' && github.event_name == 'push'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          mkdir -p .cache/worker-recovery
+          node .release-control/scripts/infra/worker-recovery.mjs plan .cache/deployment/result.json | tee .cache/worker-recovery/plan.json
+      - name: Preserve recovery plan
+        if: always() && steps.recovery-plan.outcome != 'skipped' && steps.recovery-plan.outcome != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-recovery-${{ github.run_attempt }}
+          path: .cache/worker-recovery/plan.json
+          if-no-files-found: error
       - name: Preserve partial results
         if: always()
         uses: actions/upload-artifact@v4
