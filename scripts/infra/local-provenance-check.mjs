@@ -11,6 +11,10 @@ const repository = 'devfelipisan/beauty-management-api';
 const present = (value) => typeof value === 'string' && value.trim().length > 0;
 const uuid = (value) =>
   /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value ?? '');
+const positive = (value) =>
+  /^\d+$/.test(String(value)) &&
+  Number.isSafeInteger(Number(value)) &&
+  Number(value) > 0;
 
 export function validateLocalEnvironment(env = process.env) {
   const checks = Object.fromEntries(
@@ -87,6 +91,12 @@ export async function diagnoseProvenance({
         fail('REMOTE_RESPONSE_INVALID', { ...context, worker });
       result.provenance = 'verified';
       result.commitSha = proof.commitSha;
+      // GitHub evidence is distinct from the Cloudflare deployment above.
+      result.evidence = Object.fromEntries(
+        ['deploymentId', 'runId', 'runAttempt']
+          .filter((key) => positive(proof.evidence?.[key]))
+          .map((key) => [key, proof.evidence[key]]),
+      );
     } catch (error) {
       report.failures++;
       result.failure = diagnostic(error, { ...context, worker });

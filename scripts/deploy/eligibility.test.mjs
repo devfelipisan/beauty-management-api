@@ -67,7 +67,7 @@ function scenario(options = {}) {
     controlSha: own.head_sha,
   };
   const payload = {
-    worker: 'billing',
+    worker: options.worker ?? 'billing',
     commitSha: sha,
     versionId: version,
     manifestDigest: digest(manifest),
@@ -260,6 +260,25 @@ test('historical automatic and manual provenance survives later failed verify at
     );
   }
 });
+test('completed automatic Operations record returns its own historical SHA and verification evidence', async () => {
+  const f = scenario({
+    worker: 'operations',
+    ci: { status: 'completed', conclusion: 'success' },
+  });
+  const proof = await f.client.provenanceByVersion('operations', version);
+  assert.equal(proof.commitSha, sha);
+  assert.equal(proof.versionId, version);
+  assert.deepEqual(proof.workerManifest, manifest.workers.operations);
+  assert.deepEqual(proof.evidence, {
+    runId: '100',
+    runAttempt: 1,
+    verification: 'passed',
+    deploymentId: 1,
+    manifestDigest: digest(manifest),
+  });
+  assert.deepEqual(f.writes, []);
+});
+
 test('provenance rejects forged job, attempt, origin and control identity', async () => {
   for (const proof of [
     { verifyJobId: 999 },

@@ -122,6 +122,39 @@ test('release supports call and dispatch with a protected publication and read-o
     commands.includes('node .release-control/scripts/deploy-workers.mjs'),
   );
 });
+test('failed release collects read-only provenance separately without masking the publication failure', () => {
+  const steps = workflow('deploy-workers').jobs.deploy.steps;
+  const release = steps.find((step) => step.id === 'release');
+  const diagnosis = steps.find((step) => step.id === 'provenance-diagnostic');
+  const artifact = steps.find(
+    (step) => step.with?.path === '.cache/provenance-diagnostic/result.json',
+  );
+  const original = steps.find(
+    (step) => step.with?.path === '.cache/deployment/result.json',
+  );
+  assert.ok(steps.indexOf(diagnosis) > steps.indexOf(release));
+  assert.equal(release['continue-on-error'], undefined);
+  assert.equal(diagnosis.if, "failure() && steps.release.outcome == 'failure'");
+  assert.equal(diagnosis['continue-on-error'], true);
+  for (const key of [
+    'GITHUB_TOKEN',
+    'CLOUDFLARE_API_TOKEN',
+    'CLOUDFLARE_ACCOUNT_ID',
+  ])
+    assert.equal(diagnosis.env[key], release.env[key]);
+  assert.equal(
+    diagnosis.run,
+    'mkdir -p .cache/provenance-diagnostic\nnode .release-control/scripts/infra/local-provenance-check.mjs > .cache/provenance-diagnostic/result.json\n',
+  );
+  assert.equal(artifact.if, "always() && steps.release.outcome == 'failure'");
+  assert.equal(artifact.uses, 'actions/upload-artifact@v4');
+  assert.equal(
+    artifact.with.name,
+    'provenance-diagnostic-${{ needs.prepare.outputs.commitSha }}-${{ github.run_attempt }}',
+  );
+  assert.equal(original.if, 'always()');
+});
+
 test('audit is initially manual and isolated from mutable environments and credentials', () => {
   const audit = workflow('infrastructure-audit');
   assert.deepEqual(Object.keys(audit.on), ['workflow_dispatch']);

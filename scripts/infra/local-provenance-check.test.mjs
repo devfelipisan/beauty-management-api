@@ -16,6 +16,7 @@ function remote({
   noRecords = false,
   denied = false,
   maliciousId = false,
+  wrongVersion = false,
 } = {}) {
   const calls = [];
   return {
@@ -53,7 +54,9 @@ function remote({
                   payload: {
                     worker,
                     commitSha: sha,
-                    versionId: version,
+                    versionId: wrongVersion
+                      ? '08d84654-2c06-43b1-99db-f9ac2e123b5c'
+                      : version,
                     manifestDigest: digest(manifest),
                     runId: '99',
                     baseline: false,
@@ -127,6 +130,16 @@ test('all Workers use the real clients, verify provenance and make only GET requ
   assert.ok(
     f.calls.length > 0 && f.calls.every((call) => call.method === 'GET'),
   );
+  assert.ok(
+    report.workers.every((worker) => {
+      assert.deepEqual(worker.evidence, {
+        deploymentId: 1,
+        runId: '99',
+        runAttempt: 1,
+      });
+      return true;
+    }),
+  );
   for (const secret of Object.values(env))
     assert.ok(!JSON.stringify(report).includes(secret));
 });
@@ -139,9 +152,24 @@ test('valid credentials do not imply provenance; NO_RECORDS is reported for all 
     report.workers.every(
       (worker) =>
         worker.cloudflare === 'connected' &&
+        worker.failure.versionId === version &&
         worker.failure.provenanceReason === 'NO_RECORDS',
     ),
   );
+});
+
+test('existing rejected records keep the observed Cloudflare version distinct from stored evidence', async () => {
+  const f = remote({ wrongVersion: true });
+  const report = await diagnoseProvenance({ env, fetchImpl: f.fetchImpl });
+  assert.equal(report.status, 'PROVENANCE_CHECK_FAILED');
+  for (const worker of report.workers) {
+    assert.equal(worker.versionId, version);
+    assert.equal(worker.failure.versionId, version);
+    assert.equal(worker.failure.provenanceReason, 'NO_ACCEPTED_RECORD');
+    assert.equal(worker.commitSha, undefined);
+    assert.equal(worker.evidence, undefined);
+  }
+  assert.ok(f.calls.every((call) => call.method === 'GET'));
 });
 test('denied access does not prevent diagnosing the other Workers or leak untrusted metadata', async () => {
   const f = remote({ denied: true, maliciousId: true });

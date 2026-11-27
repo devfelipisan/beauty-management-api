@@ -447,11 +447,14 @@ test('safe diagnostics exclude unknown upstream data and unapproved fields', () 
 });
 test('missing previous provenance blocks all Workers before any publication', async () => {
   const f = fixture();
-  f.github.provenanceByVersion = async () =>
+  f.github.provenanceByVersion = async (worker, versionId) =>
     fail('PROVENANCE_UNAVAILABLE', {
       phase: 'provenance',
       operation: 'github.deployment',
-      worker: 'billing',
+      worker,
+      versionId,
+      commitSha: context.commitSha,
+      provenanceReason: 'NO_ACCEPTED_RECORD',
     });
   const result = await release({
     ...f,
@@ -463,6 +466,9 @@ test('missing previous provenance blocks all Workers before any publication', as
   });
   assert.equal(result.status, 'failed');
   assert.equal(result.failure.code, 'PROVENANCE_UNAVAILABLE');
+  assert.equal(result.failure.versionId, version);
+  assert.equal(result.failure.commitSha, context.commitSha);
+  assert.equal(result.failure.provenanceReason, 'NO_ACCEPTED_RECORD');
   assert.equal(result.workers.length, 0);
 });
 test('full publication retains actual versions and stops if GitHub registration fails', async () => {

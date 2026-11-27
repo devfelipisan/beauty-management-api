@@ -70,6 +70,32 @@ PROVENANCE_CHECK_PASSED retorna zero; configuração inválida ou qualquer falha
 um. Não publica Workers, não registra Deployments, não executa migrations e não
 carrega arquivos de credenciais automaticamente.
 
+Quando a proveniência é aceita, cada Worker informa o SHA histórico comprovado e
+`evidence` com os identificadores numéricos seguros do Deployment GitHub, execução
+e tentativa. O `deploymentId` externo a `evidence` pertence à Cloudflare; não
+confundir os dois registros. Em `PROVENANCE_UNAVAILABLE`, `versionId` identifica
+exatamente a versão consultada, somente quando for um UUID válido e a fase/operação
+forem `provenance/github.deployment`. O `commitSha` do erro pode ser o candidato ao
+release; não é uma afirmação sobre a origem do código já ativo.
+
+Após falha da etapa de release, o workflow executa esse diagnóstico com o mesmo
+checkout confiável `.release-control` e as mesmas credenciais. O artefato separado
+`provenance-diagnostic-<SHA>-<tentativa>` contém `result.json`; a falha original e o
+artefato `deployment-<SHA>-<tentativa>` são preservados. O diagnóstico faz somente
+GETs e não transforma o job de publicação em sucesso. Seu snapshot é posterior à
+falha e pode observar alterações concorrentes: comparar com o `versionId` do erro
+original antes de concluir que o validador rejeitou a mesma versão.
+
+Para qualificar uma correção, exigir `npm run check:release` aprovado no Node de
+`.nvmrc`, diagnóstico remoto aprovado para os três Workers e preflight compatível
+com a topologia real. A aprovação local comprova simulações; todas as etapas
+operacionais só ficam comprovadas após um release autorizado terminar em sucesso,
+com três verificações `passed`, versões ativas iguais às publicadas e Deployments
+GitHub com status `success`. Reexecutar o diagnóstico somente leitura depois da
+publicação para confirmar a aceitação das novas provas. Não recriar Deployments,
+substituir hashes históricos pelo SHA candidato ou preencher baseline para
+contornar `NO_ACCEPTED_RECORD`; investigar a evidência rejeitada.
+
 Token presente não comprova autenticação ou permissão. Se retornar connected e
 PROVENANCE_UNAVAILABLE/NO_RECORDS, a configuração local foi ultrapassada, mas a
 adoção inicial continua pendente. Este diagnóstico não substitui readiness nem

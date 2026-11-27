@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { githubClient } from './github-client.mjs';
+import { DeploymentValidationError, diagnostic } from './errors.mjs';
 import { digest } from './manifest.mjs';
 import { sha, version, manifest } from './fixtures.mjs';
 const repository = 'owner/beauty',
@@ -264,6 +265,49 @@ test('unassociated versions, altered manifests and unrelated workflows fail clos
       provenanceFixture(options).client.provenanceByVersion('billing', version),
       { code: 'PROVENANCE_UNAVAILABLE' },
     );
+});
+
+test('rejected provenance identifies the queried version without leaking malformed IDs', async () => {
+  const active = '08d84654-2c06-43b1-99db-f9ac2e123b5c';
+  for (const requested of [active, 'PRIVATE_VERSION_VALUE']) {
+    await assert.rejects(
+      provenanceFixture().client.provenanceByVersion('operations', requested),
+      (error) => {
+        const report = diagnostic(error);
+        assert.equal(report.provenanceReason, 'NO_ACCEPTED_RECORD');
+        assert.equal(
+          report.versionId,
+          requested === active ? active : undefined,
+        );
+        assert.ok(!JSON.stringify(report).includes('PRIVATE_VERSION_VALUE'));
+        return true;
+      },
+    );
+  }
+});
+
+test('version diagnostic is allowlisted at construction and serialization only for provenance deployments', () => {
+  const scope = {
+    phase: 'provenance',
+    operation: 'github.deployment',
+    versionId: version,
+  };
+  const valid = new DeploymentValidationError('PROVENANCE_UNAVAILABLE', scope);
+  assert.equal(diagnostic(valid).versionId, version);
+  valid.versionId = 'PRIVATE_VALUE';
+  assert.equal(diagnostic(valid).versionId, undefined);
+  for (const [code, context] of [
+    ['PROVENANCE_UNAVAILABLE', { ...scope, phase: 'preflight' }],
+    ['PROVENANCE_UNAVAILABLE', { ...scope, operation: 'github.ci' }],
+    ['BINDING_MISMATCH', scope],
+    ['PROVENANCE_UNAVAILABLE', { ...scope, versionId: { private: true } }],
+  ]) {
+    const error = new DeploymentValidationError(code, context);
+    assert.equal(error.versionId, undefined);
+    error.versionId = version;
+    if (context.versionId === scope.versionId)
+      assert.equal(diagnostic(error).versionId, undefined);
+  }
 });
 test('completed protected adoption becomes durable provenance without retained historical artifacts', async () => {
   const f = provenanceFixture({

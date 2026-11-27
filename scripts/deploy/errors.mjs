@@ -116,6 +116,12 @@ function contractFields(value) {
 }
 export const requiredBindingsFailure =
   'Required production bindings unavailable; deployment blocked.';
+const provenanceVersion = (value) =>
+  value.code === 'PROVENANCE_UNAVAILABLE' &&
+  value.phase === 'provenance' &&
+  value.operation === 'github.deployment' &&
+  typeof value.versionId === 'string' &&
+  /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value.versionId);
 export class DeploymentValidationError extends Error {
   constructor(code, context = {}) {
     super(requiredBindingsFailure);
@@ -176,6 +182,8 @@ export class DeploymentValidationError extends Error {
       ['NO_RECORDS', 'NO_ACCEPTED_RECORD'].includes(context.provenanceReason)
     )
       this.provenanceReason = context.provenanceReason;
+    if (provenanceVersion({ ...this, versionId: context.versionId }))
+      this.versionId = context.versionId;
   }
 }
 export function diagnostic(error, context = {}) {
@@ -196,6 +204,7 @@ export function diagnostic(error, context = {}) {
       'reason',
       'selector',
       'provenanceReason',
+      'versionId',
       'databaseReason',
       'wranglerReason',
       'exitCode',
@@ -207,6 +216,7 @@ export function diagnostic(error, context = {}) {
       .filter(
         (key) =>
           safe[key] !== undefined &&
+          (key !== 'versionId' || provenanceVersion(safe)) &&
           (!['dependency', 'topologyStage', 'updatedWorker'].includes(key) ||
             (safe.code === 'CONTRACT_INCOMPATIBLE' &&
               safe.operation === 'github.manifest' &&

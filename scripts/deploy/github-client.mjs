@@ -363,6 +363,7 @@ export function githubClient({
       phase: 'provenance',
       worker,
       operation: 'github.deployment',
+      versionId,
     };
     const records = await pages(
       `/deployments?environment=production&task=beauty-release-${worker}`,

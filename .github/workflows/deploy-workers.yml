@@ -111,12 +111,31 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: node .release-control/scripts/infra/manage-cron.mjs --apply
       - name: Validate provenance, publish and verify Workers
+        id: release
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           TARGET_SHA: ${{ needs.prepare.outputs.commitSha }}
         run: node .release-control/scripts/deploy-workers.mjs --sha "$TARGET_SHA"
+      - name: Diagnose active versions and provenance after release failure
+        id: provenance-diagnostic
+        if: failure() && steps.release.outcome == 'failure'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          mkdir -p .cache/provenance-diagnostic
+          node .release-control/scripts/infra/local-provenance-check.mjs > .cache/provenance-diagnostic/result.json
+      - name: Preserve provenance diagnostic independently of release results
+        if: always() && steps.release.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: provenance-diagnostic-${{ needs.prepare.outputs.commitSha }}-${{ github.run_attempt }}
+          path: .cache/provenance-diagnostic/result.json
+          if-no-files-found: ignore
       - name: Preserve partial results
         if: always()
         uses: actions/upload-artifact@v4
