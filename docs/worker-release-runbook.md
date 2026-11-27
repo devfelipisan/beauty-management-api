@@ -572,6 +572,40 @@ rejeitados. Os novos deployments registram origem, tentativas, job verify e SHA 
 controle. A leitura histórica usa a tentativa registrada, sem invalidar publicação
 verificada por causa de uma reexecução posterior. Registros legados continuam aceitos.
 
+### Recuperação do Operations após a execução 45922893262
+
+Na raiz de `feature/microsservices`, com o Node de `.nvmrc` e as dependências
+instaladas, exporte `GITHUB_TOKEN` com acesso de leitura aos Deployments, Actions
+e código histórico e as credenciais autorizadas da Cloudflare. Rode a inspeção
+antes de solicitar aprovação para recuperar produção:
+
+```bash
+node scripts/infra/recover-operations.mjs
+```
+
+O resultado `ready` valida a proveniência da versão de destino e avalia seus
+bindings, os contratos RPC, o cron e o histórico de migrations contra o estado
+remoto. Revise também os efeitos sobre os dados atuais e coordene uma janela sem
+outros deploys ou alterações administrativas. A releitura antes da escrita
+detecta mudanças observadas no snapshot. A API de ativação não oferece escrita
+condicional por deployment anterior.
+
+Com autorização de produção e token Cloudflare com permissão de escrita para
+Workers, restaure o Operations:
+
+```bash
+node scripts/infra/recover-operations.mjs --apply 06447e36-33bb-4b9e-8a94-d6b1e5aabf87
+```
+
+O comando exige as versões observadas de Billing e Clinical e restaura a versão
+existente `08d84654-2c06-43b1-99db-f9ac2e123b5c` em 100% do tráfego. Ele
+consulta novamente a Cloudflare e o registro de proveniência depois da ativação.
+Em caso de erro de transporte ou de pós-verificação, rode a inspeção novamente
+para verificar o estado remoto antes de decidir por outra ação. Com resultado
+`restored` ou `already_restored`, confirme `PROVENANCE_CHECK_PASSED` com
+`node scripts/infra/local-provenance-check.mjs` e reexecute os jobs de publicação
+que falharam.
+
 ## Auditoria
 
 Publicar workflow e módulos de controle em main, confirmada como branch padrão.
