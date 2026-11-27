@@ -1,6 +1,7 @@
 import {
   requiredProductionText,
   requiredJwtSecretNames,
+  optionalProductionTextNames,
 } from './config-contract.mjs';
 import { cronVariableNames, workerCronPolicy } from './cron-policy.mjs';
 import { DeploymentValidationError, diagnostic } from './errors.mjs';
@@ -29,6 +30,7 @@ function knownNames(name, config, expected, transitions, expectedText) {
     ...expected.map((b) => b.name),
     ...Object.keys(expectedText ?? requiredProductionText(name)),
     ...Object.keys(config.vars ?? {}),
+    ...optionalProductionTextNames(name),
     ...(config.secrets?.required ?? requiredJwtSecretNames),
     ...transitions.map((t) => t.name),
     ...(name === 'operations' ? cronVariableNames : []),
@@ -50,6 +52,7 @@ function* runtimeChecks(settings, name, context = {}) {
   scope.allowedBindings = new Set([
     ...Object.keys(context.expectedText ?? requiredProductionText(name)),
     ...requiredJwtSecretNames,
+    ...optionalProductionTextNames(name),
   ]);
   for (const [key, value] of Object.entries(
     context.expectedText ?? requiredProductionText(name),
@@ -69,6 +72,30 @@ function* runtimeChecks(settings, name, context = {}) {
     const binding = settings.bindings.find((b) => b.name === key);
     if (binding && binding.type !== 'secret_text')
       yield error('BINDING_TYPE_INVALID', key);
+  }
+  for (const key of optionalProductionTextNames(name)) {
+    const binding = settings.bindings.find((b) => b.name === key);
+    if (!binding) continue;
+    if (binding.type !== 'plain_text') {
+      yield error('BINDING_TYPE_INVALID', key);
+      continue;
+    }
+    let ids;
+    try {
+      if (typeof binding.text === 'string') ids = JSON.parse(binding.text);
+    } catch {
+      // Only the fixed diagnostic below is emitted; never include tenant IDs.
+    }
+    if (
+      !Array.isArray(ids) ||
+      ids.length === 0 ||
+      ids.length > 10 ||
+      !ids.every(
+        (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(id),
+      ) ||
+      new Set(ids).size !== ids.length
+    )
+      yield error('BINDING_VALUE_INVALID', key);
   }
 }
 function* settingsChecks(

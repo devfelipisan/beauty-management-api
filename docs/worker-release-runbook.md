@@ -418,6 +418,27 @@ não existe garantia de fila FIFO. Não duplicar esse grupo no workflow chamador
 
 Se houver erro, consultar código/fase/operation/worker/status no artefato sanitizado.
 
+`SELECTOR_DEMO_TENANT_IDS` é um Text opcional de Operations administrado fora do
+repositório. Quando presente, o validador exige `plain_text` contendo JSON com
+1 a 10 IDs distintos, cada um no padrão `^[A-Za-z0-9_-]{1,128}$`, conforme o
+[contrato do seletor](selector-demo-safety.md). Não preencher IDs de produção no
+Wrangler nem adicionar a variável aos secrets obrigatórios. Sua ausência não
+bloqueia o release; o receiver demo continua fechado por configuração inválida.
+O formato válido não comprova que a massa é sintética: essa revisão permanece
+obrigatória antes da configuração administrativa.
+
+O validador rejeita tipo incorreto com `BINDING_TYPE_INVALID` e conteúdo inválido
+com `BINDING_VALUE_INVALID`, identificando apenas o nome aprovado. Outros Workers
+não recebem essa permissão. Valores e IDs não aparecem no diagnóstico.
+`BINDING_MISMATCH` sem `binding` indica nome desconhecido; conferir privadamente
+os nomes remotos. Uma falha em `preflight/worker.settings` ocorre na comparação
+de settings, antes da consulta de proveniência daquele Worker; não significa
+falha de token GitHub ou ausência de evidência histórica.
+
+O ajuste precisa estar no código confiável usado pelo checkout `.release-control`
+do workflow. Alterar somente o SHA da aplicação não atualiza esse comparador.
+Proveniência, compatibilidade entre Workers e migrations continuam obrigatórias.
+
 Quando disponível, binding identifica exclusivamente um nome declarado no contrato
 ou em transição autorizada, como D1_DATABASE. O mesmo campo aparece no CLI, resumo
 e artefato. Um binding desconhecido resulta em BINDING_MISMATCH sem divulgar seu

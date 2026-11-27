@@ -35,6 +35,10 @@ export const requiredJwtSecretNames = Object.freeze([
   'AUTH_JWKS_URL',
   'AUTH_ALGORITHM',
 ]);
+// Managed remotely; absence keeps the private demo receiver unavailable.
+export function optionalProductionTextNames(name) {
+  return name === 'operations' ? ['SELECTOR_DEMO_TENANT_IDS'] : [];
+}
 export function requiredProductionText(name) {
   return {
     APP_ENV: 'production',
