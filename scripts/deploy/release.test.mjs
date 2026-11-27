@@ -4,7 +4,13 @@ import { release } from './release.mjs';
 import { preflight } from './preflight.mjs';
 import { postcheck } from './postcheck.mjs';
 import { activeVersion } from './worker-state.mjs';
-import { simulateRelease, validateManifest } from './manifest.mjs';
+import {
+  localManifest,
+  simulateRelease,
+  validateManifest,
+} from './manifest.mjs';
+import { execFileSync } from 'node:child_process';
+import { releaseOrder } from './config-contract.mjs';
 import { fail, diagnostic, DeploymentValidationError } from './errors.mjs';
 import {
   fixture,
@@ -294,6 +300,93 @@ test('selector RPC addition preserves rolling compatibility with the immediately
     simulateRelease(current, manifest, ['billing', 'clinical', 'operations']),
   );
 });
+test('demo command manifest matches sources and requires the professional specialty migration', async () => {
+  const computed = localManifest();
+  assert.doesNotThrow(() => validateManifest(manifest, computed));
+  assert.ok(
+    manifest.workers.operations.provided.rpcMethods.includes(
+      'executeSelectedWorkspaceCommand',
+    ),
+  );
+  assert.equal(manifest.workers.operations.minMigration, '0032');
+  assert.deepEqual(
+    manifest.migrations.find(
+      (migration) => migration.name === '0032_professional_specialty.sql',
+    ),
+    computed.migrations.find(
+      (migration) => migration.name === '0032_professional_specialty.sql',
+    ),
+  );
+  const f = fixture((path) =>
+    path.endsWith('/query')
+      ? response([
+          {
+            success: true,
+            results: manifest.migrations
+              .filter(
+                (migration) =>
+                  migration.name !== '0032_professional_specialty.sql',
+              )
+              .map(({ name }) => ({ name })),
+          },
+        ])
+      : undefined,
+  );
+  await assert.rejects(preflight({ ...f, context, configurations, manifest }), {
+    code: 'SCHEMA_NOT_READY',
+  });
+  const query = f.calls.find((call) => call.path.endsWith('/query'));
+  assert.ok(query.body.params.includes('0032_professional_specialty.sql'));
+});
+
+test('demo command rollout preserves reviewed revisions but rejects the actual previous topology', () => {
+  // Last versioned selector manifest, before demo commands and shared contracts.
+  const previous = JSON.parse(
+    execFileSync(
+      'git',
+      [
+        'show',
+        '5077051f6d5afd3c4eb7510f43b47bfeb5f2ba3e:scripts/deploy/manifest.json',
+      ],
+      { encoding: 'utf8' },
+    ),
+  );
+  assert.doesNotThrow(() => simulateRelease(previous.workers, previous, []));
+  for (const [name, worker] of Object.entries(previous.workers)) {
+    for (const [dependency, revisions] of Object.entries(worker.requires)) {
+      for (const revision of revisions)
+        assert.ok(
+          manifest.workers[name].requires[dependency].includes(revision),
+        );
+      assert.ok(
+        manifest.workers[name].requires[dependency].includes(
+          manifest.workers[dependency].provided.revision,
+        ),
+      );
+    }
+    assert.deepEqual(manifest.workers[name].transitions, worker.transitions);
+    assert.equal(
+      manifest.workers[name].configurationHash,
+      worker.configurationHash,
+    );
+    assert.equal(manifest.workers[name].packageVersion, worker.packageVersion);
+  }
+  assert.deepEqual(
+    manifest.migrations.slice(0, previous.migrations.length),
+    previous.migrations,
+  );
+  assert.throws(
+    () => simulateRelease(previous.workers, manifest, releaseOrder),
+    (error) =>
+      error.code === 'CONTRACT_INCOMPATIBLE' &&
+      error.topologyStage === 'after-publish' &&
+      error.updatedWorker === 'billing',
+  );
+  assert.doesNotThrow(() =>
+    simulateRelease(manifest.workers, manifest, releaseOrder),
+  );
+});
+
 test('manifest rejects invented revisions and incomplete transitions', () => {
   const candidate = structuredClone(manifest);
   candidate.workers.billing.provided.revision = 'c'.repeat(64);

@@ -11,7 +11,7 @@ export const workerSpecifications = Object.freeze({
     },
     r2: [{ binding: 'PROFILE_MEDIA', bucket_name: 'beauty-r2' }],
     crons: [],
-    minMigration: '0030',
+    minMigration: '0032',
   },
   billing: {
     services: { OPERATIONS_SERVICE: 'beauty-operations-worker' },

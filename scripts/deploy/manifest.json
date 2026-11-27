@@ -4,11 +4,12 @@
     "operations": {
       "packageVersion": "0.0.1",
       "provided": {
-        "revision": "7d6b894949959893efc9cb9eeca2b406fc3f5fbee70119fe8f4141fee891bc75",
+        "revision": "aed9f33e7cd921e9bef102c262890d870141cca3bd34038009d393fd489191af",
         "rpcMethods": [
           "appointmentChangeRoute",
           "packageAssignmentRoute",
           "readSelectedWorkspace",
+          "executeSelectedWorkspaceCommand",
           "applyDepositConfirmed",
           "applyDepositExpired",
           "getSessionStartContext",
@@ -37,13 +38,15 @@
       },
       "requires": {
         "clinical": [
-          "a49fe9e0c37eb4fb4c3c2330dce03d8f63e6882e3be7387978185d9a1e736ec6"
+          "a49fe9e0c37eb4fb4c3c2330dce03d8f63e6882e3be7387978185d9a1e736ec6",
+          "c3e9d928d8d32ab48a705ce0dcc623eaf7ec651607105dbae0cd2fe4bec9b9aa"
         ],
         "billing": [
-          "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc"
+          "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc",
+          "4c416108a597d48024ed9620951cf791a03f21ded781609508d4d41e2a83684c"
         ]
       },
-      "minMigration": "0030",
+      "minMigration": "0032",
       "productionText": {
         "APP_ENV": "production",
         "AUTH_PROVIDER": "jwt",
@@ -64,7 +67,7 @@
     "billing": {
       "packageVersion": "0.0.1",
       "provided": {
-        "revision": "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc",
+        "revision": "4c416108a597d48024ed9620951cf791a03f21ded781609508d4d41e2a83684c",
         "rpcMethods": [
           "calculateCommercialTerms",
           "createDepositForAppointment",
@@ -96,7 +99,8 @@
       "requires": {
         "operations": [
           "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54",
-          "7d6b894949959893efc9cb9eeca2b406fc3f5fbee70119fe8f4141fee891bc75"
+          "7d6b894949959893efc9cb9eeca2b406fc3f5fbee70119fe8f4141fee891bc75",
+          "aed9f33e7cd921e9bef102c262890d870141cca3bd34038009d393fd489191af"
         ]
       },
       "minMigration": "0026",
@@ -119,7 +123,7 @@
     "clinical": {
       "packageVersion": "0.0.1",
       "provided": {
-        "revision": "a49fe9e0c37eb4fb4c3c2330dce03d8f63e6882e3be7387978185d9a1e736ec6",
+        "revision": "c3e9d928d8d32ab48a705ce0dcc623eaf7ec651607105dbae0cd2fe4bec9b9aa",
         "rpcMethods": [
           "handleReturnRoute",
           "handleCompletionRoute",
@@ -164,10 +168,12 @@
       "requires": {
         "operations": [
           "f1f32853a7c46421ce85a75394496e0ae0d458d7ea99683f230de3d87796bf54",
-          "7d6b894949959893efc9cb9eeca2b406fc3f5fbee70119fe8f4141fee891bc75"
+          "7d6b894949959893efc9cb9eeca2b406fc3f5fbee70119fe8f4141fee891bc75",
+          "aed9f33e7cd921e9bef102c262890d870141cca3bd34038009d393fd489191af"
         ],
         "billing": [
-          "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc"
+          "1c270ea025369949ea396873ab2698f11849679cbad966808dfd6724045996bc",
+          "4c416108a597d48024ed9620951cf791a03f21ded781609508d4d41e2a83684c"
         ]
       },
       "minMigration": "0026",
@@ -312,6 +318,10 @@
     {
       "name": "0031_agenda_read_permission.sql",
       "hash": "13e91798c393a8c34185db46fd1639a4b171980267b4fa2d90ac2108ec1c88e9"
+    },
+    {
+      "name": "0032_professional_specialty.sql",
+      "hash": "e70a82d7ef8f693dddd6dfb2e19410d1f2f72abeca3c1988ec5773a8df051502"
     }
   ]
 }

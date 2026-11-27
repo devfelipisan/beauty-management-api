@@ -200,6 +200,35 @@ medições reais após primeira adoção; não prometer custo zero ou Free Tier.
 
 ## Liberação e rollback
 
+### Manifesto dos comandos demo
+
+O manifesto foi sincronizado com as fontes após a adição do receiver privado
+`executeSelectedWorkspaceCommand(Request): Promise<Response>` de Operations.
+Comparação com `5077051f6d5afd3c4eb7510f43b47bfeb5f2ba3e`: os métodos e eventos
+RPC anteriores, assinaturas dos composition roots e contratos compartilhados
+anteriores permanecem; foram acrescentados `demo-catalog.ts` e seu export.
+O hash compartilhado considera todos os contratos, por isso também altera as
+revisões de Billing e Clinical, embora seus métodos RPC não tenham mudado.
+As listas `requires` preservam as revisões anteriormente aceitas e acrescentam
+as revisões calculadas atuais. Essa aceitação no candidato não modifica os
+contratos nem as listas de aceitação de Workers já publicados.
+
+A migration incremental `0032_professional_specialty.sql` foi incluída sem
+alterar hashes anteriores. Operations passa a exigir `minMigration: 0032`,
+pois seus inserts de profissionais já referenciam a coluna `specialty`.
+Aplicar a migration antes de publicar Operations, mesmo com comandos demo
+desabilitados. Esta correção não aplica migrations nem altera recursos remotos.
+
+**Bloqueio de publicação:** a simulação da topologia do manifesto anterior
+acima rejeita a ordem Billing → Clinical → Operations após atualizar Billing:
+Operations e Clinical antigos não aceitam a nova revisão de Billing. Preservar
+revisões históricas no candidato não resolve essa incompatibilidade intermediária.
+Os testes devem continuar rejeitando esse rollout; passar no CI apenas comprova
+consistência local. Uma liberação a partir dessa topologia exige um plano de
+compatibilidade separado, com evidência das versões efetivamente publicadas e
+revisão de expand → migrate → contract. Não inventar aceitação retroativa nem
+editar a proveniência histórica para liberar o deploy.
+
 Executar os gates completos e testes dos scripts. Configurar ambientes, credenciais,
 baseline e migrations pelo [runbook](../worker-release-runbook.md). A primeira
 homologação e a ativação semanal são atividades administrativas ainda não executadas.
