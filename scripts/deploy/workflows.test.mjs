@@ -144,7 +144,7 @@ test('failed release collects read-only provenance separately without masking th
     assert.equal(diagnosis.env[key], release.env[key]);
   assert.equal(
     diagnosis.run,
-    'mkdir -p .cache/provenance-diagnostic\nnode .release-control/scripts/infra/local-provenance-check.mjs > .cache/provenance-diagnostic/result.json\n',
+    'set -o pipefail\nmkdir -p .cache/provenance-diagnostic\nnode .release-control/scripts/infra/local-provenance-check.mjs | tee .cache/provenance-diagnostic/result.json\n',
   );
   assert.equal(artifact.if, "always() && steps.release.outcome == 'failure'");
   assert.equal(artifact.uses, 'actions/upload-artifact@v4');

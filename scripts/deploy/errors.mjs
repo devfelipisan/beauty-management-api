@@ -184,6 +184,11 @@ export class DeploymentValidationError extends Error {
       this.provenanceReason = context.provenanceReason;
     if (provenanceVersion({ ...this, versionId: context.versionId }))
       this.versionId = context.versionId;
+    if (
+      provenanceVersion(this) &&
+      typeof context.hasVersionRecord === 'boolean'
+    )
+      this.hasVersionRecord = context.hasVersionRecord;
   }
 }
 export function diagnostic(error, context = {}) {
@@ -205,6 +210,7 @@ export function diagnostic(error, context = {}) {
       'selector',
       'provenanceReason',
       'versionId',
+      'hasVersionRecord',
       'databaseReason',
       'wranglerReason',
       'exitCode',
@@ -217,6 +223,9 @@ export function diagnostic(error, context = {}) {
         (key) =>
           safe[key] !== undefined &&
           (key !== 'versionId' || provenanceVersion(safe)) &&
+          (key !== 'hasVersionRecord' ||
+            (provenanceVersion(safe) &&
+              typeof safe.hasVersionRecord === 'boolean')) &&
           (!['dependency', 'topologyStage', 'updatedWorker'].includes(key) ||
             (safe.code === 'CONTRACT_INCOMPATIBLE' &&
               safe.operation === 'github.manifest' &&

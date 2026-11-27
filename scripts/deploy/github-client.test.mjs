@@ -263,7 +263,12 @@ test('unassociated versions, altered manifests and unrelated workflows fail clos
   ])
     await assert.rejects(
       provenanceFixture(options).client.provenanceByVersion('billing', version),
-      { code: 'PROVENANCE_UNAVAILABLE' },
+      (error) => {
+        const report = diagnostic(error);
+        assert.equal(report.code, 'PROVENANCE_UNAVAILABLE');
+        assert.equal(report.hasVersionRecord, true);
+        return true;
+      },
     );
 });
 
@@ -275,6 +280,10 @@ test('rejected provenance identifies the queried version without leaking malform
       (error) => {
         const report = diagnostic(error);
         assert.equal(report.provenanceReason, 'NO_ACCEPTED_RECORD');
+        assert.equal(
+          report.hasVersionRecord,
+          requested === active ? false : undefined,
+        );
         assert.equal(
           report.versionId,
           requested === active ? active : undefined,
