@@ -683,6 +683,37 @@ production, conforme [o procedimento RPC V2](rpc-v2-upgrade-plan.md). A solicita
 fixa versões e SHAs anteriores; o fluxo exige proveniência aceita e não substitui
 a publicação gradual quando ela é compatível.
 
+### Upgrade coordenado do candidato 3ff9104
+
+O [job 140280989186](https://github.com/devfelipisan/beauty-management-api/actions/runs/45930033040/job/140280989186)
+bloqueou antes do primeiro upload. A primeira etapa simulada, a troca de Billing,
+instalaria a revisão `4c416108…` enquanto o Clinical ativo aceita `1c270ea0…`.
+A geração do manifesto inclui o hash de `packages/contracts/src` nas três revisões.
+A adição de `demo-catalog.ts` e sua exportação alteraram esse hash. Os conjuntos
+inicial e final passam a checagem RPC do manifesto isoladamente. A simulação
+com os dois manifestos reais bloqueia as seis ordens graduais.
+
+A solicitação em `.github/deploy/coordinated-upgrade.json` fixa o candidato
+`3ff9104aacbdf9a08422c4aaa3e43efc9f38f4d2`. O job `verify` do CI de push
+45930033040 passou. O snapshot esperado usa as três versões do diagnóstico de
+proveniência associado ao commit `80e8ad53734af43dba508d2db1942cc10c2e37d8`.
+O workflow relê a Cloudflare antes de publicar e bloqueia qualquer divergência.
+
+1. Confirmar no D1 se `0032_professional_specialty.sql` consta no histórico.
+   Se estiver pendente, inspecionar e aplicar pelo workflow **D1 migrations**,
+   com aprovação de `production-migrations` e a mesma referência da inspeção.
+2. Revisar a solicitação e confirmar a disponibilidade das três versões
+   anteriores. Coordenar a janela sem ingresso, integrações e escritores, com
+   cron de Operations desabilitado e sem agendamentos ativos.
+3. Em **Coordinated RPC upgrade**, selecionar `feature/microsservices` e
+   informar `commit_sha=3ff9104aacbdf9a08422c4aaa3e43efc9f38f4d2`.
+   Marcar `maintenance_confirmed` apenas com a janela preparada e aprovar
+   `production` depois das validações.
+4. Conferir as três versões no resultado do upgrade, repetir o diagnóstico de
+   proveniência e validar os fluxos do seletor antes de reabrir o ingresso.
+   Em falha parcial, manter a janela fechada e recuperar o conjunto
+   `previousVersions` conforme o procedimento de recuperação coordenada.
+
 ## Seletor demonstrativo — requisito de publicação
 
 O receiver exige allowlist server-side `SELECTOR_DEMO_TENANT_IDS` de tenants exclusivamente sintéticos. Configurar e auditar antes de publicar; ausência fecha o RPC em `503 SELECTOR_DEMO_CONFIGURATION_INVALID`. Não adicionar tenants reais para corrigir falha de bootstrap. [Contrato e rollback seguro](selector-demo-safety.md).
