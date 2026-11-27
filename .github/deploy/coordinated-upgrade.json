@@ -1,21 +1,21 @@
 {
-  "commitSha": "775587b80d8ef29c589606830293eb34c993fe07",
-  "authorizationReference": "Owner confirmed in implementation review: no active operation; prepare coordinated upgrade of all three Workers in maintenance. Production approval remains required.",
-  "compatibilityReference": "docs/rpc-v2-upgrade-plan.md: V1 to V2; initial and final sets validated independently, no traffic during mixed topology.",
-  "recoveryReference": "docs/rpc-v2-upgrade-plan.md: retain previousVersions artifact; recover all three versions together in maintenance.",
-  "maintenanceReference": "docs/rpc-v2-upgrade-plan.md: production approver confirms stopped ingress, integrations and writers before publishing; reopen only after final qualification.",
+  "commitSha": "3ff9104aacbdf9a08422c4aaa3e43efc9f38f4d2",
+  "authorizationReference": "docs/worker-release-runbook.md#upgrade-coordenado-do-candidato-3ff9104 — aguardando revisão do plano, confirmação da janela e aprovação do ambiente production.",
+  "compatibilityReference": "docs/worker-release-runbook.md#upgrade-coordenado-do-candidato-3ff9104 — conjuntos inicial e final compatíveis; seis ordens graduais bloqueadas pelo manifesto.",
+  "recoveryReference": "docs/worker-release-runbook.md#upgrade-coordenado-do-candidato-3ff9104 — preservar previousVersions e recuperar os três Workers em manutenção em caso de falha parcial.",
+  "maintenanceReference": "docs/worker-release-runbook.md#upgrade-coordenado-do-candidato-3ff9104 — confirmar parada de ingressos, integrações e escritores e manter cron de Operations desabilitado até qualificação.",
   "workers": {
     "billing": {
-      "versionId": "5328d32c-3207-4ece-965a-d94341816832",
-      "commitSha": "956cfbf9ed20f65d3beb2012bc8871efd5426386"
+      "versionId": "eb1a856d-c2db-4ef4-af51-3303c2ebebea",
+      "commitSha": "80e8ad53734af43dba508d2db1942cc10c2e37d8"
     },
     "clinical": {
-      "versionId": "7a22fd4e-95d2-43bd-b8e0-afa64225715e",
-      "commitSha": "956cfbf9ed20f65d3beb2012bc8871efd5426386"
+      "versionId": "ae3ee167-ecb8-4c03-a014-f63b89d36611",
+      "commitSha": "80e8ad53734af43dba508d2db1942cc10c2e37d8"
     },
     "operations": {
-      "versionId": "99606606-b42a-4e9a-b7c3-8142b604b08c",
-      "commitSha": "956cfbf9ed20f65d3beb2012bc8871efd5426386"
+      "versionId": "08d84654-2c06-43b1-99db-f9ac2e123b5c",
+      "commitSha": "80e8ad53734af43dba508d2db1942cc10c2e37d8"
     }
   }
 }
