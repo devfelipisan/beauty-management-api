@@ -50,9 +50,19 @@ export class D1ProfessionalRepository implements ProfessionalRepository {
     const x = p.data;
     if (transaction) {
       transaction.add({
-        kind: 'D1_SQL', expectedChanges: 1,
+        kind: 'D1_SQL',
+        expectedChanges: 1,
         sql: 'INSERT INTO professionals (id, tenant_id, name, status, public_visible, created_at, updated_at, specialty) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        params: [p.id, x.tenantId, x.name, x.status, x.publicVisible ? 1 : 0, x.createdAt, x.updatedAt, x.specialty ?? null],
+        params: [
+          p.id,
+          x.tenantId,
+          x.name,
+          x.status,
+          x.publicVisible ? 1 : 0,
+          x.createdAt,
+          x.updatedAt,
+          x.specialty ?? null,
+        ],
       });
       return;
     }

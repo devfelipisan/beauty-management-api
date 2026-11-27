@@ -614,7 +614,11 @@ export default class OperationsWorker extends WorkerEntrypoint<
     );
   }
   async executeSelectedWorkspaceCommand(request: Request): Promise<Response> {
-    return selectorCommand(request, executionEnv(this.env), this.ctx.props?.caller);
+    return selectorCommand(
+      request,
+      executionEnv(this.env),
+      this.ctx.props?.caller,
+    );
   }
   async fetch(request: any): Promise<any> {
     return observedHttpRequest(

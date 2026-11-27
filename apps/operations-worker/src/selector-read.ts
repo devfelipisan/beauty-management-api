@@ -28,7 +28,11 @@ export async function selectorRead(
     );
     if (url.pathname === '/v1/me/tenants') {
       if ([...url.searchParams].length) throw new Error('VALIDATION_ERROR');
-      return json({ data: { ...await provider.catalog(), mode: 'demo' }, requestId, correlationId });
+      return json({
+        data: { ...(await provider.catalog()), mode: 'demo' },
+        requestId,
+        correlationId,
+      });
     }
     const match = url.pathname.match(
       /^\/tenants\/([A-Za-z0-9_-]{1,128})\/(customers|professionals|services|agenda|appointments\/([A-Za-z0-9_-]{1,128}))$/,
@@ -67,7 +71,11 @@ export async function selectorRead(
           tenantId,
           role: context.selectedRole,
           professionalId: context.professionalId,
-          capabilities: demoCatalogCapabilities(context.permissions, env.SELECTOR_DEMO_WRITES_ENABLED === 'true', context.professionalId),
+          capabilities: demoCatalogCapabilities(
+            context.permissions,
+            env.SELECTOR_DEMO_WRITES_ENABLED === 'true',
+            context.professionalId,
+          ),
         },
         requestId,
         correlationId,

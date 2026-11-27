@@ -24,26 +24,26 @@ Usar o binding nativo também na homologação local. O adapter Web `local-http`
 
 ## Matriz de compatibilidade e pendências
 
-| Tela/ação Web | Contrato BFF | API/serviço/persistência | Permissão / situação demo |
-|---|---|---|---|
-| Bootstrap e seleção | GET bootstrap/workspace e bootstrap/context | Operations, seletor privado, roles/tenants/professionals D1 | contexto validado e capacidades implementados |
-| Clientes: consultar/criar | GET/POST v1/customers | Operations, Customer, customers D1 | customer.read / customer.create implementados |
-| Profissionais: consultar/criar/vincular | GET/POST v1/professionals | Operations, Professional e professional_services D1 | professional.read / professional.create implementados |
-| Serviços: consultar/criar/vincular | GET/POST v1/services | Operations, Service e professional_services D1 | service.read / service.create implementados |
-| Agenda e detalhe | GET v1/appointments, detalhe e actions | Operations, agenda D1 | leitura existente; escrita e ações demo indisponíveis |
-| Criar agendamento | POST v1/appointments | CreateAppointment existe em Operations com dependências Billing/Clinical | pendente compatibilizar resposta Web appointment/deposit e autoridade demo entre Workers |
-| Confirmar/check-in/reagendar/cancelar/falta | contratos de ação Web ainda precisam ser integrados | casos de uso e handlers existentes em Operations | pendente entrada demo e interface executável |
-| Sinal | POST v1/deposits/confirm | RPCs createDepositForAppointment/confirmDeposit em Billing | pendente contrato BFF e autoridade demo |
-| Sessões e registros técnicos | POST v1/sessions/start e complete; novas integrações técnicas | Clinical e colaboração Operations/Billing | pendente contrato BFF e autoridade demo |
-| Equipamentos | GET/POST v1/equipment | casos de uso e rotas em Clinical | pendente contrato Web/BFF e entrada demo |
-| Pacotes e retornos | GET/POST v1/packages; telas de retornos | Billing materializeCustomerPackage e Clinical recommendReturn | pendente contratos completos e fluxo demo |
-| Financeiro | GET/POST v1/payments | Billing registerPayment/receivables | pendente contrato Web, autoridade demo e marcação financeira simulada |
-| Leads e conversão | v1/leads e actions/status | não exposto pelo registry BFF atual | pendente implementação/integracão autoritativa |
-| Perfis/descontos | relationship-profile-configs, discount-policies, discount-approvals | não exposto pelo registry BFF atual | pendente integração comercial |
-| Usuários/equipes | GET/POST/PUT v1/users | não exposto pelo registry BFF atual | pendente administração exclusivamente demo |
-| Settings/branding/landing | tenant/settings, tenant-branding, tenant/landing-page | não exposto pelo registry BFF atual | pendente persistência/contratos e publicação limitada ao tenant demo |
-| Catálogo/agendamento/lead público | v1/public/:slug/* | não exposto pelo registry BFF atual | pendente resolver slug e contratos públicos |
-| Auditoria e criação de tenant | GET v1/audit, POST v1/tenants | não exposto pelo registry BFF atual | pendente contrato e política demo; sem concessão de acesso real |
+| Tela/ação Web                               | Contrato BFF                                                        | API/serviço/persistência                                                 | Permissão / situação demo                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Bootstrap e seleção                         | GET bootstrap/workspace e bootstrap/context                         | Operations, seletor privado, roles/tenants/professionals D1              | contexto validado e capacidades implementados                                            |
+| Clientes: consultar/criar                   | GET/POST v1/customers                                               | Operations, Customer, customers D1                                       | customer.read / customer.create implementados                                            |
+| Profissionais: consultar/criar/vincular     | GET/POST v1/professionals                                           | Operations, Professional e professional_services D1                      | professional.read / professional.create implementados                                    |
+| Serviços: consultar/criar/vincular          | GET/POST v1/services                                                | Operations, Service e professional_services D1                           | service.read / service.create implementados                                              |
+| Agenda e detalhe                            | GET v1/appointments, detalhe e actions                              | Operations, agenda D1                                                    | leitura existente; escrita e ações demo indisponíveis                                    |
+| Criar agendamento                           | POST v1/appointments                                                | CreateAppointment existe em Operations com dependências Billing/Clinical | pendente compatibilizar resposta Web appointment/deposit e autoridade demo entre Workers |
+| Confirmar/check-in/reagendar/cancelar/falta | contratos de ação Web ainda precisam ser integrados                 | casos de uso e handlers existentes em Operations                         | pendente entrada demo e interface executável                                             |
+| Sinal                                       | POST v1/deposits/confirm                                            | RPCs createDepositForAppointment/confirmDeposit em Billing               | pendente contrato BFF e autoridade demo                                                  |
+| Sessões e registros técnicos                | POST v1/sessions/start e complete; novas integrações técnicas       | Clinical e colaboração Operations/Billing                                | pendente contrato BFF e autoridade demo                                                  |
+| Equipamentos                                | GET/POST v1/equipment                                               | casos de uso e rotas em Clinical                                         | pendente contrato Web/BFF e entrada demo                                                 |
+| Pacotes e retornos                          | GET/POST v1/packages; telas de retornos                             | Billing materializeCustomerPackage e Clinical recommendReturn            | pendente contratos completos e fluxo demo                                                |
+| Financeiro                                  | GET/POST v1/payments                                                | Billing registerPayment/receivables                                      | pendente contrato Web, autoridade demo e marcação financeira simulada                    |
+| Leads e conversão                           | v1/leads e actions/status                                           | não exposto pelo registry BFF atual                                      | pendente implementação/integracão autoritativa                                           |
+| Perfis/descontos                            | relationship-profile-configs, discount-policies, discount-approvals | não exposto pelo registry BFF atual                                      | pendente integração comercial                                                            |
+| Usuários/equipes                            | GET/POST/PUT v1/users                                               | não exposto pelo registry BFF atual                                      | pendente administração exclusivamente demo                                               |
+| Settings/branding/landing                   | tenant/settings, tenant-branding, tenant/landing-page               | não exposto pelo registry BFF atual                                      | pendente persistência/contratos e publicação limitada ao tenant demo                     |
+| Catálogo/agendamento/lead público           | v1/public/:slug/*                                                   | não exposto pelo registry BFF atual                                      | pendente resolver slug e contratos públicos                                              |
+| Auditoria e criação de tenant               | GET v1/audit, POST v1/tenants                                       | não exposto pelo registry BFF atual                                      | pendente contrato e política demo; sem concessão de acesso real                          |
 
 Esta entrega é uma fundação com cadastros persistentes. Não representa a conclusão do critério de aceite de todas as telas nem da jornada cadastrar → agendar → atender → pagar. Não habilitar operações pendentes removendo seus gates de compatibilidade.
 

@@ -56,7 +56,8 @@ async function auxiliaryWorker(
       OUTBOX_LEASE_SECONDS: '60',
       OBSERVE_ENABLED: 'false',
       SELECTOR_DEMO_TENANT_IDS: '["tenant-dev-001"]',
-      SELECTOR_DEMO_WRITES_ENABLED: name === 'beauty-demo-write-runtime' ? 'true' : 'false',
+      SELECTOR_DEMO_WRITES_ENABLED:
+        name === 'beauty-demo-write-runtime' ? 'true' : 'false',
       ...(name === 'beauty-operations-runtime'
         ? { MAX_PROFILE_IMAGE_BYTES: '300000' }
         : {}),

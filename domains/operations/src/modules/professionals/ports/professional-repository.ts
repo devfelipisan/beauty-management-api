@@ -7,7 +7,10 @@ export interface ProfessionalRepository {
     limit: number,
     cursor?: string,
   ): Promise<Professional[]>;
-  create(professional: Professional, transaction?: TransactionalWriteContext): Promise<void>;
+  create(
+    professional: Professional,
+    transaction?: TransactionalWriteContext,
+  ): Promise<void>;
   update(professional: Professional): Promise<void>;
 }
 export const PROFESSIONAL_REPOSITORY = Symbol('PROFESSIONAL_REPOSITORY');

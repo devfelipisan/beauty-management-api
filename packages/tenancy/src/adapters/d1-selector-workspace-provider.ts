@@ -151,7 +151,9 @@ export class D1SelectorWorkspaceProvider {
       .all<{ permission_code: string }>();
     const permissions = rows.results
       .map((row) => row.permission_code)
-      .filter((permission) => includeCommands || readPermissions.includes(permission));
+      .filter(
+        (permission) => includeCommands || readPermissions.includes(permission),
+      );
     if (!permissions.length) throw new Error('PERMISSION_DENIED');
     return {
       mode: 'selector',

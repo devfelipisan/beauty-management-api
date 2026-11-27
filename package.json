@@ -16,6 +16,7 @@
     "build": "tsc --build",
     "deploy": "nest deploy",
     "format": "prettier --write \"apps/**/*.ts\" \"domains/**/*.ts\" \"packages/**/*.ts\"",
+    "format:check": "node scripts/check-format-changes.mjs --local",
     "start": "npm run build -w @beauty/beauty-management-api && nest start",
     "start:dev": "npm run build -w @beauty/beauty-management-api && nest start --watch",
     "start:debug": "npm run build -w @beauty/beauty-management-api && nest start --debug --watch",
