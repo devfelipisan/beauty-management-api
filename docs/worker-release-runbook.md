@@ -84,7 +84,17 @@ checkout confiável `.release-control` e as mesmas credenciais. O artefato separ
 artefato `deployment-<SHA>-<tentativa>` são preservados. O diagnóstico faz somente
 GETs e não transforma o job de publicação em sucesso. Seu snapshot é posterior à
 falha e pode observar alterações concorrentes: comparar com o `versionId` do erro
-original antes de concluir que o validador rejeitou a mesma versão.
+original antes de concluir que o validador rejeitou a mesma versão. O JSON também
+fica disponível no log da etapa de diagnóstico.
+
+Em `NO_ACCEPTED_RECORD`, `hasVersionRecord: false` indica que os Deployments
+consultados para o Worker registram outras versões. Conferir no histórico da
+Cloudflare qual operação ativou a versão atual e se existe evidência compatível
+para adoção histórica. Sem essa evidência, usar o procedimento de recuperação
+aprovado para restaurar uma versão gerenciada compatível com os demais Workers e
+com os dados atuais. Repetir o diagnóstico dos três Workers antes de publicar.
+Com `hasVersionRecord: true`, investigar o Deployment da versão ativa e sua
+evidência de execução, status e manifesto.
 
 Para qualificar uma correção, exigir `npm run check:release` aprovado no Node de
 `.nvmrc`, diagnóstico remoto aprovado para os três Workers e preflight compatível

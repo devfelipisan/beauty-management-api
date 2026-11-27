@@ -153,7 +153,8 @@ test('valid credentials do not imply provenance; NO_RECORDS is reported for all 
       (worker) =>
         worker.cloudflare === 'connected' &&
         worker.failure.versionId === version &&
-        worker.failure.provenanceReason === 'NO_RECORDS',
+        worker.failure.provenanceReason === 'NO_RECORDS' &&
+        worker.failure.hasVersionRecord === false,
     ),
   );
 });
@@ -166,6 +167,7 @@ test('existing rejected records keep the observed Cloudflare version distinct fr
     assert.equal(worker.versionId, version);
     assert.equal(worker.failure.versionId, version);
     assert.equal(worker.failure.provenanceReason, 'NO_ACCEPTED_RECORD');
+    assert.equal(worker.failure.hasVersionRecord, false);
     assert.equal(worker.commitSha, undefined);
     assert.equal(worker.evidence, undefined);
   }

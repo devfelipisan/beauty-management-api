@@ -370,14 +370,16 @@ export function githubClient({
       null,
       'github.deployment',
     );
-    for (const record of records) {
+    const matchingRecords = records.filter(
+      (record) => record.payload?.versionId === versionId,
+    );
+    for (const record of matchingRecords) {
       const commitSha = record.payload?.commitSha;
       if (
         !/^[0-9a-f]{40}$/.test(commitSha ?? '') ||
         record.creator?.login !== 'github-actions[bot]' ||
         record.sha !== commitSha ||
         record.payload?.worker !== worker ||
-        record.payload?.versionId !== versionId ||
         record.payload?.commitSha !== commitSha
       )
         continue;
@@ -558,6 +560,7 @@ export function githubClient({
     fail('PROVENANCE_UNAVAILABLE', {
       ...scope,
       provenanceReason: records.length ? 'NO_ACCEPTED_RECORD' : 'NO_RECORDS',
+      hasVersionRecord: matchingRecords.length > 0,
     });
   }
   // Historical Actions artifacts are independent of GitHub Deployment records.
